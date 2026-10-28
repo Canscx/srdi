@@ -1,6 +1,7 @@
 import type {
   AutoConfirmResponse,
   CatalogResponse,
+  CreateProjectRequest,
   CreateProjectResponse,
   EvidenceDoc,
   EvidencePatchRequest,
@@ -55,11 +56,8 @@ export interface JobStateResponse {
 export const api = {
   projects: () => request<ProjectListResponse>('/api/projects'),
   project: (projectId: string) => request<CreateProjectResponse>(`/api/projects/${projectId}`),
-  createProject: (name?: string) =>
-    request<CreateProjectResponse>(
-      '/api/projects',
-      jsonInit('POST', name ? { name } : {})
-    ),
+  createProject: (input: CreateProjectRequest = {}) =>
+    request<CreateProjectResponse>('/api/projects', jsonInit('POST', input)),
   evidence: (projectId: string) =>
     request<EvidenceDoc>(`/api/projects/${projectId}/evidence`),
   catalog: () => request<CatalogResponse>('/api/meta/catalog'),

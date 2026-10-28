@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { ProjectSummary } from '@srdi/shared'
 import { ElMessage } from 'element-plus'
 import { api, errorText } from '@/api'
@@ -10,6 +10,10 @@ const loading = ref(true)
 const error = ref('')
 const creating = ref(false)
 const name = ref('')
+const currentYear = new Date().getFullYear()
+const endYear = ref(currentYear - 1)
+const yearOptions = Array.from({ length: 6 }, (_, index) => currentYear - 1 - index)
+const periodLabel = computed(() => `${endYear.value - 2}–${endYear.value}`)
 
 const load = async () => {
   loading.value = true
@@ -27,7 +31,14 @@ const create = async () => {
   if (creating.value) return
   creating.value = true
   try {
-    const created = await api.createProject(name.value.trim() || undefined)
+    const created = await api.createProject({
+      name: name.value.trim() || undefined,
+      period: {
+        y0: endYear.value,
+        y1: endYear.value - 1,
+        y2: endYear.value - 2
+      }
+    })
     ElMessage.success('项目已创建，接下来上传材料')
     name.value = ''
     goto(`/p/${created.projectId}/review`)
@@ -46,14 +57,22 @@ onMounted(load)
     <header class="bar">
       <div>
         <h2>项目</h2>
-        <p>一个项目对应一家企业的一次申报，材料与证据都落在本地目录</p>
+        <p>一个项目对应一家企业的一次申报 · 统计期间 {{ periodLabel }}（截止年向前取三年）</p>
       </div>
       <div class="create">
+        <el-select v-model="endYear" style="width: 118px">
+          <el-option
+            v-for="year in yearOptions"
+            :key="year"
+            :label="`${year} 年`"
+            :value="year"
+          />
+        </el-select>
         <el-input
           v-model="name"
           placeholder="企业名称，例如 某某精密机械有限公司"
           clearable
-          style="width: 300px"
+          style="width: 280px"
           @keyup.enter="create"
         />
         <el-button type="primary" :loading="creating" @click="create">新建项目</el-button>
