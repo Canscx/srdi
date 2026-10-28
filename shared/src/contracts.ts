@@ -252,3 +252,35 @@ export interface RulesMetaResponse {
   dimensions: RulesMetaDimension[]
   assumptions: { id: string; text: string; impact: string }[]
 }
+
+export type AiConfigSource = 'file' | 'env' | 'default'
+
+export interface AiSettingsSource {
+  baseUrl: AiConfigSource
+  apiKey: AiConfigSource
+  model: AiConfigSource
+}
+
+export interface AiSettingsResponse {
+  baseUrl: string
+  model: string
+  hasKey: boolean
+  keyMasked: string
+  updatedAt?: string
+  source: AiSettingsSource
+  defaults: { baseUrl: string; model: string }
+}
+
+export interface AiSettingsPatchRequest {
+  baseUrl?: string
+  apiKey?: string
+  model?: string
+  clearKey?: boolean
+}
+
+export interface AiTestResponse {
+  ok: boolean
+  model: string
+  latencyMs: number
+  message: string
+}

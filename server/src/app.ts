@@ -6,6 +6,7 @@ import { API_PREFIX } from '@srdi/shared'
 import type { ApiError } from '@srdi/shared'
 import { createModelClient, type ModelClient } from './ai/client'
 import { extractProject } from './ai/extract'
+import { resolveAiConfig } from './config/aiSettings'
 import { defaultModel } from './config/pricing'
 import { AppError } from './errors'
 import { healthRouter } from './routes/health'
@@ -19,6 +20,7 @@ import { pagesRouter } from './routes/pages'
 import { parseRouter } from './routes/parse'
 import { reportRouter } from './routes/report'
 import { scoreRouter } from './routes/score'
+import { settingsRouter } from './routes/settings'
 import { createJobQueue } from './jobs/queue'
 import { requestLogger } from './logger'
 import { parseProject } from './pipeline/parse'
@@ -46,8 +48,8 @@ const missingDistHtml = `<!doctype html>
 export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiModel }: AppOptions) => {
   const app = express()
   const store = createStore(dataDir)
-  const model = aiModel ?? process.env.AI_MODEL ?? defaultModel()
-  const modelClient = aiClient ?? createModelClient({ model })
+  const modelClient = aiClient ?? createModelClient({ resolve: () => resolveAiConfig(dataDir) })
+  const currentModel = () => (aiClient ? aiModel ?? defaultModel() : resolveAiConfig(dataDir).model)
   const queue = createJobQueue(store, {
     parse: async (projectId, report) => {
       const outcome = await parseProject(store, projectId, report)
@@ -61,7 +63,7 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
     extract: async (projectId, report) => {
       const outcome = await extractProject(store, projectId, report, {
         client: modelClient,
-        model
+        model: currentModel()
       })
       const parts = [`抽取完成,${outcome.files} 个文件`]
       if (outcome.cached > 0) parts.push(`${outcome.cached} 个命中缓存`)
@@ -86,6 +88,7 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
   app.use(API_PREFIX, evidenceRouter(store))
   app.use(API_PREFIX, pagesRouter(store))
   app.use(API_PREFIX, metaRouter())
+  app.use(API_PREFIX, settingsRouter(dataDir, modelClient))
   app.use(API_PREFIX, parseRouter(store, queue))
   app.use(API_PREFIX, extractRouter(store, queue))
   app.use(API_PREFIX, scoreRouter(store))

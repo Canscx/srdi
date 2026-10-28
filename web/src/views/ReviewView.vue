@@ -12,6 +12,7 @@ import type {
 } from '@srdi/shared'
 import { ElMessage } from 'element-plus'
 import { api, errorText, fileLabel } from '@/api'
+import { useAiSettings } from '@/composables/useAiSettings'
 import { DOC_TYPE_TEXT, formatFieldValue, SKIP_TEXT, STATUS_TEXT, STATUS_TYPE } from '@/format'
 import { goto, useRoute } from '@/router'
 import type { FieldRow, FilterKey } from '@/types'
@@ -43,6 +44,7 @@ const sourceLoading = ref(false)
 const job = ref({ running: false, pct: 0, message: '', stage: '' })
 let jobStream: EventSource | null = null
 const uploadInput = ref<HTMLInputElement | null>(null)
+const { hasKey, open: openAiSettings, ensure: ensureAiSettings } = useAiSettings()
 
 const GROUPS: { id: string; title: string; prefixes: string[] }[] = [
   { id: 'company', title: '企业主体', prefixes: ['company.'] },
@@ -430,6 +432,15 @@ const runJob = async (kind: 'parse' | 'extract') => {
   }
 }
 
+const runExtract = () => {
+  if (!hasKey.value) {
+    ElMessage.warning('先填写模型 API 地址与 Key，保存后即可抽取')
+    openAiSettings()
+    return
+  }
+  void runJob('extract')
+}
+
 watch(selectedRow, (row) => {
   if (!row) return
   const first = row.entry.candidates?.[0]
@@ -439,7 +450,10 @@ watch(selectedRow, (row) => {
   }
 })
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  void ensureAiSettings()
+})
 onBeforeUnmount(closeStream)
 </script>
 
@@ -491,8 +505,11 @@ onBeforeUnmount(closeStream)
         <el-button size="small" :disabled="job.running || !project?.files.length" @click="runJob('parse')">
           解析
         </el-button>
-        <el-button size="small" :disabled="job.running || parsedCount === 0" @click="runJob('extract')">
+        <el-button size="small" :disabled="job.running || parsedCount === 0" @click="runExtract">
           抽取字段
+        </el-button>
+        <el-button v-if="!hasKey" text size="small" type="warning" @click="openAiSettings">
+          模型未配置
         </el-button>
         <span v-if="job.running" class="job">
           <i :style="{ width: `${job.pct}%` }" />

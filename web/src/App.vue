@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { goto, useRoute } from '@/router'
+import { useAiSettings } from '@/composables/useAiSettings'
+import AiSettingsDialog from '@/components/AiSettingsDialog.vue'
 import ProjectsView from '@/views/ProjectsView.vue'
 import ReviewView from '@/views/ReviewView.vue'
 import ScoringView from '@/views/ScoringView.vue'
 import StatusView from '@/views/StatusView.vue'
 
 const route = useRoute()
+const { hasKey, state: aiState, ensure, open: openAiSettings } = useAiSettings()
 
 const view = computed(() => {
   if (route.value.name === 'review') return ReviewView
@@ -16,6 +19,10 @@ const view = computed(() => {
 })
 
 const navClass = (name: string) => (route.value.name === name ? 'on' : '')
+
+onMounted(() => {
+  void ensure()
+})
 </script>
 
 <template>
@@ -31,10 +38,17 @@ const navClass = (name: string) => (route.value.name === name ? 'on' : '')
       <nav class="nav">
         <button :class="navClass('projects')" @click="goto('/projects')">工作台</button>
         <button :class="navClass('status')" @click="goto('/status')">自检</button>
+        <button class="settings" @click="openAiSettings">
+          <i class="dot" :class="{ ready: hasKey }" />
+          模型设置
+          <em v-if="aiState.loading">…</em>
+        </button>
       </nav>
     </header>
 
     <component :is="view" />
+
+    <AiSettingsDialog />
 
     <footer class="foot">
       数据不出本机 · 参考得分非官方口径 · 证据只认人工确认，打分引擎为纯函数
@@ -124,6 +138,30 @@ h1 {
   background: #eff5ff;
   color: #2563eb;
   font-weight: 600;
+}
+
+.nav button.settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+}
+
+.dot.ready {
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+}
+
+.nav em {
+  font-style: normal;
+  color: #a3adbb;
 }
 
 .foot {

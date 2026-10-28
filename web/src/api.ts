@@ -1,4 +1,7 @@
 import type {
+  AiSettingsPatchRequest,
+  AiSettingsResponse,
+  AiTestResponse,
   AutoConfirmResponse,
   CatalogResponse,
   CreateProjectRequest,
@@ -87,6 +90,10 @@ export const api = {
       jsonInit('POST')
     ),
   job: (jobId: string) => request<JobStateResponse>(`/api/jobs/${jobId}`),
+  aiSettings: () => request<AiSettingsResponse>('/api/settings/ai'),
+  saveAiSettings: (patch: AiSettingsPatchRequest) =>
+    request<AiSettingsResponse>('/api/settings/ai', jsonInit('PUT', patch)),
+  testAi: () => request<AiTestResponse>('/api/settings/ai/test', jsonInit('POST')),
   upload: async (projectId: string, file: File) => {
     const form = new FormData()
     form.append('file', file)

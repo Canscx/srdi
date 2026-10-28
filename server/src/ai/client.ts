@@ -1,4 +1,4 @@
-import { defaultModel, modelPricing } from '../config/pricing'
+import { modelPricing } from '../config/pricing'
 import { AppError } from '../errors'
 
 export interface ModelTextPart {
@@ -24,6 +24,7 @@ export interface ModelRequest {
   messages: ModelMessage[]
   temperature?: number
   json?: boolean
+  maxTokens?: number
   timeoutMs?: number
 }
 
@@ -92,34 +93,53 @@ const readText = (content: string | ChatContent[] | null | undefined) => {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+export interface ModelEndpoint {
+  apiKey: string
+  baseUrl: string
+  model: string
+}
+
 export interface ModelClientOptions {
   apiKey?: string
   baseUrl?: string
   model?: string
+  resolve?: () => ModelEndpoint
   fetchImpl?: typeof fetch
   wait?: (ms: number) => Promise<void>
 }
 
+const DEFAULT_BASE_URL = 'https://api.deepseek.com/v1'
+
 export const createModelClient = (options: ModelClientOptions = {}): ModelClient => {
-  const model = options.model ?? process.env.AI_MODEL ?? defaultModel()
-  const baseUrl = (options.baseUrl ?? process.env.AI_BASE_URL ?? 'https://api.deepseek.com/v1').replace(/\/+$/, '')
-  const apiKey = options.apiKey ?? process.env.AI_API_KEY ?? ''
   const fetchImpl = options.fetchImpl ?? fetch
   const wait = options.wait ?? sleep
-  const vision = modelPricing(model)?.supportsVision !== false
+
+  const endpointFor = (requestedModel: string): ModelEndpoint => {
+    if (options.resolve) return options.resolve()
+    return {
+      apiKey: options.apiKey ?? process.env.AI_API_KEY ?? '',
+      baseUrl: (options.baseUrl ?? process.env.AI_BASE_URL ?? DEFAULT_BASE_URL).replace(/\/+$/, ''),
+      model: options.model ?? process.env.AI_MODEL ?? requestedModel
+    }
+  }
 
   const complete = async (request: ModelRequest): Promise<ModelResponse> => {
+    const endpoint = endpointFor(request.model)
+    const apiKey = endpoint.apiKey
+    const baseUrl = endpoint.baseUrl.replace(/\/+$/, '')
+    const model = endpoint.model || request.model
     if (!apiKey) {
       throw new AppError(
         503,
         'ai_not_configured',
         '尚未配置模型 API Key',
-        '设置环境变量 AI_API_KEY 后重启服务'
+        '在页面右上角「模型设置」里填写 API 地址与 Key，保存后即可抽取；也可设置环境变量 AI_API_KEY'
       )
     }
+    const vision = modelPricing(model)?.supportsVision !== false
     const timeoutMs = request.timeoutMs ?? TEXT_TIMEOUT_MS
     const body: Record<string, unknown> = {
-      model: request.model,
+      model,
       temperature: request.temperature ?? 0,
       messages: request.messages.map((message) => ({
         role: message.role,
@@ -127,6 +147,7 @@ export const createModelClient = (options: ModelClientOptions = {}): ModelClient
       }))
     }
     if (request.json) body.response_format = { type: 'json_object' }
+    if (request.maxTokens !== undefined) body.max_tokens = request.maxTokens
     if (vision === false) {
       const hasImage = request.messages.some(
         (message) => Array.isArray(message.content) && message.content.some((part) => part.type === 'image')
@@ -135,8 +156,8 @@ export const createModelClient = (options: ModelClientOptions = {}): ModelClient
         throw new AppError(
           400,
           'model_without_vision',
-          `模型 ${request.model} 不支持图像输入`,
-          '改用支持视觉的模型,或在设置中开启「仅文本模式」'
+          `模型 ${model} 不支持图像输入`,
+          '改用支持视觉的模型，或在设置中开启「仅文本模式」'
         )
       }
     }

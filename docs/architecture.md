@@ -99,11 +99,14 @@ POST   /api/projects/:id/score            → ScoreResult
 GET    /api/projects/:id/report?format=md|pdf|json
 GET    /api/files/:fileId/page/:n?projectId= → image/jpeg
 GET    /api/meta/catalog                  → { version, fields[], autoConfirm }
-POST   /api/settings/apikey               { key } → { masked }
-GET    /api/meta/industries               → 基准库可选行业
+GET    /api/meta/rules                    → 23 项指标元数据与规则假设
+GET    /api/settings/ai                   → { baseUrl, model, hasKey, keyMasked, source, defaults }
+PUT    /api/settings/ai                   { baseUrl?, apiKey?, model?, clearKey? } → 同上
+POST   /api/settings/ai/test              → { ok, model, latencyMs, message }
+GET    /api/health                        → 运行时、规则摘要与数据目录
 ```
 
-契约由 `zod` 定义,`zod-to-openapi` 生成 `openapi.json`,前端用 `openapi-typescript` 生成类型。
+接口契约以 `shared/src/contracts.ts` 的 TS 类型为准,前后端共享同一份定义。模型配置落 `data/ai-settings.json`,读取时页面配置 > 环境变量 > 默认值,Key 只回显掩码。
 
 ## 六、进程与长任务
 
