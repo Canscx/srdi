@@ -1,0 +1,272 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://srdi.local/schema/score-result.schema.json",
+  "title": "参考得分结果",
+  "description": "规则引擎的唯一输出，页面与报告的唯一分数来源。总分区间 [0,100]，单项得分率为 [0,1]。",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "rulesId",
+    "rulesVersion",
+    "period",
+    "industry",
+    "totals",
+    "dimensions",
+    "indicators",
+    "gates",
+    "excluded",
+    "missing",
+    "flags",
+    "conclusion",
+    "meta"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "totals": {
+      "type": "object",
+      "required": ["official", "conservative", "optimistic", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "official": { "type": "number", "minimum": 0, "maximum": 100 },
+        "conservative": { "type": "number", "minimum": 0, "maximum": 100 },
+        "optimistic": { "type": "number", "minimum": 0, "maximum": 100 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "benchmark": {
+      "type": "object",
+      "required": ["key", "value", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "number" },
+        "source": { "enum": ["industry", "default"] }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "projectId": { "type": "string" },
+    "rulesId": { "type": "string" },
+    "rulesVersion": { "type": "string" },
+    "period": {
+      "type": "object",
+      "required": ["y0", "y1", "y2"],
+      "additionalProperties": false,
+      "properties": {
+        "y0": { "type": "integer" },
+        "y1": { "type": "integer" },
+        "y2": { "type": "integer" }
+      }
+    },
+    "industry": {
+      "type": "object",
+      "required": ["code", "name", "benchmarkSource"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": ["string", "null"] },
+        "benchmarkSource": { "enum": ["industry", "default"] }
+      }
+    },
+    "totals": { "$ref": "#/definitions/totals" },
+    "dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "weight", "score"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "weight": { "type": "number", "minimum": 0, "maximum": 100 },
+          "score": { "$ref": "#/definitions/totals" }
+        }
+      }
+    },
+    "indicators": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "dimensionId",
+          "status",
+          "basis",
+          "quality",
+          "raw",
+          "score",
+          "weight",
+          "effectiveWeight",
+          "contribution",
+          "benchmark",
+          "flags",
+          "explain"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "code": { "type": "integer", "minimum": 1 },
+          "name": { "type": "string" },
+          "dimensionId": { "type": "string" },
+          "status": {
+            "enum": ["scored", "estimated", "missing", "notApplicable", "excluded"]
+          },
+          "basis": {
+            "enum": ["measured", "substituted", "absent", "notApplicable", "excluded"]
+          },
+          "quality": { "enum": ["verified", "estimated", "unknown"] },
+          "raw": { "type": ["number", "null"] },
+          "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+          "weight": { "type": "number", "minimum": 0, "maximum": 100 },
+          "effectiveWeight": { "type": "number", "minimum": 0, "maximum": 100 },
+          "contribution": {
+            "type": "object",
+            "required": ["official", "conservative", "optimistic"],
+            "additionalProperties": false,
+            "properties": {
+              "official": { "type": "number", "minimum": 0, "maximum": 100 },
+              "conservative": { "type": "number", "minimum": 0, "maximum": 100 },
+              "optimistic": { "type": "number", "minimum": 0, "maximum": 100 }
+            }
+          },
+          "benchmark": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/definitions/benchmark" }]
+          },
+          "flags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "explain": {
+            "type": "object",
+            "required": ["template", "text"],
+            "additionalProperties": false,
+            "properties": {
+              "template": { "type": "string" },
+              "text": { "type": "string" }
+            }
+          },
+          "reason": { "type": "string" },
+          "trace": {
+            "type": "object",
+            "required": ["normalizedExpr", "rewrites", "valueKind"],
+            "additionalProperties": false,
+            "properties": {
+              "normalizedExpr": { "type": "string" },
+              "rewrites": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["kind", "from", "to", "index"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": { "enum": ["range", "count"] },
+                    "from": { "type": "string" },
+                    "to": { "type": "string" },
+                    "index": { "type": "integer", "minimum": 0 }
+                  }
+                }
+              },
+              "valueKind": { "enum": ["num", "series", "rows", "bool", "str", "none"] }
+            }
+          }
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "verdict", "effective", "basis", "checks", "explain"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "verdict": { "enum": ["pass", "fail", "unknown", "pending"] },
+          "effective": { "enum": ["pass", "fail", "pending"] },
+          "basis": { "enum": ["evidence", "missing", "unconfirmed", "mixed", "policy", "score"] },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "label", "verdict", "exemption", "missing", "pending", "flags"],
+              "additionalProperties": false,
+              "properties": {
+                "id": { "type": "string" },
+                "label": { "type": "string" },
+                "verdict": { "enum": ["pass", "fail", "unknown", "pending"] },
+                "exemption": { "type": "boolean" },
+                "missing": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "pending": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "flags": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          },
+          "passedVia": { "type": "string" },
+          "explain": { "type": "string" }
+        }
+      }
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["indicatorId", "baseWeight", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "indicatorId": { "type": "string" },
+          "baseWeight": { "type": "number", "minimum": 0, "maximum": 100 },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "missing": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["indicatorId", "fieldKeys"],
+        "additionalProperties": false,
+        "properties": {
+          "indicatorId": { "type": "string" },
+          "fieldKeys": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "conclusion": { "enum": ["pass", "fail", "pending"] },
+    "meta": {
+      "type": "object",
+      "required": ["engineVersion", "scale", "assumptions"],
+      "additionalProperties": false,
+      "properties": {
+        "engineVersion": { "type": "string" },
+        "scale": { "enum": ["renormalized"] },
+        "assumptions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
