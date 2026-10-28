@@ -7,16 +7,26 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.13",
     "@srdi/shared": "workspace:*",
-    "express": "^5.1.0"
+    "ajv": "^8.20.0",
+    "busboy": "^1.6.0",
+    "express": "^5.1.0",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.4.299",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/busboy": "^1.5.5",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.5",
+    "pdf-lib": "^1.17.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
   }
 }

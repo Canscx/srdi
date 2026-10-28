@@ -4,17 +4,26 @@
 
 ## 接续点(新对话从这里开始)
 
-**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照。
-**未开工** 解析链路 / AI 抽取 / 确认页 / 评分页 / 报告 / 真实材料验收。
+**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照 → 存储层 + 文件上传 + 魔数判型 → 解析链路(PDF 双通道 / DOCX / XLSX / 图片)+ 任务队列 → 四类 docType 抽取 + 五级校验。  
+**未开工** 确认页 / 评分页 / 报告 / 真实材料验收。
 
-**下一步**:第二阶段第 5 步「存储层 + 文件上传 + 魔数判型」。起点是 `server/src/store/`(project / evidence / atomic)与两条接口 `POST /api/projects`、`POST /api/projects/:id/files`。判型规则见 `docs/pipeline.md` 第二节——不信扩展名,读头部字节。
+**下一步**:第二阶段第 8 步「确认页(字段行 + 页图 bbox 对照 + 冲突二选一)」。
+
+- 输入 `evidence.json` 的 `fields[*].candidates`:每条已带 `source.fileId / page / route / quote / quoteMatched / confidence`,`value` 仍为空
+- 页图走 `data/projects/<id>/pages/<fileId>/pN.jpg`,接口按 `docs/architecture.md` 的 `GET /api/files/:fileId/page/:n`
+- 只读候选、只经 `evidenceStore.patch` 写 `value`;「单候选自动确认」必须带 confidence 阈值且阈值进配置,不散落在页面里
+- **bbox 目前恒为空**:AI 只回 quote 不回坐标。文本通道用 `quote` 在页文本里做字符串定位高亮,视觉通道整页高亮,不要伪造坐标
+- 冲突(同 key 多候选)必须人工二选一,不得自动取最高置信度
+- 不碰评分页 / 报告 / 打分引擎
 
 **三条命令**
+
 - `pnpm validate`:配置校验 + 三包类型 + 全部测试,提交前必跑
 - `pnpm start`:构建前端并起服务,8787
 - `pnpm dev`:server + vite 并行,前端 5180
 
 **三条最容易重踩的坑**
+
 1. jsep 对 `count(x where ...)` **不报错**,会把 where 当第二个实参;`parser.ts` 已注册运算符并做 AST 校验,不要绕过它直接调 jsep。
 2. vitest 的模块缓存在多 worker 下并发写同一临时文件,Windows 上偶发 `EPERM`,表现为部分 spec 根本不加载;已在 `shared/vitest.config.ts` 设 `fileParallelism: false`。
 3. 本机 5173 被其他项目占用,dev 端口固定 **5180**,生产 **8787**。
@@ -34,18 +43,30 @@
 - [x] 校验基建:`pnpm validate`(配置 + 类型 + 测试三闸)+ `scripts/smoke-web.mjs`(CDP 冒烟)
 - [x] `shared/scoring` 打分引擎:表达式求值 / 七打分器 / 六门槛 / 三口径 / 边界保护
 - [x] 三家企业 fixtures + golden 快照:明显通过(84.81)/ 临界(46.92–57.76)/ 不通过(23.21),107 条测试
+- [x] 存储层:原子写 + 项目级串行锁 + 项目/文件/证据三份 JSON,40 字段证据表按目录自动铺满
+- [x] 文件上传:busboy 流式落盘 + sha256 去重 + 50MB 限额 + 失败清理临时文件
+- [x] 魔数判型:PDF / ZIP 中央目录分 docx-xlsx / OLE 拒绝并提示另存 / 图片三格式;扩展名一律不信
+- [x] 解析链路:PDF 文本 + 页图双通道 / DOCX 保留表格 / XLSX 一表一页 / 图片单页;页级路由 + 40 页视觉上限
+- [x] 任务队列:`POST /parse` 返回 jobId、`jobs.json` 落盘、SSE 推进度、同项目重复触发复用任务
+- [x] 解析结果回填 `project.json` 与 `evidence.files`,页图落 `pages/<fileId>/pN.jpg`
+- [x] server 测试 63 条(判型 / 存储 / 上传 / 路由阈值 / 文本还原 / 四格式解析 / HTTP 解析全链路),已并入 `pnpm validate`
+- [x] AI 抽取:`ai/{client,prompt,validate,dispatch,cache,budget,extract}`;四层 prompt(L0 铁律 / L1 字段子集 / L2 页文本或页图 / L3 本块指令)、docType 前缀派子集、按页 route 与字符预算分块、五级校验、项目级 token 账本、文件级缓存
+- [x] `POST /api/projects/:id/extract` 返回 jobId;`jobs/queue.ts` 泛化为 parse / extract 两类任务共用串行 drain 与 SSE
+- [x] server 测试 70 条(新增 7 条 AI 抽取:四类 docType 出处完整 / docType 覆盖 / 二次抽取零请求 / 单块失败隔离 / quote 未命中压分 / 万元换算 / 页越界 / 预算耗尽 / HTTP 全链路)
 
 ## 待办(按优先级)
 
 **第二阶段 MVP**
-- [ ] 存储层 + 文件上传 + 魔数判型
-- [ ] PDF 双通道 / DOCX / XLSX 解析 + 任务队列
-- [ ] 四类 docType 抽取 + 五级校验
+
+- [x] 存储层 + 文件上传 + 魔数判型
+- [x] PDF 双通道 / DOCX / XLSX 解析 + 任务队列
+- [x] 四类 docType 抽取 + 五级校验
 - [ ] 确认页(字段行 + 页图 bbox 对照 + 冲突二选一)
 - [ ] 评分页(雷达 + 23 项表 + 门槛表 + 三口径)
 - [ ] 报告导出 Markdown
 
 **收尾**
+
 - [ ] 真实材料验收(50 页 ≤8 分钟 / 确认 ≤15 分钟 / ≥18 项带出处)
 - [ ] `score-result.schema.json`(引擎出 TS 类型后再定)
 
@@ -58,75 +79,113 @@
 - pnpm 11 不再读 `package.json` 的 `pnpm` 字段,构建脚本白名单写进根 `pnpm-workspace.yaml` 的 `allowBuilds`
 - 本机 5173 被其他项目占用,dev 端口固定 5180,生产 8787
 - `jsep` 对 `count(x where ...)` **不报错但错解**(把 where 当第二个实参),必须注册 `where` 运算符并做 AST 校验
+- `busboy` 的 `close` 早于写盘流的 `close`,拿它判断"没收到文件"会让每个上传都 400。完成信号必须取文件流 `close`,`bb.close` 只做「从未见过 file」的兜底
+- `pdfjs` 6.x 的 `standardFontDataUrl` / `cMapUrl` 在 Windows 上必须是正斜杠且以 `/` 结尾;用 `path.sep` 会直接抛 `Invalid factory url`
+- `pdfjs` 6.x 的 `render()` 需要同时传 `canvasContext` 与 `canvas`;`@napi-rs/canvas` 的 `toBuffer('image/jpeg', quality)` 质量范围是 0–100
+- 队列写 `jobs.json` 可能因项目目录被删而失败,不能冒泡成未处理的 Promise;`persist` 已包 try/catch,`drain` 也已挂 catch
+- `jobs.json` 的 `persist` 必须串行(`persistChain`):`enqueue` 与 `drain` 会并发读改写同一文件,Windows 上 rename 偶发 `EPERM`,表现为日志刷「任务状态写入失败」但任务照跑
+- `ajv` 已从 server 的 devDependencies 移到 dependencies —— `ai/validate.ts` 运行时直接引用,只装生产依赖会 `MODULE_NOT_FOUND`
+- `ratio` 类字段一律用小数(`0.52` 表示 52%)。模型回 `unit: "%"` 或 `value: "52.3%"` 时必须按 0.01 折算并打 `unit_scaled`;折算后 `|v| > 5` 直接丢弃,防止 52.3 被当比率写进证据
+- prompt 的正反例里也写着字段名,测试桩若按 `system.includes('fin.revenue')` 分流,每条 prompt 都会命中(正反例在同一个 system 里)。判别要带制表符匹配表格行,如 `'fin.revenue\t'`
 
 ## 决策记录
 
-- **2026-10-28 形态定为本地单机版**
+- **2026-10-28 形态定为本地单机版**  
   不做 SaaS。理由:单用户,数据本就在客户机器上,免去账号与存储成本。
-
-- **2026-10-28 前端定为 Vue3,不是 React**
-  全站 6 个页面、90% 是表格+表单+上传+图表,Element Plus 主场。React 的优势区(团队协作、SSR/SEO、Server Components)本项目用不上。
+- **2026-10-28 前端定为 Vue3,不是 React**  
+  全站 6 个页面、90% 是表格+表单+上传+图表,Element Plus 主场。React 的优势区(团队协作、SSR/SEO、Server Components)本项目用不上。  
   改判条件:长成 SaaS 且团队原有 React 基因。
-
-- **2026-10-28 后端定为 Node + Express,不是 Python FastAPI**
-  理由:打分引擎需前后端共享,前端调参可实时重算;单用户场景 Python 并发优势归零;单人维护两套语言是纯损耗。
+- **2026-10-28 后端定为 Node + Express,不是 Python FastAPI**  
+  理由:打分引擎需前后端共享,前端调参可实时重算;单用户场景 Python 并发优势归零;单人维护两套语言是纯损耗。  
   **止损点:3 份真实材料实测,pdfjs 表格抽取准确率 < 70% 即换 Python。** 引擎是零依赖纯函数,迁移只换外壳。
-
-- **2026-10-28 AI 不碰分数**
+- **2026-10-28 AI 不碰分数**  
   AI 只做证据抽取与建议撰写。分数由纯函数规则引擎算。理由:可复现、可追溯、可校准,模型直接给分三条都做不到。
-
-- **2026-10-28 三级指标采用维度内等权**
-  官方只公布五个一级维度权重,三级权重未公开。`rules.json` 允许覆盖 `share`。
+- **2026-10-28 三级指标采用维度内等权**  
+  官方只公布五个一级维度权重,三级权重未公开。`rules.json` 允许覆盖 `share`。  
   后果:参考得分与官方评分**不可直接比对**,只能作自查参考。
-
-- **2026-10-28 行业均值走「中性假设 + 行业基准表」**
-  官方行业均值由培育平台后台自动匹配,第三方拿不到。8 项 B 类指标约 32 分依赖它。
+- **2026-10-28 行业均值走「中性假设 + 行业基准表」**  
+  官方行业均值由培育平台后台自动匹配,第三方拿不到。8 项 B 类指标约 32 分依赖它。  
   无匹配行业时取 `_default` 中性值并标注"估算";三口径区间兜底。
-
-- **2026-10-28 报告采用双轨输出**
-  主视图给条件匹配度与材料完整度(可验证),次视图给参考得分与区间(满足心理需求),并标注非官方口径。
+- **2026-10-28 报告采用双轨输出**  
+  主视图给条件匹配度与材料完整度(可验证),次视图给参考得分与区间(满足心理需求),并标注非官方口径。  
   理由:既不能伪造官方分数,也不能完全不给数字。
-
-- **2026-10-28 不采纳 24 小时自动删除**
+- **2026-10-28 不采纳 24 小时自动删除**  
   本地单机版无必要。改为本地持久化 + 一键清除 + 上传页写明存储路径。上云时再启用该策略。
-
-- **2026-10-28 不引入 Pinia**
+- **2026-10-28 不引入 Pinia**  
   6 个页面、单用户、流程线性。两个 composable 足够。全局状态会让数据来源变模糊,而本项目最不能容忍这一点。
-
-- **2026-10-28 Git 采用主干开发 + tag 标里程碑**
+- **2026-10-28 Git 采用主干开发 + tag 标里程碑**  
   单人项目不开常规分支。仅在破坏性重构、需冻结演示版、试不确定方案时开分支。
-
-- **2026-10-28 shared 以 TS 源码直供,不预编译**
-  `main`/`exports` 指向 `src/index.ts`,server 用 tsx、web 用 vite alias 直接消费。
+- **2026-10-28 shared 以 TS 源码直供,不预编译**  
+  `main`/`exports` 指向 `src/index.ts`,server 用 tsx、web 用 vite alias 直接消费。  
   理由:单人项目免去 watch 编译链;代价是后续若发 npm 包需补 build 步骤。
-
-- **2026-10-28 dev 端口改用 5180**
+- **2026-10-28 dev 端口改用 5180**  
   本机 5173 被其他项目占用,`strictPort` 会让 `pnpm dev` 直接失败。生产端口仍为 8787。
-
-- **2026-10-28 排除项权重按比例重归一到 100**
-  指标 18(专利点度中心度)按 `fallback:exclude` 不计分。若简单记 0,全企业理论满分变成 94.17,报告分会系统性偏低且与官方不可比。
+- **2026-10-28 排除项权重按比例重归一到 100**  
+  指标 18(专利点度中心度)按 `fallback:exclude` 不计分。若简单记 0,全企业理论满分变成 94.17,报告分会系统性偏低且与官方不可比。  
   改为从分母移除、其余 22 项等比放大,`Σ effectiveWeight ≡ 100`,`meta.scale = 'renormalized'`,报告尾注说明。
-
-- **2026-10-28 guard 失败记 0,不进三口径区间**
-  净资产 ≤ 0 属于企业特征而非数据缺失。`notApplicable` 在 official / conservative / optimistic 三处都记 0,不像"估算"那样给 1 分上限。
+- **2026-10-28 guard 失败记 0,不进三口径区间**  
+  净资产 ≤ 0 属于企业特征而非数据缺失。`notApplicable` 在 official / conservative / optimistic 三处都记 0,不像"估算"那样给 1 分上限。  
   理由:`scoring.md` 的三口径只对"估算/缺失"展开,已确定的事实不该被区间对冲。
-
-- **2026-10-28 部分窗口只降 confidence,不改分数**
+- **2026-10-28 部分窗口只降 confidence,不改分数**  
   三年缺一年时仍按可得年份的均值计分,打 `partial_window`、quality 降为 estimated。避免大量企业 conservative 直接归零,使三口径失去意义。
-
-- **2026-10-28 数组形态的周期字段降级为 estimated**
+- **2026-10-28 数组形态的周期字段降级为 estimated**  
   `value: [a,b,c]` 不带年份,只能约定按 `[y0,y1,y2]` 解读。一旦上游写成升序,增长率会整体反号且不报错,故打 `period_order_assumed` 并降级,让错误在报告里可见。
-
-- **2026-10-28 `where` 必须注册运算符并做 AST 校验**
+- **2026-10-28 `where` 必须注册运算符并做 AST 校验**  
   jsep 在不注册时**不报错**,会把 `where` 当成第二个实参,语义全错且无提示。现已注册 `where`(优先级 0.5)与 `@`(区间,0.9),并在 parser 层强制:count 只接受 1 个参数、where 只能作 count 的第一个实参。
-
-- **2026-10-28 测试串行执行**
+- **2026-10-28 测试串行执行**  
   vitest 的模块缓存(`cacheFs`)在多 worker 下并发写同一临时文件,Windows 上偶发 `EPERM` 导致部分测试文件不被加载。改 `fileParallelism: false`,5 个文件约 3 秒,代价可忽略。
-
-- **2026-10-28 golden 快照只锁四层,不锁全量输出**
-  锁三口径总分、门槛判词、排除/缺失/标记清单、8 个易错指标的 s 值;不对整份 `ScoreResult` 做快照。
-  理由:全量快照会让任何文案微调都产生几十行 diff,真正该被看见的数字跳动反而被噪音淹没。
+- **2026-10-28 golden 快照只锁四层,不锁全量输出**  
+  锁三口径总分、门槛判词、排除/缺失/标记清单、8 个易错指标的 s 值;不对整份 `ScoreResult` 做快照。  
+  理由:全量快照会让任何文案微调都产生几十行 diff,真正该被看见的数字跳动反而被噪音淹没。  
   敏感性已验证:改 B 类曲线 `kUp`、改 `IND_01` 的 `share`、改 `IND_03` 顶点,三处各改一点,总分分别变为 84.4 / 84.67 / 84.79,golden 必然失败。
-
-- **2026-10-28 文档手算样例改为三年均值口径**
+- **2026-10-28 文档手算样例改为三年均值口径**  
   `docs/scoring.md` 第九节原先用「单年营收 ÷ 人数」算人均、用「单年净利 ÷ 净资产」算 ROE,与规则包里的 `mean(...)` 公式不一致(人均差约 5 万,ROE 差 0.13 个百分点)。已按三年均值重算,并补了数据明细。
+- **2026-10-28 数据落在 `data/projects/<id>/`,项目内去重**  
+  每项目一个目录:`project.json`(元数据 + 文件清单)、`evidence.json`(L3 契约)、`files/<fileId>.<ext>`。临时上传先进 `data/tmp`。  
+  去重只比项目内 `sha256`:跨项目共享会泄露"A 企业也传过这份文件",本地单机也没必要。  
+  重复上传返回已有 `fileId` 且 `dup: true`,不重复占盘。
+- **2026-10-28 判型只读字节,不读扩展名**  
+  PDF 认首 1KB 内的 `%PDF`;OOXML 认 `PK\x03\x04` 后解 ZIP 中央目录,按 `word/document.xml` / `xl/workbook.xml` 分流;OLE 头直接拒绝并提示另存;图片只认 jpg/png/webp。  
+  **代价**:每次上传多一次随机读(尾 64KB 找 EOCD),换来"改扩展名骗不过去"。
+- **2026-10-28 页数预算分两段拦**  
+  图片在上传时就能确定 1 页,立即校验 400 页上限;PDF/docx/xlsx 上传时拿不到页数,等到解析前用 `assertPageBudget` 拦。  
+  不在上传时猜页数:`/Count` 在压缩对象流里不可靠,猜错会误拒真材料。
+- **2026-10-28 证据表的 `files` 只收已解析文件**  
+  `evidence.schema.json` 要求每个文件带 `route` 与 `status`,而 `route` 只有解析后才知道。  
+  故 `evidence.files` 初始为空,上传只写 `project.json`;解析完成再同步进去,避免为了过 schema 编造 `route`。
+- **2026-10-28 证据写入必须是唯一入口**  
+  `evidenceStore.patch` 是唯一写 `value` 的函数,并强制记 `resolution`(`manual` / `auto_single`、`resolvedBy`、`resolvedAt`)。  
+  `appendCandidates` 只追加候选、最多把 `missing` 抬到 `candidate`,不碰 `value`;测试里对此有断言。
+- **2026-10-28 解析产物按文件落 `pages/`**  
+  每份文件一份 `pages/<fileId>.json`(`FilePages`:route + 每页 `PageDoc`),页图在 `pages/<fileId>/pN.jpg`。图片文件不复制,`PageDoc.image` 直接指向原图。  
+  好处:第 7 步按文件并行抽取,不必把整个项目读进内存。
+- **2026-10-28 DOCX 整份算 1 页,XLSX 一表一页**  
+  DOCX 没有可靠分页信息,mammoth 也不保留分页符;强行按字符切页会让页码失去意义。  
+  XLSX 以工作表为页,页号用于定位"哪个 sheet"。代价:400 页预算对这两种格式偏保守。
+- **2026-10-28 docType 先用文件名启发式**  
+  `inferDocType()` 按"审计/申报/纳税/专利/证书/标准/财务"匹配文件名,仅作解析期提示。  
+  第 7 步必须用 AI 返回的 `documentMeta.docType` 覆盖它,不得把文件名猜测当最终分类。
+- **2026-10-28 视觉页上限只降级不丢页**  
+  超过 40 个视觉页的部分把 route 改为 `text`,并给文件打 `visionSkipped`;页面本身仍保留在 `FilePages` 里。  
+  理由:丢掉整页会让"材料完整度"少算,降级只会让抽取质量下降,原因可解释。
+- **2026-10-28 解析队列单进程串行 + 同项目任务复用**  
+  一次只跑一个解析任务;同一项目已有 queued/parsing 任务时 `POST /parse` 返回原 jobId 且 `reused: true`。  
+  `jobs.json` 只落开始/结束状态,页面级进度走 SSE 内存广播;刷新页面能拿到内存快照,服务重启后旧任务不续跑。
+- **2026-10-28 字段子集按 docType 前缀分派,不按目录 `docTypes` 全量匹配**  
+  `audit`/`finance` → 全部 `fin.*`;`patent` → `ip.*`;`cert` → `qual.*` + 三个 `company.*`;`standard` → `std.*`。  
+  `tax` 收敛到 4 个字段(完税凭证只认营收、净利、研发费用、信用代码),`application` 取 `company.*` + `hr.*` + 申报书常见的 8 个财务字段,`other` 只留三个主体字段。  
+  理由:目录里的 `docTypes` 是"哪些材料可能证明这个字段",直接当 prompt 白名单会让审计报告里塞进 16 个非财务字段,白烧 token 还诱发误抽。单次 prompt 稳定落在 4–16 个字段。
+- **2026-10-28 docType 由首块 AI 判定覆盖,子集变了最多补跑一次首块**  
+  启发式只用来决定"第一炮打哪个子集"。首块返回 `documentMeta.docType` 与启发式不一致且字段集不同时,换子集对同一块重跑一次,后续块统一用新子集。  
+  只补一次:再错就是分类本身不稳,继续补会把成本翻倍;这种情况打 `doc_type_correction_partial` 标,让错误在报告里可见。
+- **2026-10-28 缓存只在「干净跑」时写入**  
+  条件:未耗尽预算且零分块失败。带失败块的半成品若进缓存,下次命中就把残缺结果当完整结果用,比不缓存更坏。  
+  桶放项目内 `data/projects/<id>/cache/ai/`,不放全局 —— 与"去重只比项目内 sha256"保持一致,避免跨项目留下"A 企业也传过这份文件"的痕迹。
+- **2026-10-28 候选 ID 用内容哈希,天然幂等**  
+  `sha1(key + fileId + page + raw + value)` 取 16 位。重复抽取、重启后重跑都产出同一 ID,`appendCandidates` 按 ID 去重,不会堆出一串重复候选。
+- **2026-10-28 队列泛化为 parse / extract 两类,同项目互斥**  
+  共用一套串行 drain、`jobs.json` 与 SSE,`JobRecord` 加 `kind`。同一项目已有任务在跑时:同类返回原 jobId(`reused`),不同类直接 409,不排队 —— 解析未完成就抽取会读到半份页数据。
+- **2026-10-28 `documentMeta.companyName` 不落候选**  
+  它没有 page 与 quote,写成候选就违反"每条候选必须可回指原文"的验收条件,确认页也无法高亮。企业主体归并留给营业执照/申报书里的 `company.name` 字段,按正常字段抽取。
+- **2026-10-28 token 账本按项目落盘,预算耗尽只停新调用**  
+  `ai-usage.json` 记 `{limit, used}`,每个文件跑完落一次。耗尽后不再发请求,已完成文件照常写候选,任务标 `done` 并在 `error` 里列出未抽文件 —— 半份证据比零份有用,且用户能看见为什么少。

@@ -3,7 +3,7 @@ import { APP_VERSION, SERVICE_NAME, STAGE } from '@srdi/shared'
 import type { HealthResponse } from '@srdi/shared'
 import { loadRulesSummary } from '../config/rules'
 
-export const healthRouter = (port: number) => {
+export const healthRouter = (port: number, dataDir: string) => {
   const router = Router()
   const rules = loadRulesSummary()
 
@@ -19,6 +19,9 @@ export const healthRouter = (port: number) => {
         uptimeSec: Math.round(process.uptime()),
         pid: process.pid,
         port
+      },
+      storage: {
+        dataDir
       },
       time: new Date().toISOString()
     }

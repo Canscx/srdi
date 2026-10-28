@@ -1,8 +1,8 @@
 import { createApp } from './app'
-import { WEB_DIST } from './paths'
+import { DATA_DIR, WEB_DIST } from './paths'
 
 const port = Number(process.env.PORT ?? 8787)
-const app = createApp({ webDist: WEB_DIST, port })
+const app = createApp({ webDist: WEB_DIST, port, dataDir: DATA_DIR })
 
 const server = app.listen(port, () => {
   console.log('')
@@ -10,6 +10,7 @@ const server = app.listen(port, () => {
   console.log(`  本地地址   http://localhost:${port}`)
   console.log(`  健康检查   http://localhost:${port}/api/health`)
   console.log(`  SSE 通道   http://localhost:${port}/api/jobs/demo/stream`)
+  console.log(`  数据目录   ${DATA_DIR}`)
   console.log(`  静态目录   ${WEB_DIST}`)
   console.log(`  运行模式   ${process.env.NODE_ENV ?? 'development'}`)
   console.log('')

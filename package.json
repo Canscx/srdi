@@ -13,8 +13,8 @@
     "start": "pnpm build && pnpm --filter @srdi/server start",
     "start:server": "pnpm --filter @srdi/server start",
     "typecheck": "pnpm -r typecheck",
-    "validate": "node scripts/validate-config.mjs && pnpm typecheck && pnpm --filter @srdi/shared test",
-    "test": "pnpm --filter @srdi/shared test"
+    "validate": "node scripts/validate-config.mjs && pnpm typecheck && pnpm test",
+    "test": "pnpm --filter @srdi/shared test && pnpm --filter @srdi/server test"
   },
   "devDependencies": {
     "ajv": "^8.17.1",

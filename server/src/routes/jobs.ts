@@ -1,11 +1,26 @@
 import { Router } from 'express'
-import type { JobProgressEvent } from '@srdi/shared'
+import type { ApiError, JobProgressEvent } from '@srdi/shared'
+import type { JobQueue } from '../jobs/queue'
 import { subscribe, subscriberCount } from '../jobs/hub'
 
 const HEARTBEAT_MS = 15000
 
-export const jobsRouter = () => {
+export const jobsRouter = (queue: JobQueue) => {
   const router = Router()
+
+  router.get('/jobs/:jobId', (req, res) => {
+    const job = queue.get(req.params.jobId)
+    if (!job) {
+      const payload: ApiError = {
+        error: 'job_not_found',
+        message: '任务不存在或已过期',
+        path: req.originalUrl
+      }
+      res.status(404).json(payload)
+      return
+    }
+    res.json({ job })
+  })
 
   router.get('/jobs/:jobId/stream', (req, res) => {
     const jobId = req.params.jobId
@@ -18,20 +33,20 @@ export const jobsRouter = () => {
     })
     res.flushHeaders()
 
-    const snapshot: JobProgressEvent = {
+    const unsubscribe = subscribe(jobId, (event) => {
+      res.write(`event: progress\ndata: ${JSON.stringify(event)}\n\n`)
+    })
+
+    const snapshot: JobProgressEvent = queue.snapshot(jobId) ?? {
       jobId,
       stage: 'queued',
       pct: 0,
       total: 0,
-      message: 'SSE 通道就绪,解析队列尚未接入'
+      message: '任务不存在或已过期'
     }
 
     res.write('retry: 3000\n\n')
     res.write(`event: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`)
-
-    const unsubscribe = subscribe(jobId, (event) => {
-      res.write(`event: progress\ndata: ${JSON.stringify(event)}\n\n`)
-    })
 
     const timer = setInterval(() => {
       res.write(`: ping ${Date.now()} subscribers=${subscriberCount(jobId)}\n\n`)

@@ -75,6 +75,19 @@ route = (printable >= 30 && hasGlyphs) ? 'text' : 'vision'
 
 **图片** —— 直传视觉,单图作为一页。prompt 要求忽略透视畸变,只读清晰字段;低质量图 `confidence ≤ 0.4`。
 
+**落地位置(第 6 步已实现)**
+
+| 产物 | 路径 |
+| --- | --- |
+| 每文件页数据 | `data/projects/<id>/pages/<fileId>.json`(`FilePages`) |
+| 页图 | `data/projects/<id>/pages/<fileId>/pN.jpg` |
+| 文件状态 | 回填 `project.json` 的 `pages / route / status / truncated / visionSkipped / unreadable` |
+
+- PDF 的**文本页也渲染页图**,确认页要靠它做 bbox 高亮;`PageDoc.text` 是还原后的行文本,`tables[]` 只在列对齐检测命中时出现。
+- DOCX 整份记 1 页(mammoth 不保留分页符);XLSX 一个工作表 1 页;图片 1 页,`text` 为空且 `route` 恒为 `vision`。
+- `docType` 暂由文件名启发式给出,第 7 步必须用 AI 的 `documentMeta.docType` 覆盖。
+- 解析阶段不调用任何模型,产出与分数无关;任务进度走 `POST /parse` 返回的 jobId + SSE。
+
 ## 七、AI 调用:四层拼接
 
 | 层 | 内容 | 变化频率 | 缓存 |

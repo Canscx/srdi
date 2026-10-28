@@ -3,14 +3,47 @@ export type Flag = string
 
 export type FieldStatus = 'missing' | 'candidate' | 'confirmed' | 'rejected'
 
+export interface CandidateSource {
+  fileId: string
+  fileName?: string
+  page: number
+  bbox?: number[]
+  route: 'text' | 'vision'
+  quote?: string
+  quoteMatched?: boolean | null
+  extractor?: string
+  confidence?: number
+}
+
+export interface FieldCandidate {
+  candidateId: string
+  value?: number | string | boolean | unknown[] | Record<string, unknown> | null
+  unit?: string
+  period?: number | null
+  raw?: string
+  confidence?: number
+  source: CandidateSource
+}
+
+export interface FieldResolution {
+  strategy: 'auto_unit_merge' | 'auto_single' | 'manual' | 'none'
+  pickedCandidateId?: string | null
+  resolvedBy?: 'auto' | 'user'
+  resolvedAt?: string
+}
+
 export interface FieldEntry {
   key: string
+  label?: string
   type?: 'money' | 'percent' | 'int' | 'ratio' | 'enum' | 'bool' | 'list' | 'text' | 'date'
   unit?: string
   periodic?: boolean
   status: FieldStatus
   value?: number | string | boolean | unknown[] | Record<string, unknown> | null
+  candidates?: FieldCandidate[]
+  resolution?: FieldResolution
   flags?: string[]
+  manualNote?: string
 }
 
 export interface EvidenceDoc {
@@ -19,9 +52,11 @@ export interface EvidenceDoc {
   level: 'SRDI' | 'LITTLE_GIANT'
   rulesId: string
   benchmarksVersion?: string
+  createdAt?: string
   period: Record<PeriodKey, number>
   company?: {
     name?: string
+    creditCode?: string
     industryCode?: string
     industryName?: string
     subMarket?: string

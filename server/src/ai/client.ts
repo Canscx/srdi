@@ -1,0 +1,203 @@
+import { defaultModel, modelPricing } from '../config/pricing'
+import { AppError } from '../errors'
+
+export interface ModelTextPart {
+  type: 'text'
+  text: string
+}
+
+export interface ModelImagePart {
+  type: 'image'
+  mime: string
+  data: string
+}
+
+export type ModelPart = ModelTextPart | ModelImagePart
+
+export interface ModelMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string | ModelPart[]
+}
+
+export interface ModelRequest {
+  model: string
+  messages: ModelMessage[]
+  temperature?: number
+  json?: boolean
+  timeoutMs?: number
+}
+
+export interface ModelUsage {
+  promptTokens: number
+  completionTokens: number
+}
+
+export interface ModelResponse {
+  text: string
+  usage: ModelUsage
+  model: string
+}
+
+export interface ModelClient {
+  complete: (request: ModelRequest) => Promise<ModelResponse>
+}
+
+const TEXT_TIMEOUT_MS = 120_000
+const VISION_TIMEOUT_MS = 180_000
+const RETRY_DELAYS = [1000, 4000, 10000]
+const MAX_ATTEMPTS = 3
+
+export class ModelError extends Error {
+  readonly status: number
+  readonly retryable: boolean
+
+  constructor(status: number, message: string, retryable: boolean) {
+    super(message)
+    this.name = 'ModelError'
+    this.status = status
+    this.retryable = retryable
+  }
+}
+
+interface ChatContent {
+  text?: string
+  [key: string]: unknown
+}
+
+interface ChatChoice {
+  message?: { content?: string | ChatContent[] | null }
+}
+
+interface ChatResponse {
+  model?: string
+  choices?: ChatChoice[]
+  usage?: { prompt_tokens?: number; completion_tokens?: number }
+  error?: { message?: string }
+}
+
+const toApiContent = (content: string | ModelPart[]) => {
+  if (typeof content === 'string') return content
+  return content.map((part) =>
+    part.type === 'text'
+      ? { type: 'text', text: part.text }
+      : { type: 'image_url', image_url: { url: `data:${part.mime};base64,${part.data}` } }
+  )
+}
+
+const readText = (content: string | ChatContent[] | null | undefined) => {
+  if (typeof content === 'string') return content
+  if (!Array.isArray(content)) return ''
+  return content.map((part) => (typeof part.text === 'string' ? part.text : '')).join('')
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+export interface ModelClientOptions {
+  apiKey?: string
+  baseUrl?: string
+  model?: string
+  fetchImpl?: typeof fetch
+  wait?: (ms: number) => Promise<void>
+}
+
+export const createModelClient = (options: ModelClientOptions = {}): ModelClient => {
+  const model = options.model ?? process.env.AI_MODEL ?? defaultModel()
+  const baseUrl = (options.baseUrl ?? process.env.AI_BASE_URL ?? 'https://api.deepseek.com/v1').replace(/\/+$/, '')
+  const apiKey = options.apiKey ?? process.env.AI_API_KEY ?? ''
+  const fetchImpl = options.fetchImpl ?? fetch
+  const wait = options.wait ?? sleep
+  const vision = modelPricing(model)?.supportsVision !== false
+
+  const complete = async (request: ModelRequest): Promise<ModelResponse> => {
+    if (!apiKey) {
+      throw new AppError(
+        503,
+        'ai_not_configured',
+        '尚未配置模型 API Key',
+        '设置环境变量 AI_API_KEY 后重启服务'
+      )
+    }
+    const timeoutMs = request.timeoutMs ?? TEXT_TIMEOUT_MS
+    const body: Record<string, unknown> = {
+      model: request.model,
+      temperature: request.temperature ?? 0,
+      messages: request.messages.map((message) => ({
+        role: message.role,
+        content: toApiContent(message.content)
+      }))
+    }
+    if (request.json) body.response_format = { type: 'json_object' }
+    if (vision === false) {
+      const hasImage = request.messages.some(
+        (message) => Array.isArray(message.content) && message.content.some((part) => part.type === 'image')
+      )
+      if (hasImage) {
+        throw new AppError(
+          400,
+          'model_without_vision',
+          `模型 ${request.model} 不支持图像输入`,
+          '改用支持视觉的模型,或在设置中开启「仅文本模式」'
+        )
+      }
+    }
+
+    let lastError: ModelError | null = null
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), timeoutMs > 0 ? timeoutMs : VISION_TIMEOUT_MS)
+      try {
+        const response = await fetchImpl(`${baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal
+        })
+        const payload = (await response.json().catch(() => null)) as ChatResponse | null
+        if (!response.ok) {
+          const retryable = response.status === 429 || response.status >= 500
+          const message = payload?.error?.message ?? `模型接口返回 ${response.status}`
+          lastError = new ModelError(response.status, message, retryable)
+          if (!retryable) throw lastError
+        } else {
+          const text = readText(payload?.choices?.[0]?.message?.content)
+          if (!text.trim()) {
+            lastError = new ModelError(502, '模型返回空内容', true)
+          } else {
+            return {
+              text,
+              model: payload?.model ?? request.model,
+              usage: {
+                promptTokens: Math.max(0, payload?.usage?.prompt_tokens ?? 0),
+                completionTokens: Math.max(0, payload?.usage?.completion_tokens ?? 0)
+              }
+            }
+          }
+        }
+      } catch (err) {
+        if (err instanceof AppError) throw err
+        if (err instanceof ModelError) {
+          if (!err.retryable) throw err
+          lastError = err
+        } else {
+          const aborted = (err as Error).name === 'AbortError'
+          lastError = new ModelError(
+            aborted ? 504 : 502,
+            aborted ? `模型请求超时(${timeoutMs}ms)` : (err as Error).message,
+            true
+          )
+        }
+      } finally {
+        clearTimeout(timer)
+      }
+
+      if (attempt < MAX_ATTEMPTS - 1) await wait(RETRY_DELAYS[attempt])
+    }
+
+    throw lastError ?? new ModelError(502, '模型调用失败', false)
+  }
+
+  return { complete }
+}
