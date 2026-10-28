@@ -17,6 +17,7 @@ let mock: Server | null = null
 let apiBase = ''
 let lastAuth = ''
 let lastModel = ''
+let lastMaxTokens = 0
 let replyText = ''
 
 const extractionPayload = JSON.stringify({
@@ -120,22 +121,32 @@ beforeEach(async () => {
   dir = await mkdtemp(path.join(tmpdir(), 'srdi-settings-'))
   lastAuth = ''
   lastModel = ''
+  lastMaxTokens = 0
   replyText = extractionPayload
   mock = createServer((req, res) => {
     lastAuth = String(req.headers.authorization ?? '')
     const chunks: Buffer[] = []
     req.on('data', (chunk) => chunks.push(chunk as Buffer))
     req.on('end', () => {
+      let parsed: Record<string, unknown> = {}
       try {
-        lastModel = String(JSON.parse(Buffer.concat(chunks).toString('utf8')).model ?? '')
+        parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>
       } catch {
-        lastModel = ''
+        parsed = {}
       }
+      lastModel = String(parsed.model ?? '')
+      lastMaxTokens = Number(parsed.max_tokens ?? 0)
+      const starved = lastMaxTokens > 0 && lastMaxTokens < 64
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(
         JSON.stringify({
           model: lastModel,
-          choices: [{ message: { content: replyText } }],
+          choices: [
+            {
+              message: { content: starved ? '' : replyText, reasoning_content: 'thinking' },
+              finish_reason: starved ? 'length' : 'stop'
+            }
+          ],
           usage: { prompt_tokens: 120, completion_tokens: 60 }
         })
       )
@@ -259,6 +270,7 @@ describe('保存后直接抽取', () => {
     expect(testResult.ok).toBe(true)
     expect(testResult.model).toBe('deepseek-flash')
     expect(lastAuth).toBe('Bearer sk-test-abcdefgh')
+    expect(lastMaxTokens).toBeGreaterThanOrEqual(64)
 
     const started = await fetch(`${server?.base}/api/projects/${created.projectId}/extract`, {
       method: 'POST'

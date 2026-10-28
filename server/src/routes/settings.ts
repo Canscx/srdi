@@ -55,9 +55,9 @@ export const settingsRouter = (dataDir: string, client: ModelClient) => {
     try {
       const reply = await client.complete({
         model: config.model,
-        messages: [{ role: 'user', content: 'connectivity check, reply ok' }],
-        maxTokens: 8,
-        timeoutMs: 20000
+        messages: [{ role: 'user', content: '只回复 ok，不要解释' }],
+        maxTokens: 256,
+        timeoutMs: 30000
       })
       const payload: AiTestResponse = {
         ok: true,
@@ -68,11 +68,14 @@ export const settingsRouter = (dataDir: string, client: ModelClient) => {
       res.json(payload)
     } catch (err) {
       const message = err instanceof Error ? err.message : '未知错误'
+      const empty = message.includes('空内容')
       throw new AppError(
         502,
         'ai_test_failed',
         `连接失败: ${message}`,
-        '核对 API 地址、Key 与模型名；网关需兼容 OpenAI 的 /chat/completions'
+        empty
+          ? '接口已连通，但模型没有返回正文：推理型模型会先消耗思考 token，可直接保存后试抽取'
+          : '核对 API 地址、Key 与模型名；网关需兼容 OpenAI 的 /chat/completions'
       )
     }
   })

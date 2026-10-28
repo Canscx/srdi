@@ -125,6 +125,7 @@
 - 未配置 `AI_API_KEY` 时,`POST /extract` 的作业会失败并返回「尚未配置模型 API Key」,服务本身不崩;上传与解析仍可用,不要误判为链路坏了
 - 页面里的「模型设置」也算配置,优先级高于环境变量;排查 `ai_not_configured` 时先看右上角状态点,不要只查终端环境
 - 设置接口只回显掩码,前端表单留空表示「不修改」;要清空必须显式 `clearKey: true`,不能靠提交空串
+- 推理型模型的 `max_tokens` 先被 `reasoning_content` 吃掉:给 8 个 token 时 HTTP 200、`finish_reason=length`、`content` 为空,客户端报「模型返回空内容」,看着像 Key 错其实不是。连通性测试已固定 256,排查时直接看原始响应而不是只信这条错误文案
 
 ## 决策记录
 
