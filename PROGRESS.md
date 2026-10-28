@@ -12,12 +12,12 @@
 - [x] pnpm workspaces:shared / server / web 三包 + 统一 TS 路径
 - [x] server 最小可运行:静态托管 web/dist + SPA 回退 + `/api/health` + SSE 通道
 - [x] web 自检页:health 明细 + SSE 事件流 + 阶段路线
-- [x] 校验基建:`pnpm validate`(配置)+ `pnpm typecheck`(三包)+ `scripts/smoke-web.mjs`(CDP 冒烟)
+- [x] 校验基建:`pnpm validate`(配置 + 类型 + 测试三闸)+ `scripts/smoke-web.mjs`(CDP 冒烟)
+- [x] `shared/scoring` 打分引擎:表达式求值 / 七打分器 / 六门槛 / 三口径 / 边界保护,72 条测试通过
 
 ## 待办(按优先级)
 
 **第二阶段 MVP**
-- [ ] `shared/scoring` 23 项打分器 + 6 门槛 + 三口径
 - [ ] 三家虚构企业 fixtures + golden test
 - [ ] 存储层 + 文件上传 + 魔数判型
 - [ ] PDF 双通道 / DOCX / XLSX 解析 + 任务队列
@@ -83,3 +83,23 @@
 
 - **2026-10-28 dev 端口改用 5180**
   本机 5173 被其他项目占用,`strictPort` 会让 `pnpm dev` 直接失败。生产端口仍为 8787。
+
+- **2026-10-28 排除项权重按比例重归一到 100**
+  指标 18(专利点度中心度)按 `fallback:exclude` 不计分。若简单记 0,全企业理论满分变成 94.17,报告分会系统性偏低且与官方不可比。
+  改为从分母移除、其余 22 项等比放大,`Σ effectiveWeight ≡ 100`,`meta.scale = 'renormalized'`,报告尾注说明。
+
+- **2026-10-28 guard 失败记 0,不进三口径区间**
+  净资产 ≤ 0 属于企业特征而非数据缺失。`notApplicable` 在 official / conservative / optimistic 三处都记 0,不像"估算"那样给 1 分上限。
+  理由:`scoring.md` 的三口径只对"估算/缺失"展开,已确定的事实不该被区间对冲。
+
+- **2026-10-28 部分窗口只降 confidence,不改分数**
+  三年缺一年时仍按可得年份的均值计分,打 `partial_window`、quality 降为 estimated。避免大量企业 conservative 直接归零,使三口径失去意义。
+
+- **2026-10-28 数组形态的周期字段降级为 estimated**
+  `value: [a,b,c]` 不带年份,只能约定按 `[y0,y1,y2]` 解读。一旦上游写成升序,增长率会整体反号且不报错,故打 `period_order_assumed` 并降级,让错误在报告里可见。
+
+- **2026-10-28 `where` 必须注册运算符并做 AST 校验**
+  jsep 在不注册时**不报错**,会把 `where` 当成第二个实参,语义全错且无提示。现已注册 `where`(优先级 0.5)与 `@`(区间,0.9),并在 parser 层强制:count 只接受 1 个参数、where 只能作 count 的第一个实参。
+
+- **2026-10-28 测试串行执行**
+  vitest 的模块缓存(`cacheFs`)在多 worker 下并发写同一临时文件,Windows 上偶发 `EPERM` 导致部分测试文件不被加载。改 `fileParallelism: false`,5 个文件约 3 秒,代价可忽略。
