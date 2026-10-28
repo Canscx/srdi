@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "fixture-firm-c",
+  "level": "SRDI",
+  "rulesId": "rules.srdi.v1.0.0",
+  "benchmarksVersion": "1.2.0",
+  "createdAt": "2026-10-20T09:20:00.000Z",
+  "period": { "y0": 2025, "y1": 2024, "y2": 2023 },
+  "company": {
+    "name": "无锡华昌新材料有限公司(虚构)",
+    "creditCode": "91320200MA1FIXTUREC",
+    "industryCode": "C35",
+    "industryName": "专用设备制造业",
+    "subMarket": "特种耐磨涂层",
+    "scope": "consolidated"
+  },
+  "files": [
+    {
+      "fileId": "f-c-audit",
+      "name": "2023-2025年度审计报告(带强调事项段).pdf",
+      "sha256": "c1b2c3d4e5f60001",
+      "pages": 28,
+      "docType": "audit",
+      "route": "text",
+      "status": "parsed",
+      "unreadable": [{ "page": 9, "reason": "扫描模糊" }]
+    }
+  ],
+  "fields": {
+    "company.name": { "key": "company.name", "type": "text", "status": "confirmed", "value": "无锡华昌新材料有限公司(虚构)" },
+    "company.industryCode": { "key": "company.industryCode", "type": "text", "status": "confirmed", "value": "C35" },
+    "company.scitechSmeTitle": { "key": "company.scitechSmeTitle", "type": "bool", "status": "confirmed", "value": true },
+    "company.subMarketYears": { "key": "company.subMarketYears", "type": "int", "unit": "year", "status": "confirmed", "value": 4 },
+    "company.employeeYearAvg": { "key": "company.employeeYearAvg", "type": "int", "unit": "person", "status": "confirmed", "value": 120 },
+
+    "fin.revenue": { "key": "fin.revenue", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 12000000, "2024": 11000000, "2023": 9000000 } },
+    "fin.mainBusinessRevenue": { "key": "fin.mainBusinessRevenue", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 10800000, "2024": 9900000, "2023": 8100000 } },
+    "fin.assetLiabilityRatio": { "key": "fin.assetLiabilityRatio", "type": "ratio", "status": "confirmed", "value": 0.85 },
+    "fin.rdExpense": { "key": "fin.rdExpense", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 800000, "2024": 600000, "2023": 550000 } },
+    "fin.netProfit": { "key": "fin.netProfit", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": -1000000, "2024": -800000, "2023": -600000 } },
+    "fin.netAssets": { "key": "fin.netAssets", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": -2000000, "2024": -1500000, "2023": -1200000 } },
+    "fin.totalProfit": { "key": "fin.totalProfit", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 800000, "2024": -500000, "2023": -300000 } },
+    "fin.productSalesCost": { "key": "fin.productSalesCost", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 0, "2024": 0, "2023": 0 } },
+    "fin.operatingCost": { "key": "fin.operatingCost", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 10000000, "2024": 9500000, "2023": 8000000 } },
+    "fin.salesExpense": { "key": "fin.salesExpense", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 500000, "2024": 450000, "2023": 400000 } },
+    "fin.adminExpense": { "key": "fin.adminExpense", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 400000, "2024": 380000, "2023": 350000 } },
+
+    "ip.inventionGrantedByYear": { "key": "ip.inventionGrantedByYear", "type": "list", "status": "confirmed", "value": [] },
+    "ip.ipcDistribution": { "key": "ip.ipcDistribution", "type": "list", "status": "confirmed", "value": [] },
+    "ip.inventionFirstApplicant": { "key": "ip.inventionFirstApplicant", "type": "int", "unit": "count", "status": "confirmed", "value": 0 },
+    "ip.inventionI": { "key": "ip.inventionI", "type": "list", "status": "confirmed", "value": [] },
+    "ip.pctCount": { "key": "ip.pctCount", "type": "int", "unit": "count", "status": "confirmed", "value": 0 },
+
+    "std.hostedIntl": { "key": "std.hostedIntl", "type": "list", "status": "confirmed", "value": [] },
+    "std.hostedNatInd": { "key": "std.hostedNatInd", "type": "list", "status": "confirmed", "value": [] },
+    "std.joinedIntl": { "key": "std.joinedIntl", "type": "list", "status": "confirmed", "value": [] },
+    "std.joinedNatInd": { "key": "std.joinedNatInd", "type": "list", "status": "confirmed", "value": [] },
+
+    "qual.qualityAward": { "key": "qual.qualityAward", "type": "enum", "status": "confirmed", "value": "none" },
+    "qual.productCert": { "key": "qual.productCert", "type": "bool", "status": "confirmed", "value": false },
+    "qual.digitalTransformation": { "key": "qual.digitalTransformation", "type": "enum", "status": "confirmed", "value": "none" },
+    "qual.greenTitles": { "key": "qual.greenTitles", "type": "list", "status": "confirmed", "value": [] },
+    "qual.marketRanking": { "key": "qual.marketRanking", "type": "enum", "status": "confirmed", "value": "none" },
+
+    "hr.rdHeadcount": { "key": "hr.rdHeadcount", "type": "int", "unit": "person", "status": "confirmed", "value": 8 },
+    "hr.totalHeadcount": { "key": "hr.totalHeadcount", "type": "int", "unit": "person", "status": "confirmed", "value": 120 }
+  }
+}

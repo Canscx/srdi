@@ -1,0 +1,103 @@
+{
+  "fixture": "firm-b",
+  "engine": "1.0.0",
+  "totals": {
+    "official": 57.76,
+    "conservative": 46.92,
+    "optimistic": 68.6,
+    "confidence": 0.7832
+  },
+  "conclusion": "pending",
+  "gates": [
+    {
+      "id": "GATE_1",
+      "verdict": "pass",
+      "effective": "pass",
+      "passedVia": null
+    },
+    {
+      "id": "GATE_2",
+      "verdict": "pass",
+      "effective": "pass",
+      "passedVia": null
+    },
+    {
+      "id": "GATE_3",
+      "verdict": "pass",
+      "effective": "pass",
+      "passedVia": null
+    },
+    {
+      "id": "GATE_4",
+      "verdict": "pass",
+      "effective": "pass",
+      "passedVia": "G4a"
+    },
+    {
+      "id": "GATE_5",
+      "verdict": "pass",
+      "effective": "pass",
+      "passedVia": "G5b"
+    },
+    {
+      "id": "GATE_6",
+      "verdict": "pending",
+      "effective": "pending",
+      "passedVia": null
+    }
+  ],
+  "dimensions": {
+    "DIM_PROFESSION": 7.79,
+    "DIM_REFINE": 12.64,
+    "DIM_SPECIAL": 8.12,
+    "DIM_INNOVATION": 16.6,
+    "DIM_GROWTH": 12.62
+  },
+  "excluded": [
+    "IND_18"
+  ],
+  "absent": [
+    "IND_10",
+    "IND_12",
+    "IND_13",
+    "IND_14",
+    "IND_20"
+  ],
+  "flags": [
+    "excluded"
+  ],
+  "anchors": {
+    "IND_02": {
+      "score": 0.4,
+      "basis": "measured"
+    },
+    "IND_03": {
+      "score": 0.955556,
+      "basis": "measured"
+    },
+    "IND_04": {
+      "score": 0.1,
+      "basis": "measured"
+    },
+    "IND_05": {
+      "score": 0.253846,
+      "basis": "measured"
+    },
+    "IND_06": {
+      "score": 0.836437,
+      "basis": "measured"
+    },
+    "IND_16": {
+      "score": 0.304209,
+      "basis": "measured"
+    },
+    "IND_17": {
+      "score": 0.85,
+      "basis": "measured"
+    },
+    "IND_20": {
+      "score": null,
+      "basis": "absent"
+    }
+  }
+}

@@ -2,6 +2,25 @@
 
 > 只写未完成项。完成项折叠成一行。不写每日日志。
 
+## 接续点(新对话从这里开始)
+
+**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照。
+**未开工** 解析链路 / AI 抽取 / 确认页 / 评分页 / 报告 / 真实材料验收。
+
+**下一步**:第二阶段第 5 步「存储层 + 文件上传 + 魔数判型」。起点是 `server/src/store/`(project / evidence / atomic)与两条接口 `POST /api/projects`、`POST /api/projects/:id/files`。判型规则见 `docs/pipeline.md` 第二节——不信扩展名,读头部字节。
+
+**三条命令**
+- `pnpm validate`:配置校验 + 三包类型 + 全部测试,提交前必跑
+- `pnpm start`:构建前端并起服务,8787
+- `pnpm dev`:server + vite 并行,前端 5180
+
+**三条最容易重踩的坑**
+1. jsep 对 `count(x where ...)` **不报错**,会把 where 当第二个实参;`parser.ts` 已注册运算符并做 AST 校验,不要绕过它直接调 jsep。
+2. vitest 的模块缓存在多 worker 下并发写同一临时文件,Windows 上偶发 `EPERM`,表现为部分 spec 根本不加载;已在 `shared/vitest.config.ts` 设 `fileParallelism: false`。
+3. 本机 5173 被其他项目占用,dev 端口固定 **5180**,生产 **8787**。
+
+**不可动摇的契约**:证据只认 `confirmed`;L3 确认层是唯一写 `value` 的地方;打分只读 confirmed 与 `ScoreResult`;引擎是零 I/O 纯函数。
+
 ## 当前状态
 
 `v0.2.0` 开发中 · 第二阶段 MVP · 最后更新 2026-10-28
@@ -13,12 +32,12 @@
 - [x] server 最小可运行:静态托管 web/dist + SPA 回退 + `/api/health` + SSE 通道
 - [x] web 自检页:health 明细 + SSE 事件流 + 阶段路线
 - [x] 校验基建:`pnpm validate`(配置 + 类型 + 测试三闸)+ `scripts/smoke-web.mjs`(CDP 冒烟)
-- [x] `shared/scoring` 打分引擎:表达式求值 / 七打分器 / 六门槛 / 三口径 / 边界保护,72 条测试通过
+- [x] `shared/scoring` 打分引擎:表达式求值 / 七打分器 / 六门槛 / 三口径 / 边界保护
+- [x] 三家企业 fixtures + golden 快照:明显通过(84.81)/ 临界(46.92–57.76)/ 不通过(23.21),107 条测试
 
 ## 待办(按优先级)
 
 **第二阶段 MVP**
-- [ ] 三家虚构企业 fixtures + golden test
 - [ ] 存储层 + 文件上传 + 魔数判型
 - [ ] PDF 双通道 / DOCX / XLSX 解析 + 任务队列
 - [ ] 四类 docType 抽取 + 五级校验
@@ -103,3 +122,11 @@
 
 - **2026-10-28 测试串行执行**
   vitest 的模块缓存(`cacheFs`)在多 worker 下并发写同一临时文件,Windows 上偶发 `EPERM` 导致部分测试文件不被加载。改 `fileParallelism: false`,5 个文件约 3 秒,代价可忽略。
+
+- **2026-10-28 golden 快照只锁四层,不锁全量输出**
+  锁三口径总分、门槛判词、排除/缺失/标记清单、8 个易错指标的 s 值;不对整份 `ScoreResult` 做快照。
+  理由:全量快照会让任何文案微调都产生几十行 diff,真正该被看见的数字跳动反而被噪音淹没。
+  敏感性已验证:改 B 类曲线 `kUp`、改 `IND_01` 的 `share`、改 `IND_03` 顶点,三处各改一点,总分分别变为 84.4 / 84.67 / 84.79,golden 必然失败。
+
+- **2026-10-28 文档手算样例改为三年均值口径**
+  `docs/scoring.md` 第九节原先用「单年营收 ÷ 人数」算人均、用「单年净利 ÷ 净资产」算 ROE,与规则包里的 `mean(...)` 公式不一致(人均差约 5 万,ROE 差 0.13 个百分点)。已按三年均值重算,并补了数据明细。

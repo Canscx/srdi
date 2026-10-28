@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "fixture-firm-b",
+  "level": "SRDI",
+  "rulesId": "rules.srdi.v1.0.0",
+  "benchmarksVersion": "1.2.0",
+  "createdAt": "2026-10-20T09:10:00.000Z",
+  "period": { "y0": 2025, "y1": 2024, "y2": 2023 },
+  "company": {
+    "name": "苏州恒锐机电科技有限公司(虚构)",
+    "creditCode": "91320500MA1FIXTUREB",
+    "industryCode": "C35",
+    "industryName": "专用设备制造业",
+    "subMarket": "工业机器人谐波减速器",
+    "scope": "consolidated"
+  },
+  "files": [
+    {
+      "fileId": "f-b-audit",
+      "name": "2023-2025年度审计报告.pdf",
+      "sha256": "b1b2c3d4e5f60001",
+      "pages": 36,
+      "docType": "audit",
+      "route": "text",
+      "status": "parsed"
+    },
+    {
+      "fileId": "f-b-patent",
+      "name": "专利证书扫描件.pdf",
+      "sha256": "b1b2c3d4e5f60002",
+      "pages": 12,
+      "docType": "patent",
+      "route": "vision",
+      "status": "parsed"
+    }
+  ],
+  "fields": {
+    "company.name": { "key": "company.name", "type": "text", "status": "confirmed", "value": "苏州恒锐机电科技有限公司(虚构)" },
+    "company.industryCode": { "key": "company.industryCode", "type": "text", "status": "confirmed", "value": "C35" },
+    "company.scitechSmeTitle": { "key": "company.scitechSmeTitle", "type": "bool", "status": "confirmed", "value": true },
+    "company.subMarketYears": { "key": "company.subMarketYears", "type": "int", "unit": "year", "status": "confirmed", "value": 5 },
+    "company.employeeYearAvg": { "key": "company.employeeYearAvg", "type": "int", "unit": "person", "status": "confirmed", "value": 260 },
+
+    "fin.revenue": { "key": "fin.revenue", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 180000000, "2024": 165000000, "2023": 150000000 } },
+    "fin.mainBusinessRevenue": { "key": "fin.mainBusinessRevenue", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 154000000, "2024": 140000000, "2023": 128000000 } },
+    "fin.assetLiabilityRatio": { "key": "fin.assetLiabilityRatio", "type": "ratio", "status": "confirmed", "value": 0.65 },
+    "fin.rdExpense": { "key": "fin.rdExpense", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 6200000, "2024": 5800000, "2023": 5500000 } },
+    "fin.netProfit": { "key": "fin.netProfit", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 12000000, "2024": 10500000, "2023": 9500000 } },
+    "fin.netAssets": { "key": "fin.netAssets", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 90000000, "2024": 82000000, "2023": 75000000 } },
+    "fin.totalProfit": { "key": "fin.totalProfit", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 15000000, "2024": 13500000, "2023": 12000000 } },
+    "fin.productSalesCost": { "key": "fin.productSalesCost", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 135000000, "2024": 125000000, "2023": 115000000 } },
+    "fin.operatingCost": { "key": "fin.operatingCost", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 135000000, "2024": 125000000, "2023": 115000000 } },
+    "fin.salesExpense": { "key": "fin.salesExpense", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 9000000, "2024": 8500000, "2023": 8000000 } },
+    "fin.adminExpense": { "key": "fin.adminExpense", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 7000000, "2024": 6500000, "2023": 6000000 } },
+
+    "ip.inventionGrantedByYear": { "key": "ip.inventionGrantedByYear", "type": "list", "status": "confirmed", "value": [
+      { "year": 2025, "count": 1 },
+      { "year": 2024, "count": 1 },
+      { "year": 2023, "count": 1 },
+      { "year": 2020, "count": 1 }
+    ] },
+    "ip.ipcDistribution": { "key": "ip.ipcDistribution", "type": "list", "status": "confirmed", "value": [
+      { "ipc": "F16", "count": 2 },
+      { "ipc": "B25", "count": 1 }
+    ] },
+    "ip.inventionFirstApplicant": { "key": "ip.inventionFirstApplicant", "type": "int", "unit": "count", "status": "confirmed", "value": 3 },
+    "ip.inventionI": { "key": "ip.inventionI", "type": "list", "status": "confirmed", "value": [
+      { "name": "一种谐波减速器柔轮成形工艺", "patentNo": "ZL2023100101", "grantedDate": "2023-09-15", "applicantRank": 1, "selfApplied": true, "transferredIn": false }
+    ] },
+
+    "std.hostedIntl": { "key": "std.hostedIntl", "type": "list", "status": "confirmed", "value": [] },
+    "std.hostedNatInd": { "key": "std.hostedNatInd", "type": "list", "status": "confirmed", "value": [] },
+    "std.joinedIntl": { "key": "std.joinedIntl", "type": "list", "status": "confirmed", "value": [] },
+    "std.joinedNatInd": { "key": "std.joinedNatInd", "type": "list", "status": "confirmed", "value": ["GB/T 30819-2021 机器人用谐波齿轮减速器"] },
+
+    "qual.qualityAward": { "key": "qual.qualityAward", "type": "enum", "status": "confirmed", "value": "iso9001" },
+    "qual.rdInstitution": { "key": "qual.rdInstitution", "type": "enum", "status": "confirmed", "value": "self_built" },
+    "qual.marketRanking": { "key": "qual.marketRanking", "type": "enum", "status": "confirmed", "value": "province_top10" },
+    "qual.scienceAward": { "key": "qual.scienceAward", "type": "bool", "status": "confirmed", "value": false }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "fixture-firm-a",
+  "level": "SRDI",
+  "rulesId": "rules.srdi.v1.0.0",
+  "benchmarksVersion": "1.2.0",
+  "createdAt": "2026-10-20T09:00:00.000Z",
+  "period": { "y0": 2025, "y1": 2024, "y2": 2023 },
+  "company": {
+    "name": "南京鼎新精密机械有限公司(虚构)",
+    "creditCode": "91320100MA1FIXTUREA",
+    "industryCode": "C35",
+    "industryName": "专用设备制造业",
+    "subMarket": "高精度数控磨床",
+    "scope": "consolidated"
+  },
+  "files": [
+    {
+      "fileId": "f-a-audit",
+      "name": "2023-2025年度审计报告.pdf",
+      "sha256": "a1b2c3d4e5f60001",
+      "pages": 42,
+      "docType": "audit",
+      "route": "text",
+      "status": "parsed"
+    },
+    {
+      "fileId": "f-a-patent",
+      "name": "知识产权清单.xlsx",
+      "sha256": "a1b2c3d4e5f60002",
+      "pages": 3,
+      "docType": "patent",
+      "route": "text",
+      "status": "parsed"
+    },
+    {
+      "fileId": "f-a-cert",
+      "name": "资质证书汇编.pdf",
+      "sha256": "a1b2c3d4e5f60003",
+      "pages": 18,
+      "docType": "cert",
+      "route": "hybrid",
+      "status": "parsed"
+    }
+  ],
+  "fields": {
+    "company.name": { "key": "company.name", "type": "text", "status": "confirmed", "value": "南京鼎新精密机械有限公司(虚构)" },
+    "company.industryCode": { "key": "company.industryCode", "type": "text", "status": "confirmed", "value": "C35" },
+    "company.scitechSmeTitle": { "key": "company.scitechSmeTitle", "type": "bool", "status": "confirmed", "value": true },
+    "company.subMarketYears": { "key": "company.subMarketYears", "type": "int", "unit": "year", "status": "confirmed", "value": 8 },
+    "company.employeeYearAvg": { "key": "company.employeeYearAvg", "type": "int", "unit": "person", "status": "confirmed", "value": 190 },
+
+    "fin.revenue": { "key": "fin.revenue", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 320000000, "2024": 280000000, "2023": 245000000 } },
+    "fin.mainBusinessRevenue": { "key": "fin.mainBusinessRevenue", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 304000000, "2024": 263200000, "2023": 230300000 } },
+    "fin.assetLiabilityRatio": { "key": "fin.assetLiabilityRatio", "type": "ratio", "status": "confirmed", "value": 0.52 },
+    "fin.equityInvested": { "key": "fin.equityInvested", "type": "money", "unit": "CNY", "status": "confirmed", "value": 30000000 },
+    "fin.rdExpense": { "key": "fin.rdExpense", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 19000000, "2024": 16500000, "2023": 14000000 } },
+    "fin.netProfit": { "key": "fin.netProfit", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 36000000, "2024": 31000000, "2023": 27000000 } },
+    "fin.netAssets": { "key": "fin.netAssets", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 240000000, "2024": 210000000, "2023": 185000000 } },
+    "fin.totalProfit": { "key": "fin.totalProfit", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 42000000, "2024": 36000000, "2023": 31500000 } },
+    "fin.productSalesCost": { "key": "fin.productSalesCost", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 220000000, "2024": 195000000, "2023": 170000000 } },
+    "fin.operatingCost": { "key": "fin.operatingCost", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 210000000, "2024": 185000000, "2023": 162000000 } },
+    "fin.salesExpense": { "key": "fin.salesExpense", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 26000000, "2024": 23000000, "2023": 20000000 } },
+    "fin.adminExpense": { "key": "fin.adminExpense", "type": "money", "unit": "CNY", "periodic": true, "status": "confirmed", "value": { "2025": 18000000, "2024": 16000000, "2023": 14000000 } },
+
+    "ip.inventionGrantedByYear": { "key": "ip.inventionGrantedByYear", "type": "list", "status": "confirmed", "value": [
+      { "year": 2025, "count": 5 },
+      { "year": 2024, "count": 4 },
+      { "year": 2023, "count": 3 },
+      { "year": 2021, "count": 3 },
+      { "year": 2019, "count": 2 }
+    ] },
+    "ip.ipcDistribution": { "key": "ip.ipcDistribution", "type": "list", "status": "confirmed", "value": [
+      { "ipc": "B23", "count": 5 },
+      { "ipc": "G01", "count": 3 },
+      { "ipc": "H02", "count": 2 }
+    ] },
+    "ip.inventionFirstApplicant": { "key": "ip.inventionFirstApplicant", "type": "int", "unit": "count", "status": "confirmed", "value": 10 },
+    "ip.inventionI": { "key": "ip.inventionI", "type": "list", "status": "confirmed", "value": [
+      { "name": "一种五轴磨床砂轮修整装置", "patentNo": "ZL2023100001", "grantedDate": "2023-06-12", "applicantRank": 1, "selfApplied": true, "transferredIn": false },
+      { "name": "磨削力在线监测方法", "patentNo": "ZL2023100002", "grantedDate": "2024-03-08", "applicantRank": 1, "selfApplied": true, "transferredIn": false },
+      { "name": "主轴热变形补偿结构", "patentNo": "ZL2023100003", "grantedDate": "2025-01-20", "applicantRank": 2, "selfApplied": true, "transferredIn": false }
+    ] },
+    "ip.pctCount": { "key": "ip.pctCount", "type": "int", "unit": "count", "status": "confirmed", "value": 5 },
+
+    "std.hostedIntl": { "key": "std.hostedIntl", "type": "list", "status": "confirmed", "value": [] },
+    "std.hostedNatInd": { "key": "std.hostedNatInd", "type": "list", "status": "confirmed", "value": ["GB/T 4681-2024 数控磨床精度检验", "JB/T 8832-2023 磨床砂轮架技术条件"] },
+    "std.joinedIntl": { "key": "std.joinedIntl", "type": "list", "status": "confirmed", "value": [] },
+    "std.joinedNatInd": { "key": "std.joinedNatInd", "type": "list", "status": "confirmed", "value": ["GB/T 9061-2022 金属切削机床通用技术条件", "GB/T 17421.1-2023 机床检验通则"] },
+
+    "qual.qualityAward": { "key": "qual.qualityAward", "type": "enum", "status": "confirmed", "value": "province_award" },
+    "qual.productCert": { "key": "qual.productCert", "type": "bool", "status": "confirmed", "value": true },
+    "qual.digitalTransformation": { "key": "qual.digitalTransformation", "type": "enum", "status": "confirmed", "value": "ministry_title" },
+    "qual.greenTitles": { "key": "qual.greenTitles", "type": "list", "status": "confirmed", "value": ["国家级绿色工厂", "绿色供应链管理企业", "绿色设计产品", "能效领跑者"] },
+    "qual.rdInstitution": { "key": "qual.rdInstitution", "type": "enum", "status": "confirmed", "value": "province" },
+    "qual.marketRanking": { "key": "qual.marketRanking", "type": "enum", "status": "confirmed", "value": "province_top3" },
+    "qual.scienceAward": { "key": "qual.scienceAward", "type": "bool", "status": "confirmed", "value": false },
+
+    "hr.rdHeadcount": { "key": "hr.rdHeadcount", "type": "int", "unit": "person", "status": "confirmed", "value": 45 },
+    "hr.totalHeadcount": { "key": "hr.totalHeadcount", "type": "int", "unit": "person", "status": "confirmed", "value": 190 }
+  }
+}
