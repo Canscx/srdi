@@ -4,19 +4,17 @@
 
 ## 接续点(新对话从这里开始)
 
-**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照 → 存储层 + 文件上传 + 魔数判型 → 解析链路(PDF 双通道 / DOCX / XLSX / 图片)+ 任务队列 → 四类 docType 抽取 + 五级校验 → 确认页。  
-**未开工** 评分页 / 报告 / 真实材料验收。
+**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照 → 存储层 + 文件上传 + 魔数判型 → 解析链路(PDF 双通道 / DOCX / XLSX / 图片)+ 任务队列 → 四类 docType 抽取 + 五级校验 → 确认页 → 评分页。  
+**未开工** 报告导出 / 真实材料验收。
 
-**下一步**:第二阶段第 9 步「评分页(雷达 + 23 项表 + 门槛表 + 三口径)」。
+**下一步**:第二阶段第 10 步「报告导出 Markdown」。
 
-- 输入`evidence.json`(只读 `status === 'confirmed'` 的字段)+ `config/rules/rules.srdi.v1.0.0.json` + `config/benchmarks/*`;打分是 `shared/scoring` 的纯函数 `evaluate(model, rules)`,后端只负责组装 model 与落 `score-result.json`
-- 新增 `POST /api/projects/:id/score`:读证据 → 组装 `ScoringModel` → `evaluate` → 写 `score-result.json` 并返回;行业代码取 `evidence.company.industryCode`,缺失时走 `_default` 并标估算
-- **两个缺口要先补**:`server/src/config/` 目前只有 `loadRulesSummary()` 与 `loadBenchmarksVersion()`,需新增 `loadRules(): RulesDoc` 与 `loadBenchmarks(): BenchmarksDoc`;`web` 还没装 `echarts`,先加依赖再画雷达
-- 页面四块:五维雷达 / 23 项明细表(状态、raw、score、权重、有效权重、标记)/ 六门槛判词表 / 三口径总分与区间;入口挂在确认页顶部,路由 `#/p/:id/score`
-- 必须显示的四类信息:`excluded`(如 IND_18 被排除、权重已重归一化到 100)、`missing`(字段缺失)、`estimated`(估算)、`notApplicable`(净资产 ≤ 0 记 0)。四态不可混为"没分";`indicator.contribution` 已是三口径加权分,前端不要再乘权重
-- 页面顶部与底部都要写明「参考得分非官方口径」;不得出现任何"官方评分"措辞
-- 验收:`pnpm validate` 全绿;三家企业 fixtures 走 HTTP 全链路得分与 golden 快照一致(明显通过 84.81 / 临界 46.92–57.76 / 不通过 23.21);补 ≥3 条 server 测试(评分接口、缺证据走 missing、行业基准缺失走 default)
-- 不碰报告导出 / AI 建议 / 规则编辑器
+- 报告只消费 `score-result.json` 与 `evidence.json`,不得二次计算分数;页面与文档里的数字全部来自 `ScoreResult`,格式化不改写数值
+- 双轨输出:主视图条件匹配度与材料完整度,次视图参考得分与三口径区间;顶部与结尾都要写「参考得分非官方口径」
+- 数字白名单 + 模板兜底:AI 只写建议段落,不碰任何数字;模板缺失时降级为纯规则文案
+- 不碰规则编辑器;`score-result.schema.json` 仍未定,等报告字段稳定后再写
+
+**评分页已收口**:`POST /api/projects/:id/score` + `GET` 读回,四态(excluded / missing / estimated / notApplicable)分列;雷达轴上限用重归一后的维度满分,不是名义维度权重。
 
 **三条命令**
 
@@ -60,6 +58,13 @@
 - [x] 前端多视图:hash 路由(工作台 / 确认 / 自检)+ 统一 fetch 客户端 + 工作台项目列表与新建;自检页搬到 `#/status` 并更新路线到 6/8
 - [x] 确认页三栏:40 字段清单(分组/筛选/搜索)、页图与原文摘录高亮对照、候选卡片与采纳/手填/否决/缺失;冲突强制人工二选一;顶部材料条带内置上传/解析/抽取与 SSE 进度
 - [x] server 测试 76 条(新增 6 条确认页:目录元数据 / 页数据越界 / 页图 200-404 / 无 projectId 定位 / 自动确认阈值与 quoteMatched 拦截 / 冲突候选人工采纳)
+- [x] 规则与基准加载器:`loadRules()` / `loadBenchmarks()` 单例缓存,读取失败抛 500 `rules_unavailable` / `benchmarks_unavailable`;`GET /api/meta/rules` 出 23 项元数据(unit / dataClass / scoringType / formula / evidenceRefs / fallback)与规则假设
+- [x] `POST /api/projects/:id/score`:证据 → `evaluate()` → `score-result.json`(`{ savedAt, rulesVersion, benchmarksVersion, evidence 统计, result }`);`GET` 读回,未打分返回 `record: null`
+- [x] 行业代码优先取 `evidence.company.industryCode`,缺失时回落到 `company.industryCode` 字段的 confirmed 值;未命中行业表时 `benchmarkSource: 'default'` 并在页面标「中性基准估算」
+- [x] 评分页四块:五维雷达(保守/参考/乐观三线,轴上限为重归一后的维度满分)、三口径卡与门槛结论、六门槛判词表(可展开检查项与放行条目)、23 项明细(状态 / raw / 得分率 / 权重 / 有效权重 / 标记,可按四态与维度筛选,行内展开公式、基准、缺失字段与三口径贡献)
+- [x] 评分页双处声明「参考得分 · 非官方口径」;确认页顶部加「评分 →」入口,路由 `#/p/:id/score`
+- [x] 修确认页按年字段预览显示 `[object Object]`(`formatFieldValue` 增加年份字典分支)
+- [x] server 测试 83 条(新增 7 条评分:三家企业 HTTP 全链路与 golden 一致 / 结果落盘与读回 / 未打分返回空 / 缺证据走 missing / 行业未命中走 default / 规则元数据);shared 测试 109 条(新增 2 条守卫边界)
 
 ## 待办(按优先级)
 
@@ -69,7 +74,7 @@
 - [x] PDF 双通道 / DOCX / XLSX 解析 + 任务队列
 - [x] 四类 docType 抽取 + 五级校验
 - [x] 确认页(字段行 + 页图 bbox 对照 + 冲突二选一)
-- [ ] 评分页(雷达 + 23 项表 + 门槛表 + 三口径)
+- [x] 评分页(雷达 + 23 项表 + 门槛表 + 三口径)
 - [ ] 报告导出 Markdown
 
 **收尾**
@@ -98,6 +103,9 @@
 - 页图接口 `GET /api/files/:fileId/page/:n` 的路径里没有 projectId,必须「先查 query、再扫项目目录」定位;`res.sendFile` 只接受绝对路径,`res.type(扩展名)` 才会带对 `image/jpeg`
 - **bbox 恒为空**,这不是 bug:模型只回 quote 不回坐标。文本通道靠字符串匹配高亮,视觉通道给整页图;前端不得伪造框选坐标
 - 确认页里比率字段的手工输入按百分比收(52.3 表示 52.3%),提交前除以 100。直接把 52.3 当比率写入会让 ROE / 资产负债率整条链出错
+- 雷达轴上限必须取维度内 `effectiveWeight` 之和,不能取 `dimension.weight`。排除项重归一后维度分会超过名义权重(专业化 15.93 > 15、成长性 15.93 > 15),按名义值设上限会把顶点裁到网格外
+- 守卫条件取值为 `null` 表示字段缺失,必须走 `missing`;只有 `false` 才是真正的「不适用」。改前空证据项目会出 11 项 `notApplicable`,把「没填」伪装成「不适用」
+- `evidence.company` 目前没有任何写入点(只有 fixture 带),行业代码实际来自 `company.industryCode` 的 confirmed 字段;评分接口两处都读,别只读其一会踩空
 
 ## 决策记录
 
@@ -216,3 +224,15 @@
   上传 / 解析 / 抽取三个按钮放进确认页顶部,不另建上传页。理由:当前没有别的入口能到达确认页,先让主链路自足;等页面多了再抽独立上传视图。三个按钮全部复用已有接口,后端不新增逻辑。
 - **2026-10-28 比率手工输入按百分比收口**  
   输入框后缀 `%`,提交前 `/100`。用户不会按小数填 0.523,而错误量纲在报告里几乎看不出来 —— 必须在入口收口,不能指望确认的人记得。
+- **2026-10-28 评分页不让前端二次加权**  
+  `IndicatorResult.contribution` 已是三口径加权分,页面只展示与汇总校验,不再乘权重。  
+  为了让页面格式化 raw,新增 `GET /api/meta/rules` 只读元数据(unit / dataClass / scoringType / formula / refs);不改引擎输出结构,`score-result.json` 里嵌的仍是纯 `ScoreResult`。
+- **2026-10-28 雷达轴上限用重归一后的维度满分**  
+  排除 IND_18 后其余指标等比放大,维度分可超过名义权重(专业化 15.93、成长性 15.93)。按名义权重设轴上限会把顶点裁到网格外,视觉上系统性低估高分维度。  
+  改法:轴上限 = 该维度 `effectiveWeight` 之和;页面同时标「名义权重 / 重归一满分」。
+- **2026-10-28 守卫失败分两种,只有 false 才是不适用**  
+  字段缺失时守卫结果为 `null`,原实现直接判 `notApplicable`,空证据项目会出现 11 项「不适用」,与「缺证据」混为一谈。  
+  现改为:`null → missing`(带缺失字段),`false → notApplicable` 记 0。黄金快照不变;空证据项目为 21 项 absent + 1 项中性估算 + 1 项排除。
+- **2026-10-28 评分页四态分列,不用「没分」概括**  
+  `excluded` / `missing` / `estimated` / `notApplicable` 各有独立徽标与筛选;缺失项在标记列显示「缺 N 字段」,不适用显示边界保护标记。  
+  理由:用户看到 0 分与看到「材料没交」应采取的动作完全不同。
