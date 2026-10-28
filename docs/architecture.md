@@ -96,7 +96,7 @@ PATCH  /api/projects/:id/evidence/:key    { candidateId?, manualValue?, unit?, n
 POST   /api/projects/:id/evidence/auto-confirm → { confirmed[], skipped[], policy }
 GET    /api/projects/:id/pages/:fileId    → FilePages(确认页做原文定位)
 POST   /api/projects/:id/score            → ScoreResult
-GET    /api/projects/:id/report?format=md|json
+GET    /api/projects/:id/report?format=md|pdf|json
 GET    /api/files/:fileId/page/:n?projectId= → image/jpeg
 GET    /api/meta/catalog                  → { version, fields[], autoConfirm }
 POST   /api/settings/apikey               { key } → { masked }
@@ -139,6 +139,7 @@ confirmed ──重新解析──> candidate(旧值保留,不丢历史)
 主视图   条件匹配度:六项门槛逐条 满足/不满足/材料不足/需人工确认
          材料完整度:40 字段中已确认多少,缺哪些佐证
 次视图   参考得分:63.4(区间 51.2 – 71.8),标注非官方口径
+导出    Markdown / PDF,由同一 ReportModel 渲染,数字全部来自 score-result.json
 ```
 
 四态必须区分"材料不足"与"需人工确认":前者是客户没给,后者是我们识别到但拿不准。
@@ -158,12 +159,12 @@ confirmed ──重新解析──> candidate(旧值保留,不丢历史)
 5. 抽取:四类 docType 分派
 6. 确认页:字段行 + 页图 bbox 对照 + 冲突二选一
 7. 评分页:雷达 + 23 项表 + 门槛表 + 三口径
-8. 报告:Markdown 导出
+8. 报告:Markdown + PDF 导出(同一报告模型,两套渲染)
 
 **验收**:50 页真实材料,上传到出报告 ≤8 分钟;人工确认 ≤15 分钟;23 项中 ≥18 项自动带出处。
 
 **第三阶段**
-规则编辑器 UI(改 share 立即重算)、小巨人规则包、报告 PDF、批量对比、成本面板、样本回归集扩到 10 份。
+规则编辑器 UI(改 share 立即重算)、小巨人规则包、批量对比、成本面板、样本回归集扩到 10 份。
 
 ## 十、风险
 

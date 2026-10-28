@@ -258,6 +258,20 @@ const recalc = async () => {
   }
 }
 
+const exportReport = (format: 'md' | 'pdf') => {
+  if (!record.value) {
+    ElMessage.warning('先生成参考得分')
+    return
+  }
+  const link = document.createElement('a')
+  link.href = api.reportUrl(projectId.value, format)
+  link.download = ''
+  link.rel = 'noopener'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
+
 onMounted(bootstrap)
 </script>
 
@@ -272,6 +286,12 @@ onMounted(bootstrap)
       </div>
       <div class="actions">
         <span v-if="record" class="stamp">打分于 {{ savedText }}</span>
+        <el-button size="small" :disabled="!record" @click="exportReport('md')">
+          导出 MD
+        </el-button>
+        <el-button size="small" :disabled="!record" @click="exportReport('pdf')">
+          导出 PDF
+        </el-button>
         <el-button size="small" type="primary" plain :loading="busy" @click="recalc">
           重新计算
         </el-button>

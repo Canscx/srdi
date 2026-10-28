@@ -152,7 +152,7 @@ try {
   if (!report.heading.includes('专精特新')) failures.push('主标题缺失')
   if (report.panelCount < 5) failures.push(`卡片数量偏少: ${report.panelCount}`)
   if (report.stepCount !== 8) failures.push(`路线步骤数量异常: ${report.stepCount}`)
-  if (report.doneSteps !== 7) failures.push(`已完成步骤应为 7,实际 ${report.doneSteps}`)
+  if (report.doneSteps !== 8) failures.push(`已完成步骤应为 8,实际 ${report.doneSteps}`)
   if (!report.logRows.some((r) => r.includes('snapshot'))) failures.push('SSE 未收到 snapshot 事件')
   if (!report.streamState.includes('open')) failures.push(`SSE 状态非 open: ${report.streamState}`)
   if (report.hasHorizontalOverflow) failures.push(`出现横向溢出: ${report.docWidth} > ${report.viewport[0]}`)

@@ -56,7 +56,7 @@ const steps = [
   { id: '05', title: '四类 docType 抽取', desc: '四层 prompt / 字段子集 / 五级校验', state: 'done' },
   { id: '06', title: '确认页', desc: '字段行 / 页图对照 / 冲突二选一', state: 'done' },
   { id: '07', title: '评分页', desc: '雷达图 / 23 项表 / 门槛表 / 三口径', state: 'done' },
-  { id: '08', title: '报告导出', desc: 'Markdown / 数字白名单 / 模板兜底', state: 'todo' }
+  { id: '08', title: '报告导出', desc: 'Markdown / PDF 双格式 / 数字白名单', state: 'done' }
 ]
 
 const doneSteps = steps.filter((step) => step.state === 'done').length

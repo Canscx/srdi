@@ -99,17 +99,6 @@ export const STATUS_TYPE: Record<string, 'info' | 'warning' | 'success' | 'dange
   rejected: 'danger'
 }
 
-export const DOC_TYPE_TEXT: Record<string, string> = {
-  audit: '审计报告',
-  application: '申报书',
-  tax: '纳税证明',
-  patent: '专利清单',
-  cert: '证书资质',
-  standard: '标准文本',
-  finance: '财务报表',
-  other: '其他'
-}
-
 export const SKIP_TEXT: Record<string, string> = {
   multiple_candidates: '多候选冲突',
   low_confidence: '置信度不足',
@@ -124,56 +113,14 @@ export const confidenceTone = (confidence?: number) => {
   return 'low'
 }
 
-export const INDICATOR_STATUS_TEXT: Record<string, string> = {
-  scored: '已计分',
-  estimated: '估算',
-  missing: '缺证据',
-  notApplicable: '不适用',
-  excluded: '已排除'
-}
-
-export const GATE_VERDICT_TEXT: Record<string, string> = {
-  pass: '满足',
-  fail: '不满足',
-  unknown: '材料不足',
-  pending: '待确认'
-}
-
-export const GATE_BASIS_TEXT: Record<string, string> = {
-  evidence: '证据判定',
-  missing: '材料不足',
-  unconfirmed: '待确认',
-  mixed: '缺失 + 待确认',
-  policy: '按策略放行',
-  score: '分数判定'
-}
-
-export const CONCLUSION_TEXT: Record<string, string> = {
-  pass: '门槛全过',
-  fail: '存在硬性不满足',
-  pending: '待补材料'
-}
-
-export const FLAG_TEXT: Record<string, string> = {
-  negative_equity: '净资产为负',
-  cost_nonpositive: '成本非正',
-  revenue_nonpositive: '营收非正',
-  base_negative: '基期为负',
-  denominator_zero: '分母为零',
-  partial_window: '窗口不完整',
-  period_assumed: '期间推定',
-  period_order_assumed: '年份顺序推定',
-  period_not_in_window: '期间超窗',
-  benchmark_default: '行业基准缺失',
-  benchmark_missing: '基准缺失',
-  partial_composite: '合成项不全',
-  fallback_neutral: '中性兜底',
-  guard_failed: '边界保护',
-  not_finite: '非有限值',
-  excluded: '按策略排除',
-  gate_passed_by_policy: '策略放行',
-  quote_unverified: '原文未匹配'
-}
+export {
+  CONCLUSION_TEXT,
+  DOC_TYPE_TEXT,
+  FLAG_TEXT,
+  GATE_BASIS_TEXT,
+  GATE_VERDICT_TEXT,
+  INDICATOR_STATUS_TEXT
+} from '@srdi/shared'
 
 export const formatIndicatorRaw = (value: number | null, unit?: string): string => {
   if (value === null || !Number.isFinite(value)) return '—'

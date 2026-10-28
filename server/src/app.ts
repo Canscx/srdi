@@ -17,6 +17,7 @@ import { extractRouter } from './routes/extract'
 import { metaRouter } from './routes/meta'
 import { pagesRouter } from './routes/pages'
 import { parseRouter } from './routes/parse'
+import { reportRouter } from './routes/report'
 import { scoreRouter } from './routes/score'
 import { createJobQueue } from './jobs/queue'
 import { requestLogger } from './logger'
@@ -88,6 +89,7 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
   app.use(API_PREFIX, parseRouter(store, queue))
   app.use(API_PREFIX, extractRouter(store, queue))
   app.use(API_PREFIX, scoreRouter(store))
+  app.use(API_PREFIX, reportRouter(store))
 
   app.use(API_PREFIX, (req, res) => {
     const payload: ApiError = {

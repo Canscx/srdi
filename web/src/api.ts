@@ -101,6 +101,8 @@ export const api = {
   },
   pageImageUrl: (projectId: string, fileId: string, page: number) =>
     `/api/files/${fileId}/page/${page}?projectId=${projectId}`,
+  reportUrl: (projectId: string, format: 'md' | 'pdf') =>
+    `/api/projects/${projectId}/report?format=${format}`,
   streamUrl: (jobId: string) => `/api/jobs/${jobId}/stream`
 }
 
