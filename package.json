@@ -1,0 +1,14 @@
+{
+  "name": "srdi-scorer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "专精特新申报自评打分系统",
+  "scripts": {
+    "validate": "node scripts/validate-config.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}

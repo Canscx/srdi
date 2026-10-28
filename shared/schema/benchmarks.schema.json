@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://srdi.local/schema/benchmarks.schema.json",
+  "title": "行业基准库",
+  "description": "为 8 项 B 类「超出行业均值」指标提供参考基准。非官方数据,每档标注来源与年份。",
+  "type": "object",
+  "required": ["version", "default", "industries"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "note": { "type": "string" },
+    "default": { "$ref": "#/definitions/profile" },
+    "industries": {
+      "type": "array",
+      "minItems": 12,
+      "items": {
+        "type": "object",
+        "required": ["code", "name", "profile"],
+        "additionalProperties": false,
+        "properties": {
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "profile": { "$ref": "#/definitions/profile" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "profile": {
+      "type": "object",
+      "required": [
+        "revenuePerEmployee",
+        "roe",
+        "costProfitMargin",
+        "expenseRatio",
+        "grossMargin",
+        "revenueGrowth",
+        "profitGrowth",
+        "netAssetGrowth",
+        "meta"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "revenuePerEmployee": { "type": "number", "exclusiveMinimum": 0 },
+        "roe": { "type": "number" },
+        "costProfitMargin": { "type": "number" },
+        "expenseRatio": { "type": "number" },
+        "grossMargin": { "type": "number" },
+        "revenueGrowth": { "type": "number" },
+        "profitGrowth": { "type": "number" },
+        "netAssetGrowth": { "type": "number" },
+        "meta": { "$ref": "#/definitions/meta" }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["source", "year"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string" },
+        "year": { "type": "integer" },
+        "sampleSize": { "type": "integer" },
+        "confidence": { "enum": ["high", "medium", "low"] }
+      }
+    }
+  }
+}

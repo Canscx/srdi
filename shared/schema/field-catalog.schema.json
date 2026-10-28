@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://srdi.local/schema/field-catalog.schema.json",
+  "title": "字段目录",
+  "description": "定义抽取层可识别的全部字段。此文件即字段文档,不再单写 markdown。",
+  "type": "object",
+  "required": ["version", "fields"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "policyNote": { "type": "string" },
+    "fields": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["key", "label", "type", "dataClass", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-zA-Z0-9]*(\\.[a-zA-Z][a-zA-Z0-9]*)+$"
+          },
+          "label": { "type": "string" },
+          "type": {
+            "enum": ["money", "percent", "int", "ratio", "enum", "bool", "list", "text", "date"]
+          },
+          "unit": { "type": "string" },
+          "periodic": { "type": "boolean" },
+          "dataClass": { "enum": ["A", "B", "C"] },
+          "derived": { "type": "boolean" },
+          "derivedFrom": { "type": "array", "items": { "type": "string" } },
+          "indicatorIds": { "type": "array", "items": { "type": "string" } },
+          "gateIds": { "type": "array", "items": { "type": "string" } },
+          "docTypes": {
+            "type": "array",
+            "items": {
+              "enum": ["audit", "application", "tax", "patent", "cert", "standard", "finance", "other"]
+            }
+          },
+          "aliases": { "type": "array", "items": { "type": "string" } },
+          "enumValues": { "type": "array", "items": { "type": "string" } },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}

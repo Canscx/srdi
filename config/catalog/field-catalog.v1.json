@@ -1,0 +1,289 @@
+{
+  "version": "1.0.0",
+  "policyNote": "dataClass 表示字段可得性:A=材料中可直接抽取;B=需用户手工补充;C=需外部数据库,第三方不可得。periodic=true 表示按年取值,时间窗由 evidence.json 的 period 决定(y0=上年,y1=前年,y2=大前年)。",
+  "fields": [
+    {
+      "key": "company.name", "label": "企业名称", "type": "text", "dataClass": "A",
+      "docTypes": ["application", "audit", "cert"],
+      "aliases": ["企业名称", "公司名称", "单位名称"],
+      "description": "与营业执照一致。用于跨文件实体归并,判断多份材料是否同一主体"
+    },
+    {
+      "key": "company.creditCode", "label": "统一社会信用代码", "type": "text", "dataClass": "A",
+      "docTypes": ["application", "cert", "tax"],
+      "aliases": ["统一社会信用代码", "信用代码", "纳税人识别号"],
+      "description": "18 位。跨文件实体归并的主键,缺失时降级用企业名称模糊匹配"
+    },
+    {
+      "key": "company.industryCode", "label": "行业代码", "type": "text", "dataClass": "A",
+      "docTypes": ["application"],
+      "aliases": ["行业代码", "国民经济行业分类", "所属行业"],
+      "description": "4 位码,用于索引行业基准库。取不到时用 _default 并在报告标注估算"
+    },
+    {
+      "key": "company.subMarket", "label": "细分市场", "type": "text", "dataClass": "A",
+      "docTypes": ["application"],
+      "aliases": ["细分市场", "主导产品", "细分领域"],
+      "description": "主导产品所属细分市场描述,不要求标准代码"
+    },
+    {
+      "key": "company.subMarketYears", "label": "从事细分市场年限", "type": "int", "unit": "year", "dataClass": "A",
+      "gateIds": ["GATE_1"], "indicatorIds": ["IND_01"],
+      "docTypes": ["application"],
+      "aliases": ["从事细分市场年限", "专注年限"],
+      "description": "截至上年末从事该细分市场的年限。从开始从事该产品算起,不是公司成立时间"
+    },
+    {
+      "key": "company.scitechSmeTitle", "label": "科技和创新型中小企业称号", "type": "bool", "dataClass": "A",
+      "gateIds": ["GATE_1"],
+      "docTypes": ["cert"],
+      "aliases": ["科技型中小企业", "创新型中小企业"],
+      "description": "是否持有有效期内的科技型或创新型中小企业称号"
+    },
+    {
+      "key": "company.employeeYearAvg", "label": "年平均从业人数", "type": "int", "unit": "person", "dataClass": "A",
+      "indicatorIds": ["IND_05"],
+      "docTypes": ["audit", "application"],
+      "aliases": ["年平均从业人数", "平均职工人数", "从业人数"],
+      "description": "近三年年平均从业人数。取不到时用期末人数近似并降低置信度"
+    },
+
+    {
+      "key": "fin.revenue", "label": "营业收入", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "gateIds": ["GATE_2"], "indicatorIds": ["IND_05", "IND_08", "IND_11", "IND_21"],
+      "docTypes": ["audit", "application", "tax", "finance"],
+      "aliases": ["营业收入", "营业总收入", "销售收入", "主营业务收入合计"],
+      "description": "利润表首行。注意合并报表与母公司报表口径,冲突时须人工选"
+    },
+    {
+      "key": "fin.mainBusinessRevenue", "label": "主营业务收入", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "gateIds": ["GATE_2"],
+      "docTypes": ["audit", "application"],
+      "aliases": ["主营业务收入", "主营收入"],
+      "description": "与营业收入的比例须 ≥80%"
+    },
+    {
+      "key": "fin.operatingCost", "label": "营业成本", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "indicatorIds": ["IND_11"],
+      "docTypes": ["audit", "finance"],
+      "aliases": ["营业成本", "主营业务成本"],
+      "description": "毛利率分子项。留意运费计入营业成本还是销售费用,影响毛利率"
+    },
+    {
+      "key": "fin.productSalesCost", "label": "产品销售成本", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "indicatorIds": ["IND_07"],
+      "docTypes": ["audit", "finance"],
+      "aliases": ["产品销售成本", "营业成本"],
+      "description": "成本利润率分母。报表未单列时用营业成本替代并打标"
+    },
+    {
+      "key": "fin.totalProfit", "label": "利润总额", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "indicatorIds": ["IND_07", "IND_22"],
+      "docTypes": ["audit", "finance"],
+      "aliases": ["利润总额", "税前利润"],
+      "description": "增长率计算须走符号规则,基期为负时不能套用常规公式"
+    },
+    {
+      "key": "fin.netProfit", "label": "净利润", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "indicatorIds": ["IND_06"],
+      "docTypes": ["audit", "finance"],
+      "aliases": ["净利润", "归属于母公司股东的净利润"],
+      "description": "ROE 分子。优先取归母净利润,并在报告中标注口径"
+    },
+    {
+      "key": "fin.salesExpense", "label": "销售费用", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "indicatorIds": ["IND_08"],
+      "docTypes": ["audit", "finance"],
+      "aliases": ["销售费用", "营业费用"],
+      "description": "费用率分子之一"
+    },
+    {
+      "key": "fin.adminExpense", "label": "管理费用", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "indicatorIds": ["IND_08"],
+      "docTypes": ["audit", "finance"],
+      "aliases": ["管理费用"],
+      "description": "费用率分子之一"
+    },
+    {
+      "key": "fin.netAssets", "label": "净资产", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "indicatorIds": ["IND_06", "IND_23"],
+      "docTypes": ["audit", "application"],
+      "aliases": ["净资产", "所有者权益合计", "股东权益合计"],
+      "description": "ROE 分母与净资产增速基数。≤0 时 ROE 不计分并打 negative_equity 标"
+    },
+    {
+      "key": "fin.totalAssets", "label": "资产总计", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "docTypes": ["audit", "finance"],
+      "aliases": ["资产总计", "资产总额", "资产合计"],
+      "description": "资产负债率的分母来源"
+    },
+    {
+      "key": "fin.totalLiabilities", "label": "负债合计", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "docTypes": ["audit", "finance"],
+      "aliases": ["负债合计", "负债总额", "负债总计"],
+      "description": "资产负债率的分子"
+    },
+    {
+      "key": "fin.assetLiabilityRatio", "label": "资产负债率", "type": "ratio", "periodic": true, "dataClass": "A",
+      "derived": true, "derivedFrom": ["fin.totalLiabilities", "fin.totalAssets"],
+      "gateIds": ["GATE_2"],
+      "docTypes": ["audit", "application"],
+      "aliases": ["资产负债率"],
+      "description": "派生字段 = 负债合计 / 资产总计。报表若直接披露则优先读取,计算值仅作校验"
+    },
+    {
+      "key": "fin.rdExpense", "label": "研发费用", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",
+      "gateIds": ["GATE_3"], "indicatorIds": ["IND_15", "IND_16"],
+      "docTypes": ["audit", "application", "tax", "finance"],
+      "aliases": ["研发费用", "研发投入", "研究开发费用", "研发支出"],
+      "description": "利润表研发费用或研发投入辅助账。近两年每年均须 ≥100 万且占营收 ≥3%"
+    },
+    {
+      "key": "fin.equityInvested", "label": "近两年股权融资额", "type": "money", "unit": "CNY", "dataClass": "B",
+      "gateIds": ["GATE_2"],
+      "docTypes": ["application", "cert"],
+      "aliases": ["股权融资", "股权投资", "实缴资本"],
+      "description": "近两年合格机构投资者实缴额。营收未达 1500 万时的替代门槛,多数企业需手工填"
+    },
+
+    {
+      "key": "ip.inventionFirstApplicant", "label": "第一专利权人发明专利数", "type": "int", "unit": "count", "dataClass": "A",
+      "indicatorIds": ["IND_03"],
+      "docTypes": ["patent"],
+      "aliases": ["发明专利", "授权发明专利"],
+      "description": "企业为第一专利权人的授权发明专利总数。受让专利不计入"
+    },
+    {
+      "key": "ip.ipcDistribution", "label": "IPC 分类分布", "type": "list", "dataClass": "A",
+      "indicatorIds": ["IND_03"],
+      "docTypes": ["patent"],
+      "aliases": ["IPC 分类", "国际专利分类"],
+      "description": "[{ipc, count}] 按 IPC 大类聚合。用于计算发明专利集中度的赫芬达尔指数"
+    },
+    {
+      "key": "ip.inventionGrantedByYear", "label": "各年授权发明专利数", "type": "list", "dataClass": "A",
+      "indicatorIds": ["IND_17"],
+      "docTypes": ["patent"],
+      "aliases": ["授权年度", "专利授权日"],
+      "description": "[{year, count}]。近三年授权数量权重 ×2,其他年份 ×1"
+    },
+    {
+      "key": "ip.inventionI", "label": "Ⅰ类知识产权明细", "type": "list", "dataClass": "A",
+      "gateIds": ["GATE_4"],
+      "docTypes": ["patent", "cert"],
+      "aliases": ["Ⅰ类知识产权", "知识产权清单"],
+      "description": "[{name, patentNo, grantedDate, applicantRank, selfApplied, transferredIn}]。须自主申请且权利人排名前三"
+    },
+    {
+      "key": "ip.pctCount", "label": "PCT 专利数", "type": "int", "unit": "count", "dataClass": "A",
+      "indicatorIds": ["IND_14"],
+      "docTypes": ["patent"],
+      "aliases": ["PCT", "国际专利", "PCT 申请"],
+      "description": "PCT 国际申请数。须已进入国家阶段,仅提交申请不计分"
+    },
+    {
+      "key": "ip.citationEdges", "label": "专利引用连边数", "type": "int", "unit": "count", "dataClass": "C",
+      "indicatorIds": ["IND_18"],
+      "docTypes": ["patent"],
+      "description": "专利引用网络连边总数。需专利引文库,第三方不可得,本工具默认排除该项不计分"
+    },
+
+    {
+      "key": "std.hostedIntl", "label": "主持国际标准", "type": "list", "dataClass": "A",
+      "indicatorIds": ["IND_04"],
+      "docTypes": ["standard", "cert"],
+      "aliases": ["主持国际标准", "国际标准"],
+      "description": "每项计 5 分。须提供标准文本起草单位页佐证"
+    },
+    {
+      "key": "std.hostedNatInd", "label": "主持国家或行业标准", "type": "list", "dataClass": "A",
+      "indicatorIds": ["IND_04"],
+      "docTypes": ["standard", "cert"],
+      "aliases": ["主持国家标准", "主持行业标准"],
+      "description": "每项计 3 分。通常前三名为主要起草人"
+    },
+    {
+      "key": "std.joinedIntl", "label": "参与国际标准", "type": "list", "dataClass": "A",
+      "indicatorIds": ["IND_04"],
+      "docTypes": ["standard", "cert"],
+      "aliases": ["参与国际标准"],
+      "description": "每项计 2 分"
+    },
+    {
+      "key": "std.joinedNatInd", "label": "参与国家或行业标准", "type": "list", "dataClass": "A",
+      "indicatorIds": ["IND_04"],
+      "docTypes": ["standard", "cert"],
+      "aliases": ["参与国家标准", "参与行业标准"],
+      "description": "每项计 1 分"
+    },
+
+    {
+      "key": "qual.qualityAward", "label": "质量管理体系认证", "type": "enum", "dataClass": "A",
+      "indicatorIds": ["IND_09"],
+      "enumValues": ["national_award", "province_award", "assurance", "iso9001", "none"],
+      "docTypes": ["cert"],
+      "aliases": ["质量奖", "ISO9001", "质量管理体系认证", "中国质量奖"],
+      "description": "取最高档不累加。国家级质量奖或卓越级=10,省级或预防级=5,保证级=3,ISO9001 或检验级=1"
+    },
+    {
+      "key": "qual.productCert", "label": "产品权威机构认证", "type": "bool", "dataClass": "A",
+      "indicatorIds": ["IND_10"],
+      "docTypes": ["cert"],
+      "aliases": ["产品认证", "CE", "UL", "3C", "权威机构认证"],
+      "description": "发达国家或地区权威机构认证,含我国权威认证机构。有=10,无=0"
+    },
+    {
+      "key": "qual.digitalTransformation", "label": "数字化转型水平", "type": "enum", "dataClass": "A",
+      "indicatorIds": ["IND_12"],
+      "enumValues": ["ministry_title", "lianghua_90", "province_digital", "city_digital", "scored", "none"],
+      "docTypes": ["cert", "application"],
+      "aliases": ["智能工厂", "5G 工厂", "两化融合", "数字化水平评测"],
+      "description": "部级称号或两化融合 90 分以上或通过贯标记满分"
+    },
+    {
+      "key": "qual.greenTitles", "label": "绿色化标杆称号", "type": "list", "dataClass": "A",
+      "indicatorIds": ["IND_13"],
+      "docTypes": ["cert"],
+      "aliases": ["绿色工厂", "绿色供应链", "绿色产品", "能效领跑者", "水效领跑者"],
+      "description": "每项称号计 0.5 分,累计上限 2 分"
+    },
+    {
+      "key": "qual.rdInstitution", "label": "研发机构级别", "type": "enum", "dataClass": "A",
+      "indicatorIds": ["IND_19"], "gateIds": ["GATE_4"],
+      "enumValues": ["national", "province", "self_built", "none"],
+      "docTypes": ["cert"],
+      "aliases": ["技术中心", "工程研究中心", "重点实验室", "研发机构", "企业技术中心"],
+      "description": "省部级以上可豁免 GATE_4 的Ⅰ类知识产权要求"
+    },
+    {
+      "key": "qual.scienceAward", "label": "省部级以上科技奖励", "type": "bool", "dataClass": "A",
+      "gateIds": ["GATE_4"],
+      "docTypes": ["cert"],
+      "aliases": ["科技进步奖", "科技奖励", "科学技术奖"],
+      "description": "近三年省部级以上科技奖励且企业排名前三,可豁免知识产权门槛"
+    },
+    {
+      "key": "qual.marketRanking", "label": "细分市场排名", "type": "enum", "dataClass": "C",
+      "indicatorIds": ["IND_02"], "gateIds": ["GATE_5"],
+      "enumValues": ["national_top3", "province_top3", "province_top5", "province_top10", "none", "unknown"],
+      "docTypes": ["application", "cert"],
+      "aliases": ["市场占有率", "市场排名", "细分市场占有率", "行业排名"],
+      "description": "第三方不可得。unknown 时进人工确认,不按 0 处理,而是走中性估算并标注"
+    },
+
+    {
+      "key": "hr.rdHeadcount", "label": "研发人员数", "type": "int", "unit": "person", "dataClass": "A",
+      "indicatorIds": ["IND_20"],
+      "docTypes": ["application", "audit"],
+      "aliases": ["研发人员", "技术人员", "研发人员数"],
+      "description": "研发人员总数。需社保记录或花名册佐证"
+    },
+    {
+      "key": "hr.totalHeadcount", "label": "职工总数", "type": "int", "unit": "person", "dataClass": "A",
+      "indicatorIds": ["IND_20"],
+      "docTypes": ["application", "audit"],
+      "aliases": ["职工总数", "员工人数", "从业人数"],
+      "description": "职工总数。与年平均从业人数区分,后者用于人均营收"
+    }
+  ]
+}

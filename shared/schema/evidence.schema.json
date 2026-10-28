@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://srdi.local/schema/evidence.schema.json",
+  "title": "结构化证据表",
+  "description": "L3 确认层的输出、L4 打分层的唯一输入。字段只认 confirmed 状态,其余进缺失清单。",
+  "type": "object",
+  "required": ["schemaVersion", "projectId", "level", "rulesId", "period", "files", "fields"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "projectId": { "type": "string" },
+    "level": { "enum": ["SRDI", "LITTLE_GIANT"] },
+    "rulesId": { "type": "string" },
+    "benchmarksVersion": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "period": {
+      "type": "object",
+      "required": ["y0", "y1", "y2"],
+      "additionalProperties": false,
+      "properties": {
+        "y0": { "type": "integer", "description": "上年度" },
+        "y1": { "type": "integer", "description": "前年度" },
+        "y2": { "type": "integer", "description": "大前年度" }
+      }
+    },
+    "company": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "creditCode": { "type": "string" },
+        "industryCode": { "type": "string" },
+        "industryName": { "type": "string" },
+        "subMarket": { "type": "string" },
+        "scope": { "enum": ["consolidated", "parent", "unknown"] }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fileId", "name", "route", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "fileId": { "type": "string" },
+          "name": { "type": "string" },
+          "sha256": { "type": "string" },
+          "pages": { "type": "integer", "minimum": 1 },
+          "docType": {
+            "enum": ["audit", "application", "tax", "patent", "cert", "standard", "finance", "other"]
+          },
+          "route": { "enum": ["text", "vision", "hybrid"] },
+          "status": { "enum": ["pending", "parsed", "failed"] },
+          "truncated": { "type": "boolean" },
+          "visionSkipped": { "type": "boolean" },
+          "unreadable": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["page", "reason"],
+              "additionalProperties": false,
+              "properties": {
+                "page": { "type": "integer" },
+                "reason": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/fieldEntry" }
+    }
+  },
+  "definitions": {
+    "fieldEntry": {
+      "type": "object",
+      "required": ["key", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string" },
+        "label": { "type": "string" },
+        "type": {
+          "enum": ["money", "percent", "int", "ratio", "enum", "bool", "list", "text", "date"]
+        },
+        "unit": { "type": "string" },
+        "periodic": { "type": "boolean" },
+        "status": { "enum": ["missing", "candidate", "confirmed", "rejected"] },
+        "value": {
+          "type": ["number", "string", "array", "object", "boolean", "null"]
+        },
+        "candidates": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/candidate" }
+        },
+        "resolution": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "strategy": { "enum": ["auto_unit_merge", "auto_single", "manual", "none"] },
+            "pickedCandidateId": { "type": ["string", "null"] },
+            "resolvedBy": { "enum": ["auto", "user"] },
+            "resolvedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "flags": { "type": "array", "items": { "type": "string" } },
+        "manualNote": { "type": "string" }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "required": ["candidateId", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": { "type": "string" },
+        "value": { "type": ["number", "string", "array", "object", "boolean", "null"] },
+        "unit": { "type": "string" },
+        "period": { "type": ["integer", "null"] },
+        "raw": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "source": { "$ref": "#/definitions/source" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["fileId", "page", "route"],
+      "additionalProperties": false,
+      "properties": {
+        "fileId": { "type": "string" },
+        "fileName": { "type": "string" },
+        "page": { "type": "integer", "minimum": 1 },
+        "bbox": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "[x1, y1, x2, y2] 页面坐标,用于高亮"
+        },
+        "route": { "enum": ["text", "vision"] },
+        "quote": { "type": "string", "description": "原文摘录,文本通道必须能在该页匹配" },
+        "quoteMatched": { "type": ["boolean", "null"] },
+        "extractor": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}

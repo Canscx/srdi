@@ -1,0 +1,143 @@
+{
+  "version": "1.2.0",
+  "note": "非官方数据。数值由公开统计年鉴、上市公司年报与行业研究报告估算,用于自查参考。默认置信度 low,仅表示相对量级,不代表任一年度精确均值。匹配不到行业时使用 default,并在报告标注估算。",
+  "default": {
+    "revenuePerEmployee": 1400000,
+    "roe": 0.09,
+    "costProfitMargin": 0.06,
+    "expenseRatio": 0.14,
+    "grossMargin": 0.22,
+    "revenueGrowth": 0.08,
+    "profitGrowth": 0.07,
+    "netAssetGrowth": 0.08,
+    "meta": { "source": "制造业中性值", "year": 2025, "confidence": "low" }
+  },
+  "industries": [
+    {
+      "code": "C13", "name": "农副食品加工业",
+      "profile": {
+        "revenuePerEmployee": 1600000, "roe": 0.09, "costProfitMargin": 0.05,
+        "expenseRatio": 0.10, "grossMargin": 0.13, "revenueGrowth": 0.06,
+        "profitGrowth": 0.05, "netAssetGrowth": 0.07,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 380, "confidence": "low" }
+      }
+    },
+    {
+      "code": "C17", "name": "纺织业",
+      "profile": {
+        "revenuePerEmployee": 1200000, "roe": 0.07, "costProfitMargin": 0.05,
+        "expenseRatio": 0.09, "grossMargin": 0.15, "revenueGrowth": 0.05,
+        "profitGrowth": 0.04, "netAssetGrowth": 0.06,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 420, "confidence": "low" }
+      }
+    },
+    {
+      "code": "C26", "name": "化学原料和化学制品制造业",
+      "profile": {
+        "revenuePerEmployee": 1800000, "roe": 0.10, "costProfitMargin": 0.07,
+        "expenseRatio": 0.11, "grossMargin": 0.20, "revenueGrowth": 0.08,
+        "profitGrowth": 0.07, "netAssetGrowth": 0.09,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 510, "confidence": "low" }
+      }
+    },
+    {
+      "code": "C27", "name": "医药制造业",
+      "profile": {
+        "revenuePerEmployee": 1300000, "roe": 0.11, "costProfitMargin": 0.10,
+        "expenseRatio": 0.28, "grossMargin": 0.42, "revenueGrowth": 0.09,
+        "profitGrowth": 0.08, "netAssetGrowth": 0.10,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 340, "confidence": "low" }
+      }
+    },
+    {
+      "code": "C34", "name": "通用设备制造业",
+      "profile": {
+        "revenuePerEmployee": 1400000, "roe": 0.09, "costProfitMargin": 0.06,
+        "expenseRatio": 0.14, "grossMargin": 0.24, "revenueGrowth": 0.07,
+        "profitGrowth": 0.06, "netAssetGrowth": 0.08,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 620, "confidence": "low" }
+      }
+    },
+    {
+      "code": "C35", "name": "专用设备制造业",
+      "profile": {
+        "revenuePerEmployee": 1500000, "roe": 0.10, "costProfitMargin": 0.07,
+        "expenseRatio": 0.14, "grossMargin": 0.27, "revenueGrowth": 0.08,
+        "profitGrowth": 0.07, "netAssetGrowth": 0.09,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 580, "confidence": "low" }
+      }
+    },
+    {
+      "code": "C38", "name": "电气机械和器材制造业",
+      "profile": {
+        "revenuePerEmployee": 1600000, "roe": 0.09, "costProfitMargin": 0.06,
+        "expenseRatio": 0.13, "grossMargin": 0.22, "revenueGrowth": 0.09,
+        "profitGrowth": 0.07, "netAssetGrowth": 0.09,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 640, "confidence": "low" }
+      }
+    },
+    {
+      "code": "C39", "name": "计算机、通信和其他电子设备制造业",
+      "profile": {
+        "revenuePerEmployee": 1450000, "roe": 0.09, "costProfitMargin": 0.06,
+        "expenseRatio": 0.12, "grossMargin": 0.21, "revenueGrowth": 0.11,
+        "profitGrowth": 0.09, "netAssetGrowth": 0.10,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 720, "confidence": "low" }
+      }
+    },
+    {
+      "code": "C40", "name": "仪器仪表制造业",
+      "profile": {
+        "revenuePerEmployee": 1350000, "roe": 0.10, "costProfitMargin": 0.08,
+        "expenseRatio": 0.16, "grossMargin": 0.32, "revenueGrowth": 0.08,
+        "profitGrowth": 0.07, "netAssetGrowth": 0.09,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 300, "confidence": "low" }
+      }
+    },
+    {
+      "code": "I65", "name": "软件和信息技术服务业",
+      "profile": {
+        "revenuePerEmployee": 850000, "roe": 0.11, "costProfitMargin": 0.10,
+        "expenseRatio": 0.30, "grossMargin": 0.50, "revenueGrowth": 0.12,
+        "profitGrowth": 0.09, "netAssetGrowth": 0.11,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 460, "confidence": "low" }
+      }
+    },
+    {
+      "code": "M73", "name": "研究和试验发展",
+      "profile": {
+        "revenuePerEmployee": 750000, "roe": 0.09, "costProfitMargin": 0.08,
+        "expenseRatio": 0.26, "grossMargin": 0.38, "revenueGrowth": 0.10,
+        "profitGrowth": 0.08, "netAssetGrowth": 0.09,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 220, "confidence": "low" }
+      }
+    },
+    {
+      "code": "M74", "name": "专业技术服务业",
+      "profile": {
+        "revenuePerEmployee": 900000, "roe": 0.10, "costProfitMargin": 0.09,
+        "expenseRatio": 0.24, "grossMargin": 0.35, "revenueGrowth": 0.09,
+        "profitGrowth": 0.08, "netAssetGrowth": 0.10,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 280, "confidence": "low" }
+      }
+    },
+    {
+      "code": "E48", "name": "土木工程建筑业",
+      "profile": {
+        "revenuePerEmployee": 2000000, "roe": 0.06, "costProfitMargin": 0.04,
+        "expenseRatio": 0.06, "grossMargin": 0.10, "revenueGrowth": 0.05,
+        "profitGrowth": 0.04, "netAssetGrowth": 0.06,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 390, "confidence": "low" }
+      }
+    },
+    {
+      "code": "G54", "name": "道路运输业",
+      "profile": {
+        "revenuePerEmployee": 700000, "roe": 0.06, "costProfitMargin": 0.05,
+        "expenseRatio": 0.08, "grossMargin": 0.15, "revenueGrowth": 0.05,
+        "profitGrowth": 0.04, "netAssetGrowth": 0.05,
+        "meta": { "source": "公开统计与行业报告估算", "year": 2025, "sampleSize": 210, "confidence": "low" }
+      }
+    }
+  ]
+}

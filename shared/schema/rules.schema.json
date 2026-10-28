@@ -1,0 +1,386 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://srdi.local/schema/rules.schema.json",
+  "title": "打分规则包",
+  "description": "一个规则包对应一次政策口径。项目创建时绑定 rulesId 与 effectiveFrom,永不自动升级。",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "rulesId",
+    "level",
+    "levelName",
+    "policyBasis",
+    "effectiveFrom",
+    "status",
+    "passLine",
+    "policies",
+    "gates",
+    "dimensions",
+    "assumptions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "rulesId": {
+      "type": "string",
+      "pattern": "^rules\\.[a-z0-9-]+\\.v\\d+\\.\\d+\\.\\d+$"
+    },
+    "level": {
+      "enum": ["SRDI", "LITTLE_GIANT"]
+    },
+    "levelName": {
+      "type": "string"
+    },
+    "region": {
+      "enum": ["CN", "JS", "ZJ", "GD", "SD"],
+      "default": "CN"
+    },
+    "policyBasis": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["doc", "effectiveFrom"],
+        "additionalProperties": false,
+        "properties": {
+          "doc": { "type": "string" },
+          "no": { "type": "string" },
+          "effectiveFrom": { "type": "string", "format": "date" },
+          "url": { "type": "string" }
+        }
+      }
+    },
+    "effectiveFrom": { "type": "string", "format": "date" },
+    "effectiveTo": { "type": ["string", "null"], "format": "date" },
+    "status": { "enum": ["draft", "active", "superseded"] },
+    "supersedes": { "type": ["string", "null"] },
+    "passLine": { "type": "number", "minimum": 0, "maximum": 100 },
+    "benchmarksRef": {
+      "type": "object",
+      "required": ["file", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "policies": {
+      "type": "object",
+      "required": ["weightModel", "missingPolicy", "rounding", "cClassFallback"],
+      "additionalProperties": false,
+      "properties": {
+        "weightModel": { "enum": ["dimensionShare"] },
+        "missingPolicy": { "enum": ["rangeBounds", "zero", "exclude"] },
+        "rounding": {
+          "type": "object",
+          "required": ["decimals", "mode"],
+          "additionalProperties": false,
+          "properties": {
+            "decimals": { "type": "integer", "minimum": 0, "maximum": 6 },
+            "mode": { "enum": ["half_up", "half_even", "floor"] }
+          }
+        },
+        "cClassFallback": {
+          "type": "object",
+          "required": ["score", "confidence"],
+          "additionalProperties": false,
+          "properties": {
+            "score": { "type": "number", "minimum": 0, "maximum": 1 },
+            "confidence": { "enum": ["verified", "estimated", "unknown"] }
+          }
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 6,
+      "items": { "$ref": "#/definitions/gate" }
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/definitions/dimension" }
+    },
+    "assumptions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "text": { "type": "string" },
+          "impact": { "type": "string" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "gate": {
+      "type": "object",
+      "required": ["id", "name", "type", "unknownPolicy"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^GATE_[1-6]$" },
+        "name": { "type": "string" },
+        "type": { "enum": ["expr", "scoreGate"] },
+        "logic": { "enum": ["all", "anyOf"] },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "label", "expr"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "expr": { "type": "string" },
+              "exemption": { "type": "boolean" }
+            }
+          }
+        },
+        "passLine": { "type": "number" },
+        "totalKey": { "enum": ["official", "conservative", "optimistic"] },
+        "unknownPolicy": { "enum": ["notPass", "pending", "ignore"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "expr" } } },
+          "then": { "required": ["logic", "checks"], "properties": { "checks": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "scoreGate" } } },
+          "then": { "required": ["passLine", "totalKey"] }
+        }
+      ]
+    },
+    "dimension": {
+      "type": "object",
+      "required": ["id", "name", "weight", "indicators"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "weight": { "type": "number", "minimum": 0, "maximum": 100 },
+        "indicators": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/indicator" }
+        }
+      }
+    },
+    "indicator": {
+      "type": "object",
+      "required": ["id", "code", "name", "share", "dataClass", "scoring"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^IND_\\d{2}$" },
+        "code": { "type": "integer", "minimum": 1, "maximum": 23 },
+        "name": { "type": "string" },
+        "share": { "type": "number", "exclusiveMinimum": 0 },
+        "dataClass": { "enum": ["A", "B", "C"] },
+        "unit": { "type": "string" },
+        "aggregation": {
+          "type": "object",
+          "required": ["method"],
+          "additionalProperties": false,
+          "properties": {
+            "window": { "type": "array", "items": { "enum": ["y0", "y1", "y2"] } },
+            "method": { "enum": ["mean", "last", "sum", "none"] }
+          }
+        },
+        "formula": {
+          "type": "object",
+          "required": ["expr", "inputs"],
+          "additionalProperties": false,
+          "properties": {
+            "expr": { "type": "string" },
+            "inputs": { "type": "array", "items": { "type": "string" } },
+            "guard": { "type": "string" }
+          }
+        },
+        "scoring": { "$ref": "#/definitions/scoring" },
+        "benchmarkKey": { "type": "string" },
+        "evidenceRefs": { "type": "array", "items": { "type": "string" } },
+        "explain": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "template": { "type": "string" }
+          }
+        },
+        "fallback": { "$ref": "#/definitions/fallback" }
+      }
+    },
+    "fallback": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["neutral", "exclude", "zero"] },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "confidence": { "enum": ["verified", "estimated", "unknown"] },
+        "reason": { "type": "string" }
+      }
+    },
+    "scoring": {
+      "type": "object",
+      "required": ["type"],
+      "properties": { "type": { "type": "string" } },
+      "oneOf": [
+        {
+          "properties": {
+            "type": { "const": "piecewise" },
+            "points": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "clamp": {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "tail": { "enum": ["hold", "cap", "extend"] }
+          },
+          "required": ["type", "points"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "tier" },
+            "maxPoints": { "type": "number", "exclusiveMinimum": 0 },
+            "tiers": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["when", "points", "label"],
+                "additionalProperties": false,
+                "properties": {
+                  "when": { "type": "string" },
+                  "points": { "type": "number", "minimum": 0 },
+                  "label": { "type": "string" }
+                }
+              }
+            }
+          },
+          "required": ["type", "maxPoints", "tiers"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "benchmark" },
+            "direction": { "enum": ["positive", "negative"] },
+            "benchmarkKey": { "type": "string" },
+            "curve": {
+              "type": "object",
+              "required": ["base", "kUp", "kDown"],
+              "additionalProperties": false,
+              "properties": {
+                "base": { "type": "number", "minimum": 0, "maximum": 1 },
+                "kUp": { "type": "number", "exclusiveMinimum": 0 },
+                "kDown": { "type": "number", "exclusiveMinimum": 0 }
+              }
+            }
+          },
+          "required": ["type", "direction", "benchmarkKey", "curve"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "formulaSum" },
+            "terms": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["ref", "coef"],
+                "additionalProperties": false,
+                "properties": {
+                  "ref": { "type": "string" },
+                  "coef": { "type": "number" }
+                }
+              }
+            },
+            "cap": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "required": ["type", "terms", "cap"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "hhi" },
+            "distributionRef": { "type": "string" },
+            "totalRef": { "type": "string" },
+            "points": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          },
+          "required": ["type", "distributionRef", "totalRef", "points"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "composite" },
+            "parts": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "required": ["weight", "scoring"],
+                "additionalProperties": false,
+                "properties": {
+                  "weight": { "type": "number", "exclusiveMinimum": 0 },
+                  "scoring": { "$ref": "#/definitions/scoring" }
+                }
+              }
+            }
+          },
+          "required": ["type", "parts"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "manualTier" },
+            "maxPoints": { "type": "number", "exclusiveMinimum": 0 },
+            "options": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["key", "points", "label"],
+                "additionalProperties": false,
+                "properties": {
+                  "key": { "type": "string" },
+                  "points": { "type": "number", "minimum": 0 },
+                  "label": { "type": "string" }
+                }
+              }
+            }
+          },
+          "required": ["type", "maxPoints", "options"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

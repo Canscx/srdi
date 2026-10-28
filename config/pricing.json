@@ -1,0 +1,25 @@
+{
+  "currency": "USD",
+  "updatedAt": "2026-10-28",
+  "note": "单价单位:每百万 token。价格随官方调整,使用前请核对。peakMultiplier 用于高峰时段倍率。",
+  "models": {
+    "deepseek-flash": {
+      "inputPerMTok": 0.15,
+      "cachedInputPerMTok": 0.003,
+      "outputPerMTok": 0.6,
+      "peakMultiplier": 2,
+      "visionTokensPerImage": 384,
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "supportsVision": true,
+      "supportsJsonOutput": true,
+      "supportsToolCalls": true
+    }
+  },
+  "budget": {
+    "perProjectTokens": 400000,
+    "perProjectCostLimit": 2,
+    "visionConcurrency": 2,
+    "textConcurrency": 3
+  }
+}
