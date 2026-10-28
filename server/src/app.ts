@@ -14,6 +14,8 @@ import { projectsRouter } from './routes/projects'
 import { filesRouter } from './routes/files'
 import { evidenceRouter } from './routes/evidence'
 import { extractRouter } from './routes/extract'
+import { metaRouter } from './routes/meta'
+import { pagesRouter } from './routes/pages'
 import { parseRouter } from './routes/parse'
 import { createJobQueue } from './jobs/queue'
 import { requestLogger } from './logger'
@@ -80,6 +82,8 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
   app.use(API_PREFIX, projectsRouter(store))
   app.use(API_PREFIX, filesRouter(store, { maxFileBytes }))
   app.use(API_PREFIX, evidenceRouter(store))
+  app.use(API_PREFIX, pagesRouter(store))
+  app.use(API_PREFIX, metaRouter())
   app.use(API_PREFIX, parseRouter(store, queue))
   app.use(API_PREFIX, extractRouter(store, queue))
 

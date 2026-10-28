@@ -5,7 +5,12 @@
     "types": ["vite/client", "node"],
     "jsx": "preserve",
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@srdi/shared": ["shared/src/index.ts"],
+      "@srdi/shared/*": ["shared/src/*"],
+      "@/*": ["web/src/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "vite.config.ts"]
 }

@@ -1,5 +1,11 @@
 import { Router } from 'express'
-import type { EvidencePatchRequest, EvidencePatchResponse } from '@srdi/shared'
+import type {
+  AutoConfirmResponse,
+  EvidencePatchRequest,
+  EvidencePatchResponse
+} from '@srdi/shared'
+import { catalogFields } from '../config/catalog'
+import { autoConfirmPolicy } from '../config/review'
 import { badRequest } from '../errors'
 import type { AppStore } from '../store'
 
@@ -58,6 +64,45 @@ export const evidenceRouter = (store: AppStore) => {
     const input = parsePatch(req.body)
     const entry = await store.evidence.patch(project, req.params.key, input)
     const payload: EvidencePatchResponse = { key: entry.key, entry }
+    res.json(payload)
+  })
+
+  router.post('/projects/:projectId/evidence/auto-confirm', async (req, res) => {
+    const project = await store.projects.get(req.params.projectId)
+    const policy = autoConfirmPolicy()
+    const payload: AutoConfirmResponse = { confirmed: [], skipped: [], policy }
+    if (!policy.enabled) {
+      res.json(payload)
+      return
+    }
+
+    const doc = await store.evidence.get(project)
+    for (const field of catalogFields()) {
+      const entry = doc.fields[field.key]
+      if (!entry || entry.status !== 'candidate') continue
+      const candidates = entry.candidates ?? []
+      if (candidates.length === 0) continue
+      if (candidates.length > 1) {
+        payload.skipped.push({ key: field.key, reason: 'multiple_candidates' })
+        continue
+      }
+      const candidate = candidates[0]
+      if (candidate.value === undefined || candidate.value === null) {
+        payload.skipped.push({ key: field.key, reason: 'empty_value' })
+        continue
+      }
+      if ((candidate.confidence ?? 0) < policy.minConfidence) {
+        payload.skipped.push({ key: field.key, reason: 'low_confidence' })
+        continue
+      }
+      if (policy.rejectUnverifiedQuote && candidate.source.quoteMatched === false) {
+        payload.skipped.push({ key: field.key, reason: 'quote_unverified' })
+        continue
+      }
+      await store.evidence.patch(project, field.key, { candidateId: candidate.candidateId })
+      payload.confirmed.push(field.key)
+    }
+
     res.json(payload)
   })
 

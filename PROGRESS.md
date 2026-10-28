@@ -4,17 +4,17 @@
 
 ## 接续点(新对话从这里开始)
 
-**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照 → 存储层 + 文件上传 + 魔数判型 → 解析链路(PDF 双通道 / DOCX / XLSX / 图片)+ 任务队列 → 四类 docType 抽取 + 五级校验。  
-**未开工** 确认页 / 评分页 / 报告 / 真实材料验收。
+**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照 → 存储层 + 文件上传 + 魔数判型 → 解析链路(PDF 双通道 / DOCX / XLSX / 图片)+ 任务队列 → 四类 docType 抽取 + 五级校验 → 确认页。  
+**未开工** 评分页 / 报告 / 真实材料验收。
 
-**下一步**:第二阶段第 8 步「确认页(字段行 + 页图 bbox 对照 + 冲突二选一)」。
+**下一步**:第二阶段第 9 步「评分页(雷达 + 23 项表 + 门槛表 + 三口径)」。
 
-- 输入 `evidence.json` 的 `fields[*].candidates`:每条已带 `source.fileId / page / route / quote / quoteMatched / confidence`,`value` 仍为空
-- 页图走 `data/projects/<id>/pages/<fileId>/pN.jpg`,接口按 `docs/architecture.md` 的 `GET /api/files/:fileId/page/:n`
-- 只读候选、只经 `evidenceStore.patch` 写 `value`;「单候选自动确认」必须带 confidence 阈值且阈值进配置,不散落在页面里
-- **bbox 目前恒为空**:AI 只回 quote 不回坐标。文本通道用 `quote` 在页文本里做字符串定位高亮,视觉通道整页高亮,不要伪造坐标
-- 冲突(同 key 多候选)必须人工二选一,不得自动取最高置信度
-- 不碰评分页 / 报告 / 打分引擎
+- 输入`evidence.json`(只读 `status === 'confirmed'` 的字段)+ `config/rules/rules.srdi.v1.0.0.json` + `config/benchmarks/*`;打分是 `shared/scoring` 的纯函数 `evaluate`,后端只负责组装 model 与落 `score-result.json`
+- 新增 `POST /api/projects/:id/score`:读证据 → 组装 `ScoringModel` → `evaluate` → 写 `score-result.json` 并返回;行业代码取 `evidence.company.industryCode`,缺失时走 `_default` 并标估算
+- 页面四块:五维雷达 / 23 项明细表(状态、raw、score、权重、有效权重、标记)/ 六门槛判词表 / 三口径总分与区间
+- 必须显示的四类信息:`excluded`(如 IND_18 被排除)、`missing`(字段缺失)、`estimated`(估算)、`notApplicable`(净资产 ≤ 0 记 0)。四态不可混为"没分"
+- 页面顶部与底部都要写明「参考得分非官方口径」;不得出现任何"官方评分"措辞
+- 不碰报告导出 / AI 建议 / 规则编辑器
 
 **三条命令**
 
@@ -53,6 +53,11 @@
 - [x] AI 抽取:`ai/{client,prompt,validate,dispatch,cache,budget,extract}`;四层 prompt(L0 铁律 / L1 字段子集 / L2 页文本或页图 / L3 本块指令)、docType 前缀派子集、按页 route 与字符预算分块、五级校验、项目级 token 账本、文件级缓存
 - [x] `POST /api/projects/:id/extract` 返回 jobId;`jobs/queue.ts` 泛化为 parse / extract 两类任务共用串行 drain 与 SSE
 - [x] server 测试 70 条(新增 7 条 AI 抽取:四类 docType 出处完整 / docType 覆盖 / 二次抽取零请求 / 单块失败隔离 / quote 未命中压分 / 万元换算 / 页越界 / 预算耗尽 / HTTP 全链路)
+- [x] 确认页所需接口:`GET /api/files/:fileId/page/:n` 出页图(越界/无图分别 404)、`GET /api/projects/:id/pages/:fileId` 出 `FilePages`、`GET /api/meta/catalog` 出 40 字段元数据与枚举值
+- [x] 自动确认:`config/review.json` 存阈值(0.9 / 拒绝原文未匹配),`POST /api/projects/:id/evidence/auto-confirm` 仅对单候选生效,仍走 `evidenceStore.patch`
+- [x] 前端多视图:hash 路由(工作台 / 确认 / 自检)+ 统一 fetch 客户端 + 工作台项目列表与新建;自检页搬到 `#/status` 并更新路线到 6/8
+- [x] 确认页三栏:40 字段清单(分组/筛选/搜索)、页图与原文摘录高亮对照、候选卡片与采纳/手填/否决/缺失;冲突强制人工二选一;顶部材料条带内置上传/解析/抽取与 SSE 进度
+- [x] server 测试 76 条(新增 6 条确认页:目录元数据 / 页数据越界 / 页图 200-404 / 无 projectId 定位 / 自动确认阈值与 quoteMatched 拦截 / 冲突候选人工采纳)
 
 ## 待办(按优先级)
 
@@ -61,7 +66,7 @@
 - [x] 存储层 + 文件上传 + 魔数判型
 - [x] PDF 双通道 / DOCX / XLSX 解析 + 任务队列
 - [x] 四类 docType 抽取 + 五级校验
-- [ ] 确认页(字段行 + 页图 bbox 对照 + 冲突二选一)
+- [x] 确认页(字段行 + 页图 bbox 对照 + 冲突二选一)
 - [ ] 评分页(雷达 + 23 项表 + 门槛表 + 三口径)
 - [ ] 报告导出 Markdown
 
@@ -87,6 +92,10 @@
 - `ajv` 已从 server 的 devDependencies 移到 dependencies —— `ai/validate.ts` 运行时直接引用,只装生产依赖会 `MODULE_NOT_FOUND`
 - `ratio` 类字段一律用小数(`0.52` 表示 52%)。模型回 `unit: "%"` 或 `value: "52.3%"` 时必须按 0.01 折算并打 `unit_scaled`;折算后 `|v| > 5` 直接丢弃,防止 52.3 被当比率写进证据
 - prompt 的正反例里也写着字段名,测试桩若按 `system.includes('fin.revenue')` 分流,每条 prompt 都会命中(正反例在同一个 system 里)。判别要带制表符匹配表格行,如 `'fin.revenue\t'`
+- `@/` 别名必须同时写两处:`vite.config.ts` 的 `resolve.alias` 与 `web/tsconfig.json` 的 `paths`。只配 vite 时 `vue-tsc` 会一片 `Cannot find module '@/...'`
+- 页图接口 `GET /api/files/:fileId/page/:n` 的路径里没有 projectId,必须「先查 query、再扫项目目录」定位;`res.sendFile` 只接受绝对路径,`res.type(扩展名)` 才会带对 `image/jpeg`
+- **bbox 恒为空**,这不是 bug:模型只回 quote 不回坐标。文本通道靠字符串匹配高亮,视觉通道给整页图;前端不得伪造框选坐标
+- 确认页里比率字段的手工输入按百分比收(52.3 表示 52.3%),提交前除以 100。直接把 52.3 当比率写入会让 ROE / 资产负债率整条链出错
 
 ## 决策记录
 
@@ -189,3 +198,19 @@
   它没有 page 与 quote,写成候选就违反"每条候选必须可回指原文"的验收条件,确认页也无法高亮。企业主体归并留给营业执照/申报书里的 `company.name` 字段,按正常字段抽取。
 - **2026-10-28 token 账本按项目落盘,预算耗尽只停新调用**  
   `ai-usage.json` 记 `{limit, used}`,每个文件跑完落一次。耗尽后不再发请求,已完成文件照常写候选,任务标 `done` 并在 `error` 里列出未抽文件 —— 半份证据比零份有用,且用户能看见为什么少。
+- **2026-10-28 自动确认的阈值进 `config/review.json`,且条件收得很紧**  
+  只有「单候选 + 置信度 ≥ 0.9 + 原文匹配(或视觉通道无文本层)」才自动确认;多候选一律转人工。  
+  阈值写进页面会让"什么算可信"变成前端常量,以后调口径要改代码;放配置里,业务方自己改。
+- **2026-10-28 页图按 fileId 定位项目,路径必须防越界**  
+  `GET /api/files/:fileId/page/:n` 路径里没有 projectId,先读 `?projectId=`,没有就扫项目目录。  
+  `page.image` 是项目内相对路径,解析后必须校验仍在项目目录内,否则一个被篡改的 `FilePages` 就能读到任意文件。
+- **2026-10-28 确认页不伪造 bbox**  
+  模型只回 quote 不回坐标。文本通道把 quote 去空白后在页文本里做字符串定位并高亮;视觉通道给整页图并写明"图像通道,无文本层可比对"。  
+  伪造坐标比没有坐标更坏:用户会以为框出来的就是证据。
+- **2026-10-28 前端不引入 vue-router**  
+  三个视图、两层路径,手写 20 行 hash 路由足够。加依赖要改 lockfile、配 base、处理 SPA 回退,收益为零。  
+  同理不引入 Pinia:确认页的状态只在这一个视图里活,`ref` + 局部 computed 已经够。
+- **2026-10-28 确认页内置材料条带**  
+  上传 / 解析 / 抽取三个按钮放进确认页顶部,不另建上传页。理由:当前没有别的入口能到达确认页,先让主链路自足;等页面多了再抽独立上传视图。三个按钮全部复用已有接口,后端不新增逻辑。
+- **2026-10-28 比率手工输入按百分比收口**  
+  输入框后缀 `%`,提交前 `/100`。用户不会按小数填 0.523,而错误量纲在报告里几乎看不出来 —— 必须在入口收口,不能指望确认的人记得。

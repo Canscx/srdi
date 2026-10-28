@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "note": "确认页策略。阈值只在这里改,不要写进页面或路由代码。",
+  "autoConfirm": {
+    "enabled": true,
+    "minConfidence": 0.9,
+    "rejectUnverifiedQuote": true
+  },
+  "review": {
+    "defaultFilter": "pending",
+    "autoJumpToNext": true
+  }
+}

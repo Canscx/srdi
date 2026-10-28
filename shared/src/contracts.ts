@@ -158,3 +158,45 @@ export interface ExtractRequestResponse {
   jobId: string
   reused: boolean
 }
+
+export type FieldType =
+  | 'money'
+  | 'percent'
+  | 'int'
+  | 'ratio'
+  | 'enum'
+  | 'bool'
+  | 'list'
+  | 'text'
+  | 'date'
+
+export interface CatalogFieldMeta {
+  key: string
+  label: string
+  type: FieldType
+  unit?: string
+  periodic?: boolean
+  dataClass?: string
+  enumValues?: string[]
+  aliases?: string[]
+  description?: string
+  docTypes?: string[]
+}
+
+export interface AutoConfirmPolicy {
+  enabled: boolean
+  minConfidence: number
+  rejectUnverifiedQuote: boolean
+}
+
+export interface CatalogResponse {
+  version: string
+  fields: CatalogFieldMeta[]
+  autoConfirm: AutoConfirmPolicy
+}
+
+export interface AutoConfirmResponse {
+  confirmed: string[]
+  skipped: { key: string; reason: string }[]
+  policy: AutoConfirmPolicy
+}

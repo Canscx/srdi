@@ -107,7 +107,7 @@ try {
   await send('Page.enable', {}, sessionId)
   await send('Runtime.enable', {}, sessionId)
   await send('Log.enable', {}, sessionId)
-  await send('Page.navigate', { url: BASE }, sessionId)
+  await send('Page.navigate', { url: `${BASE}/#/status` }, sessionId)
   await sleep(3200)
 
   const probe = await send(
@@ -151,8 +151,8 @@ try {
   if (report.title !== '专精特新申报自评打分系统') failures.push(`title 不符: ${report.title}`)
   if (!report.heading.includes('专精特新')) failures.push('主标题缺失')
   if (report.panelCount < 5) failures.push(`卡片数量偏少: ${report.panelCount}`)
-  if (report.stepCount !== 5) failures.push(`路线步骤数量异常: ${report.stepCount}`)
-  if (report.doneSteps !== 2) failures.push(`已完成步骤应为 2,实际 ${report.doneSteps}`)
+  if (report.stepCount !== 8) failures.push(`路线步骤数量异常: ${report.stepCount}`)
+  if (report.doneSteps !== 6) failures.push(`已完成步骤应为 6,实际 ${report.doneSteps}`)
   if (!report.logRows.some((r) => r.includes('snapshot'))) failures.push('SSE 未收到 snapshot 事件')
   if (!report.streamState.includes('open')) failures.push(`SSE 状态非 open: ${report.streamState}`)
   if (report.hasHorizontalOverflow) failures.push(`出现横向溢出: ${report.docWidth} > ${report.viewport[0]}`)

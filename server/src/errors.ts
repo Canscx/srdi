@@ -15,7 +15,8 @@ export class AppError extends Error {
 export const badRequest = (code: string, message: string, hint?: string) =>
   new AppError(400, code, message, hint)
 
-export const notFound = (code: string, message: string) => new AppError(404, code, message)
+export const notFound = (code: string, message: string, hint?: string) =>
+  new AppError(404, code, message, hint)
 
 export const unsupported = (code: string, message: string, hint?: string) =>
   new AppError(415, code, message, hint)

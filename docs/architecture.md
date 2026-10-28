@@ -46,8 +46,8 @@ server/
   store/         project / evidence / atomic
   jobs/          queue / progress
 web/
-  views/         Upload / ParseProgress / EvidenceReview / Score / Report
-  components/    SourceViewer / EvidenceFieldRow / ConflictPicker / GateTable / ExplainPopover
+  views/         ProjectsView / ReviewView / StatusView(评分页与报告页待建)
+  components/    SourceViewer / EvidenceFieldRow / CandidateCard
 data/            项目数据(永不入库)
 docs/            本目录
 ```
@@ -93,9 +93,12 @@ GET    /api/jobs/:jobId                    → { job }
 GET    /api/jobs/:jobId/stream            SSE: { stage, fileId, page, total, pct }
 GET    /api/projects/:id/evidence         → evidence.json
 PATCH  /api/projects/:id/evidence/:key    { candidateId?, manualValue?, unit?, note?, status? }
+POST   /api/projects/:id/evidence/auto-confirm → { confirmed[], skipped[], policy }
+GET    /api/projects/:id/pages/:fileId    → FilePages(确认页做原文定位)
 POST   /api/projects/:id/score            → ScoreResult
 GET    /api/projects/:id/report?format=md|json
-GET    /api/files/:fileId/page/:n         → image/jpeg
+GET    /api/files/:fileId/page/:n?projectId= → image/jpeg
+GET    /api/meta/catalog                  → { version, fields[], autoConfirm }
 POST   /api/settings/apikey               { key } → { masked }
 GET    /api/meta/industries               → 基准库可选行业
 ```
