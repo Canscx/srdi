@@ -118,13 +118,26 @@ const deriveFormula = (def: IndicatorDef, ctx: EvalContext): Derived => {
   if (def.formula.guard) {
     const guard = parseExpr(def.formula.guard)
     const tri = evalTri(guard.ast, { ctx })
-    if (tri.v !== true) {
+    if (tri.v === null) {
+      return {
+        state: tri.pending.length > 0 ? 'pending' : 'missing',
+        basis: 'absent',
+        s: null,
+        raw: null,
+        flags: tri.flags,
+        benchmark: null,
+        quality: 'unknown',
+        refs: [...tri.missing, ...tri.pending],
+        trace
+      }
+    }
+    if (tri.v === false) {
       return {
         state: 'notApplicable',
         basis: 'notApplicable',
         s: 0,
         raw: null,
-        flags: [guardFlag(def.formula.guard), FLAG.GUARD_FAILED],
+        flags: Array.from(new Set([guardFlag(def.formula.guard), FLAG.GUARD_FAILED])),
         benchmark: null,
         quality: 'unknown',
         refs: [...tri.missing, ...tri.pending],

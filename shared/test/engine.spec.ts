@@ -144,3 +144,31 @@ describe('缺失字段的三口径展开', () => {
     expect(partial.missing.map((item) => item.indicatorId)).toContain('IND_10')
   })
 })
+
+describe('边界保护只管事实,不管缺证据', () => {
+  const { 'fin.netAssets': _assets, ...withoutAssets } = baseFields
+  const missingAssets = evaluate(buildModel(withoutAssets), rules)
+
+  it('守卫字段缺失记为缺证据,不得判为不适用', () => {
+    const roe = missingAssets.indicators.find((item) => item.id === 'IND_06')
+    expect(roe?.status).toBe('missing')
+    expect(roe?.basis).toBe('absent')
+    expect(roe?.flags).not.toContain('guard_failed')
+    expect(missingAssets.indicators.some((item) => item.status === 'notApplicable')).toBe(false)
+  })
+
+  it('守卫取值为假才判不适用并记 0 分', () => {
+    const negative = evaluate(
+      buildModel({
+        ...baseFields,
+        'fin.netAssets': entry({ 2025: -1000, 2024: -2000, 2023: -3000 })
+      }),
+      rules
+    )
+    const roe = negative.indicators.find((item) => item.id === 'IND_06')
+    expect(roe?.status).toBe('notApplicable')
+    expect(roe?.score).toBe(0)
+    expect(roe?.flags).toContain('negative_equity')
+    expect(roe?.flags).toContain('guard_failed')
+  })
+})
