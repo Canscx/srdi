@@ -4,17 +4,17 @@
 
 ## 接续点(新对话从这里开始)
 
-**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照 → 存储层 + 文件上传 + 魔数判型 → 解析链路(PDF 双通道 / DOCX / XLSX / 图片)+ 任务队列 → 四类 docType 抽取 + 五级校验 → 确认页 → 评分页。  
-**未开工** 报告导出 / 真实材料验收。
+**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照 → 存储层 + 文件上传 + 魔数判型 → 解析链路(PDF 双通道 / DOCX / XLSX / 图片)+ 任务队列 → 四类 docType 抽取 + 五级校验 → 确认页 → 评分页 → 报告导出(Markdown / PDF)。  
+**未开工** 真实材料验收。
 
-**下一步**:第二阶段第 10 步「报告导出 Markdown」。
+**下一步**:第二阶段收尾「真实材料验收」。
 
-- 报告只消费 `score-result.json` 与 `evidence.json`,不得二次计算分数;页面与文档里的数字全部来自 `ScoreResult`,格式化不改写数值
-- 双轨输出:主视图条件匹配度与材料完整度,次视图参考得分与三口径区间;顶部与结尾都要写「参考得分非官方口径」
-- 数字白名单 + 模板兜底:AI 只写建议段落,不碰任何数字;模板缺失时降级为纯规则文案
-- 不碰规则编辑器;`score-result.schema.json` 仍未定,等报告字段稳定后再写
+- 3 份真实材料、50 页规模:上传到出报告 ≤8 分钟,人工确认 ≤15 分钟,23 项中 ≥18 项自动带出处
+- 重点看 pdfjs 表格还原(止损点 70%)、跨页表格、扫描件视觉通道配额;报告 PDF 用真实数据再排一次版
+- 通过后补 `score-result.schema.json`,并把 `ReportModel` 一并纳入 schema
+- 不碰规则编辑器 / 小巨人规则包
 
-**评分页已收口**:`POST /api/projects/:id/score` + `GET` 读回,四态(excluded / missing / estimated / notApplicable)分列;雷达轴上限用重归一后的维度满分,不是名义维度权重。
+**报告导出已收口**:`GET /api/projects/:id/report?format=md|pdf|json`,同一个 `ReportModel` 两套渲染;数字全部来自 `score-result.json`,证据在打分后变动会在报告顶部标过期。
 
 **三条命令**
 
@@ -65,6 +65,13 @@
 - [x] 评分页双处声明「参考得分 · 非官方口径」;确认页顶部加「评分 →」入口,路由 `#/p/:id/score`
 - [x] 修确认页按年字段预览显示 `[object Object]`(`formatFieldValue` 增加年份字典分支)
 - [x] server 测试 83 条(新增 7 条评分:三家企业 HTTP 全链路与 golden 一致 / 结果落盘与读回 / 未打分返回空 / 缺证据走 missing / 行业未命中走 default / 规则元数据);shared 测试 109 条(新增 2 条守卫边界)
+- [x] 报告模型:`server/src/report/`(build / format / markdown / pdf / fonts),同一个 `ReportModel` 两套渲染;MD 与 PDF 顶部、结尾都写「参考得分非官方口径」,PDF 每页页脚再标一次
+- [x] `GET /api/projects/:id/report?format=md|pdf|json`:md/pdf 走 attachment + RFC 5987 中文文件名,json 出报告模型;未打分 409 `score_required`,非法 format 400
+- [x] 报告八节:结论摘要 / 材料完整度(40 字段四态 + 分组 + 缺失清单)/ 三口径与五维 / 六门槛逐条(含检查项)/ 23 项明细(按维度分表)/ 待补材料与排除项 / 口径与假设 / 材料清单
+- [x] 证据在打分后变动时,报告顶部标注「证据在打分之后有变动」并给出打分时间与当时确认数;报告仍用已保存的 `ScoreResult`,不偷算
+- [x] PDF:pdfkit + 系统中文字体,A4 自动分页、表格重复表头、页脚页码;找不到字体时 500 `report_font_missing` 并提示 `REPORT_FONT_PATH`
+- [x] 评分页顶部「导出 MD / 导出 PDF」;自检页 8/8
+- [x] server 测试 88 条(新增 5 条报告:MD 结构与 23 行明细 / json 模型 / 过期标注 / 未打分与非法格式 / PDF 魔数与中文可提取)
 
 ## 待办(按优先级)
 
@@ -75,7 +82,7 @@
 - [x] 四类 docType 抽取 + 五级校验
 - [x] 确认页(字段行 + 页图 bbox 对照 + 冲突二选一)
 - [x] 评分页(雷达 + 23 项表 + 门槛表 + 三口径)
-- [ ] 报告导出 Markdown
+- [x] 报告导出(Markdown + PDF 双格式)
 
 **收尾**
 
@@ -106,6 +113,9 @@
 - 雷达轴上限必须取维度内 `effectiveWeight` 之和,不能取 `dimension.weight`。排除项重归一后维度分会超过名义权重(专业化 15.93 > 15、成长性 15.93 > 15),按名义值设上限会把顶点裁到网格外
 - 守卫条件取值为 `null` 表示字段缺失,必须走 `missing`;只有 `false` 才是真正的「不适用」。改前空证据项目会出 11 项 `notApplicable`,把「没填」伪装成「不适用」
 - `evidence.company` 目前没有任何写入点(只有 fixture 带),行业代码实际来自 `company.industryCode` 的 confirmed 字段;评分接口两处都读,别只读其一会踩空
+- `pdfkit` 加载 TTC 字体必须传 family(`registerFont(name, path, family)`),Windows 优先 `simhei.ttf`;Linux 没有中文字体会直接 500,靠 `REPORT_FONT_PATH` 兜底
+- 报告 PDF 是 `application/pdf`,本机装了 IDM 时浏览器会把下载交给 IDM,无头浏览器与自动化看不到落盘文件。验收看服务端 200 + `%PDF-` 魔数 + pdfjs 文本提取,不要以下载目录判断成功
+- pdfkit 的表格必须在每行前 `ensure`,并且换页后重画表头;页脚要在 `bufferPages` 结束后用 `switchToPage` 统一画,提前画会被后续内容覆盖
 
 ## 决策记录
 
@@ -236,3 +246,18 @@
 - **2026-10-28 评分页四态分列,不用「没分」概括**  
   `excluded` / `missing` / `estimated` / `notApplicable` 各有独立徽标与筛选;缺失项在标记列显示「缺 N 字段」,不适用显示边界保护标记。  
   理由:用户看到 0 分与看到「材料没交」应采取的动作完全不同。
+- **2026-10-28 报告 MD 与 PDF 同源**  
+  先把 `score-result.json` + `evidence.json` + 规则元数据组装成 `ReportModel`,再由 `renderMarkdown` 与 `renderPdf` 各自渲染。  
+  理由:两套模板各写一遍必然漂移;同源后改一处口径两边同步,数字也只有一个来源。
+- **2026-10-28 PDF 用 pdfkit,不引无头 Chromium**  
+  备选是 Chrome/Edge `--print-to-pdf`(排版更省事),但它把浏览器变成运行时依赖,客户机器缺 Chrome 就导不出;pdfkit 纯 Node,失败只剩字体一种原因。  
+  代价:表格、分页、页脚都要手写;换来 200ms 出 4 页、73KB、中文可选可搜。
+- **2026-10-28 报告不接 AI**  
+  本期只做模板渲染,`docs/pipeline.md` 的数字白名单暂不启用。理由:模板已经能 100% 出报告,AI 润色属于增值项,先把可靠性底线立住。  
+  后续接 AI 时,也只让它写建议段落,数字仍从 `ScoreResult` 取。
+- **2026-10-28 报告读已保存的评分结果,并标过期**  
+  导出不重新打分:报告数字必须与用户上次看到的页面一致。证据在打分后变动时,报告顶部标「证据在打分之后有变动」,给出打分时间与当时确认字段数。  
+  理由:静默用新证据重算,会让同一份报告两次导出数字不同且无法解释。
+- **2026-10-28 PDF 提前到第二阶段**  
+  架构文档原把「报告 PDF」放在第三阶段;用户明确要 MD/PDF 二选一,故本期一并做完,文档已同步。  
+  仍然成立的部分:PDF 只做导出,不做在线预览与模板自定义。
