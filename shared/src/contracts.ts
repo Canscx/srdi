@@ -1,4 +1,4 @@
-import type { FieldEntry } from './scoring/types'
+import type { FieldEntry, ScoreResult } from './scoring/types'
 
 export interface RulesSummary {
   id: string
@@ -199,4 +199,56 @@ export interface AutoConfirmResponse {
   confirmed: string[]
   skipped: { key: string; reason: string }[]
   policy: AutoConfirmPolicy
+}
+
+export interface ScoreEvidenceStats {
+  total: number
+  confirmed: number
+  candidate: number
+  missing: number
+  rejected: number
+}
+
+export interface ScoreRecord {
+  schemaVersion: string
+  savedAt: string
+  rulesId: string
+  rulesVersion: string
+  benchmarksVersion?: string
+  evidence: ScoreEvidenceStats
+  result: ScoreResult
+}
+
+export interface ScoreResponse {
+  record: ScoreRecord | null
+}
+
+export interface RulesMetaIndicator {
+  id: string
+  code: number
+  name: string
+  unit?: string
+  dataClass: 'A' | 'B' | 'C'
+  share: number
+  scoringType: string
+  evidenceRefs: string[]
+  formula?: string
+  fallback?: { type: 'neutral' | 'exclude'; reason?: string }
+}
+
+export interface RulesMetaDimension {
+  id: string
+  name: string
+  weight: number
+  indicators: RulesMetaIndicator[]
+}
+
+export interface RulesMetaResponse {
+  rulesId: string
+  version: string
+  level: string
+  levelName?: string
+  passLine?: number
+  dimensions: RulesMetaDimension[]
+  assumptions: { id: string; text: string; impact: string }[]
 }

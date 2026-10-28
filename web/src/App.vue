@@ -3,12 +3,14 @@ import { computed } from 'vue'
 import { goto, useRoute } from '@/router'
 import ProjectsView from '@/views/ProjectsView.vue'
 import ReviewView from '@/views/ReviewView.vue'
+import ScoringView from '@/views/ScoringView.vue'
 import StatusView from '@/views/StatusView.vue'
 
 const route = useRoute()
 
 const view = computed(() => {
   if (route.value.name === 'review') return ReviewView
+  if (route.value.name === 'score') return ScoringView
   if (route.value.name === 'status') return StatusView
   return ProjectsView
 })

@@ -9,6 +9,8 @@ import type {
   JobProgressEvent,
   ProjectListResponse,
   ProjectMeta,
+  RulesMetaResponse,
+  ScoreResponse,
   UploadFileResponse
 } from '@srdi/shared'
 
@@ -61,6 +63,9 @@ export const api = {
   evidence: (projectId: string) =>
     request<EvidenceDoc>(`/api/projects/${projectId}/evidence`),
   catalog: () => request<CatalogResponse>('/api/meta/catalog'),
+  rules: () => request<RulesMetaResponse>('/api/meta/rules'),
+  score: (projectId: string) =>
+    request<ScoreResponse>(`/api/projects/${projectId}/score`, jsonInit('POST')),
   pages: (projectId: string, fileId: string) =>
     request<FilePages>(`/api/projects/${projectId}/pages/${fileId}`),
   patch: (projectId: string, key: string, body: EvidencePatchRequest) =>

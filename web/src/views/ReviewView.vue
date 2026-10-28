@@ -469,6 +469,9 @@ onBeforeUnmount(closeStream)
         >
           自动确认高置信度
         </el-button>
+        <el-button size="small" type="primary" @click="goto(`/p/${projectId}/score`)">
+          评分 →
+        </el-button>
       </div>
     </header>
 
