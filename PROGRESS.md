@@ -4,14 +4,14 @@
 
 ## 接续点(新对话从这里开始)
 
-**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照 → 存储层 + 文件上传 + 魔数判型 → 解析链路(PDF 双通道 / DOCX / XLSX / 图片)+ 任务队列 → 四类 docType 抽取 + 五级校验 → 确认页 → 评分页 → 报告导出(Markdown / PDF)。  
-**未开工** 真实材料验收。
+**已完成** 规则配置 → 三包脚手架 → 最小可运行服务 → 打分引擎 → 三家企业 golden 快照 → 存储层 + 文件上传 + 魔数判型 → 解析链路(PDF 双通道 / DOCX / XLSX / 图片)+ 任务队列 → 四类 docType 抽取 + 五级校验 → 确认页 → 评分页 → 报告导出(Markdown / PDF)→ 样本材料包 + 得分 Schema。  
+**未开工** 真实材料验收(需客户实件)。
 
 **下一步**:第二阶段收尾「真实材料验收」。
 
 - 3 份真实材料、50 页规模:上传到出报告 ≤8 分钟,人工确认 ≤15 分钟,23 项中 ≥18 项自动带出处
 - 重点看 pdfjs 表格还原(止损点 70%)、跨页表格、扫描件视觉通道配额;报告 PDF 用真实数据再排一次版
-- 通过后补 `score-result.schema.json`,并把 `ReportModel` 一并纳入 schema
+- 先用 `samples/` 两套虚构材料跑通链路(已实测:每家 5 份、8 页、解析 ≤1.1s);真实件到位后替换样本复测
 - 不碰规则编辑器 / 小巨人规则包
 
 **报告导出已收口**:`GET /api/projects/:id/report?format=md|pdf|json`,同一个 `ReportModel` 两套渲染;数字全部来自 `score-result.json`,证据在打分后变动会在报告顶部标过期。
@@ -72,6 +72,10 @@
 - [x] PDF:pdfkit + 系统中文字体,A4 自动分页、表格重复表头、页脚页码;找不到字体时 500 `report_font_missing` 并提示 `REPORT_FONT_PATH`
 - [x] 评分页顶部「导出 MD / 导出 PDF」;自检页 8/8
 - [x] server 测试 88 条(新增 5 条报告:MD 结构与 23 行明细 / json 模型 / 过期标注 / 未打分与非法格式 / PDF 魔数与中文可提取)
+- [x] `shared/schema/score-result.schema.json`:锁 `ScoreResult` 全结构(四态、门槛、三口径、benchmark、trace),三家企业结果全部通过,越界分数与缺字段被拒;shared 测试 114 条
+- [x] 样本材料包:`samples/firm-a-nanjing` 与 `samples/firm-b-suzhou` 各 5 份(PDF / DOCX / XLSX),共 8 页;由 fixtures 反向生成,与 golden 同源;`pnpm samples` 可重生成
+- [x] 样本导入验收:两家各 5 份文件全部上传、判型正确(audit / application / patent / cert / standard)、解析 ≤1.1s;未配 Key 时抽取作业明确报「尚未配置模型 API Key」
+- [x] 新建项目支持「统计截止年」(向前取三年),避免跨年后期间与材料错位
 
 ## 待办(按优先级)
 
@@ -87,7 +91,7 @@
 **收尾**
 
 - [ ] 真实材料验收(50 页 ≤8 分钟 / 确认 ≤15 分钟 / ≥18 项带出处)
-- [ ] `score-result.schema.json`(引擎出 TS 类型后再定)
+- [x] `score-result.schema.json`(引擎 TS 类型已稳定,三家企业结果通过校验)
 
 ## 已知坑
 
@@ -116,6 +120,8 @@
 - `pdfkit` 加载 TTC 字体必须传 family(`registerFont(name, path, family)`),Windows 优先 `simhei.ttf`;Linux 没有中文字体会直接 500,靠 `REPORT_FONT_PATH` 兜底
 - 报告 PDF 是 `application/pdf`,本机装了 IDM 时浏览器会把下载交给 IDM,无头浏览器与自动化看不到落盘文件。验收看服务端 200 + `%PDF-` 魔数 + pdfjs 文本提取,不要以下载目录判断成功
 - pdfkit 的表格必须在每行前 `ensure`,并且换页后重画表头;页脚要在 `bufferPages` 结束后用 `switchToPage` 统一画,提前画会被后续内容覆盖
+- 生成样本 PDF 时,行数组里不要再放表头行 —— `pdfTable` 已经统一画表头,重复传入会让表头出现两次
+- 未配置 `AI_API_KEY` 时,`POST /extract` 的作业会失败并返回「尚未配置模型 API Key」,服务本身不崩;上传与解析仍可用,不要误判为链路坏了
 
 ## 决策记录
 
@@ -261,3 +267,11 @@
 - **2026-10-28 PDF 提前到第二阶段**  
   架构文档原把「报告 PDF」放在第三阶段;用户明确要 MD/PDF 二选一,故本期一并做完,文档已同步。  
   仍然成立的部分:PDF 只做导出,不做在线预览与模板自定义。
+- **2026-10-28 样本包由 fixtures 反向生成,不手写第二份数据**  
+  `server/scripts/generate-samples.ts` 读 `firm-a/b.json` 渲染 PDF / DOCX / XLSX;改 fixture 后 `pnpm samples` 一键同步。  
+  理由:样本一旦与 golden 各写一份,数字迟早对不上;反向生成让「预期得分」天然可信。
+- **2026-10-28 样本证书保留枚举键**  
+  证书正文写成「省内前三（province_top3）」,让抽取结果直接对齐证据枚举。真实材料不写 key,这是测试样本的额外约定,已写进 `samples/README.md`。
+- **2026-10-28 新建项目必须显式带统计截止年**  
+  原先前端只传企业名,期间由服务端按「当前年−1」推;跨年后样本与材料年份会对不上,且用户无法改。  
+  改为下拉选截止年,前端固定发 `y0=截止年, y1−1, y2−2`,服务端仍保留校验。

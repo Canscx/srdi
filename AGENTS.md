@@ -1,7 +1,7 @@
 # AGENTS.md
 
 专精特新申报自评打分系统。上传企业材料 → 抽取证据 → 规则引擎打分 → 输出报告。
-当前 `v0.2.0`:第二阶段进行中(规则配置 / 脚手架 / 打分引擎 / 存储与上传 / 解析链路 / AI 抽取 / 确认页 / 评分页 / 报告导出已完成,真实材料验收未开始)。
+当前 `v0.2.0`:第二阶段进行中(规则配置 / 脚手架 / 打分引擎 / 存储与上传 / 解析链路 / AI 抽取 / 确认页 / 评分页 / 报告导出 / 样本材料包已完成,真实材料验收未开始)。
 
 ## 技术栈(已定,勿改)
 
@@ -33,3 +33,4 @@ pnpm workspaces:`shared` / `server` / `web`。
 
 `docs/architecture.md` 架构与接口 · `docs/scoring.md` 打分数学 · `docs/pipeline.md` 解析与 AI 契约
 `config/rules/` 23 项指标参数 · `config/catalog/` 40 字段 · `config/benchmarks/` 行业基准
+`samples/` 两套虚构企业材料 · `server/scripts/generate-samples.ts` 样本生成器(`pnpm samples`)
