@@ -9,11 +9,13 @@
 
 **下一步**:第二阶段第 9 步「评分页(雷达 + 23 项表 + 门槛表 + 三口径)」。
 
-- 输入`evidence.json`(只读 `status === 'confirmed'` 的字段)+ `config/rules/rules.srdi.v1.0.0.json` + `config/benchmarks/*`;打分是 `shared/scoring` 的纯函数 `evaluate`,后端只负责组装 model 与落 `score-result.json`
+- 输入`evidence.json`(只读 `status === 'confirmed'` 的字段)+ `config/rules/rules.srdi.v1.0.0.json` + `config/benchmarks/*`;打分是 `shared/scoring` 的纯函数 `evaluate(model, rules)`,后端只负责组装 model 与落 `score-result.json`
 - 新增 `POST /api/projects/:id/score`:读证据 → 组装 `ScoringModel` → `evaluate` → 写 `score-result.json` 并返回;行业代码取 `evidence.company.industryCode`,缺失时走 `_default` 并标估算
-- 页面四块:五维雷达 / 23 项明细表(状态、raw、score、权重、有效权重、标记)/ 六门槛判词表 / 三口径总分与区间
-- 必须显示的四类信息:`excluded`(如 IND_18 被排除)、`missing`(字段缺失)、`estimated`(估算)、`notApplicable`(净资产 ≤ 0 记 0)。四态不可混为"没分"
+- **两个缺口要先补**:`server/src/config/` 目前只有 `loadRulesSummary()` 与 `loadBenchmarksVersion()`,需新增 `loadRules(): RulesDoc` 与 `loadBenchmarks(): BenchmarksDoc`;`web` 还没装 `echarts`,先加依赖再画雷达
+- 页面四块:五维雷达 / 23 项明细表(状态、raw、score、权重、有效权重、标记)/ 六门槛判词表 / 三口径总分与区间;入口挂在确认页顶部,路由 `#/p/:id/score`
+- 必须显示的四类信息:`excluded`(如 IND_18 被排除、权重已重归一化到 100)、`missing`(字段缺失)、`estimated`(估算)、`notApplicable`(净资产 ≤ 0 记 0)。四态不可混为"没分";`indicator.contribution` 已是三口径加权分,前端不要再乘权重
 - 页面顶部与底部都要写明「参考得分非官方口径」;不得出现任何"官方评分"措辞
+- 验收:`pnpm validate` 全绿;三家企业 fixtures 走 HTTP 全链路得分与 golden 快照一致(明显通过 84.81 / 临界 46.92–57.76 / 不通过 23.21);补 ≥3 条 server 测试(评分接口、缺证据走 missing、行业基准缺失走 default)
 - 不碰报告导出 / AI 建议 / 规则编辑器
 
 **三条命令**
