@@ -1,0 +1,24 @@
+import { createApp } from './app'
+import { WEB_DIST } from './paths'
+
+const port = Number(process.env.PORT ?? 8787)
+const app = createApp({ webDist: WEB_DIST, port })
+
+const server = app.listen(port, () => {
+  console.log('')
+  console.log('  专精特新申报自评打分系统 · server')
+  console.log(`  本地地址   http://localhost:${port}`)
+  console.log(`  健康检查   http://localhost:${port}/api/health`)
+  console.log(`  SSE 通道   http://localhost:${port}/api/jobs/demo/stream`)
+  console.log(`  静态目录   ${WEB_DIST}`)
+  console.log(`  运行模式   ${process.env.NODE_ENV ?? 'development'}`)
+  console.log('')
+})
+
+const shutdown = (signal: string) => {
+  console.log(`收到 ${signal},正在关闭`)
+  server.close(() => process.exit(0))
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'))
+process.on('SIGTERM', () => shutdown('SIGTERM'))

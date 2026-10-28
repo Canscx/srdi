@@ -1,14 +1,23 @@
 {
   "name": "srdi-scorer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "专精特新申报自评打分系统",
+  "engines": {
+    "node": ">=20.11"
+  },
   "scripts": {
+    "dev": "pnpm --parallel --filter @srdi/server --filter @srdi/web dev",
+    "build": "pnpm --filter @srdi/web build",
+    "start": "pnpm build && pnpm --filter @srdi/server start",
+    "start:server": "pnpm --filter @srdi/server start",
+    "typecheck": "pnpm -r typecheck",
     "validate": "node scripts/validate-config.mjs"
   },
   "devDependencies": {
     "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1"
+    "ajv-formats": "^3.0.1",
+    "typescript": "^5.7.3"
   }
 }

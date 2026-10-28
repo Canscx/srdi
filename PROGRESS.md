@@ -4,31 +4,31 @@
 
 ## 当前状态
 
-`v0.1.0` 开发中 · 设计文档与规则配置阶段 · 最后更新 2026-10-28
+`v0.2.0` 开发中 · 第二阶段 MVP · 最后更新 2026-10-28
 
 ## 已完成
 
-- [x] 项目骨架:`package.json` / `.gitignore` / `.env.example` / README / PROGRESS
-- [x] `rules.srdi.v1.0.0.json`:六项门槛 + 23 项指标
-- [x] `field-catalog.v1.json`:40 个字段含表头别名
-- [x] `industry-benchmarks.v1.2.0.json`:14 个行业 + default
-- [x] 五份 Schema:rules / field-catalog / benchmarks / evidence
-- [x] 三篇文档:architecture / scoring / pipeline
+- [x] 第一阶段全部:规则包 / 40 字段目录 / 14 行业基准 / 4 份 Schema / 三篇文档(已 tag `v0.1.0`)
+- [x] pnpm workspaces:shared / server / web 三包 + 统一 TS 路径
+- [x] server 最小可运行:静态托管 web/dist + SPA 回退 + `/api/health` + SSE 通道
+- [x] web 自检页:health 明细 + SSE 事件流 + 阶段路线
+- [x] 校验基建:`pnpm validate`(配置)+ `pnpm typecheck`(三包)+ `scripts/smoke-web.mjs`(CDP 冒烟)
 
 ## 待办(按优先级)
 
-**第一阶段收尾**
-- [ ] 首次提交
-- [ ] 打 tag `v0.1.0`
-
 **第二阶段 MVP**
-- [ ] pnpm workspaces + TS 脚手架
-- [ ] `shared/scoring` 23 项打分器 + 6 门槛 + golden test
-- [ ] PDF 双通道 / DOCX / XLSX 解析
-- [ ] 四类 docType 抽取
+- [ ] `shared/scoring` 23 项打分器 + 6 门槛 + 三口径
+- [ ] 三家虚构企业 fixtures + golden test
+- [ ] 存储层 + 文件上传 + 魔数判型
+- [ ] PDF 双通道 / DOCX / XLSX 解析 + 任务队列
+- [ ] 四类 docType 抽取 + 五级校验
 - [ ] 确认页(字段行 + 页图 bbox 对照 + 冲突二选一)
 - [ ] 评分页(雷达 + 23 项表 + 门槛表 + 三口径)
 - [ ] 报告导出 Markdown
+
+**收尾**
+- [ ] 真实材料验收(50 页 ≤8 分钟 / 确认 ≤15 分钟 / ≥18 项带出处)
+- [ ] `score-result.schema.json`(引擎出 TS 类型后再定)
 
 ## 已知坑
 
@@ -36,6 +36,9 @@
 - 环境变量禁用 `VITE_` 前缀,否则会被打进前端 bundle 等同公开密钥
 - 模型名用 `deepseek-flash`;旧名 `deepseek-v4-flash` / `deepseek-v4-flash-vision-exp` 已下线并路由
 - 混合型 PDF(文字页与扫描页混排)必须页级判定,不能文件级一刀切
+- pnpm 11 不再读 `package.json` 的 `pnpm` 字段,构建脚本白名单写进根 `pnpm-workspace.yaml` 的 `allowBuilds`
+- 本机 5173 被其他项目占用,dev 端口固定 5180,生产 8787
+- `jsep` 对 `count(x where ...)` **不报错但错解**(把 where 当第二个实参),必须注册 `where` 运算符并做 AST 校验
 
 ## 决策记录
 
@@ -73,3 +76,10 @@
 
 - **2026-10-28 Git 采用主干开发 + tag 标里程碑**
   单人项目不开常规分支。仅在破坏性重构、需冻结演示版、试不确定方案时开分支。
+
+- **2026-10-28 shared 以 TS 源码直供,不预编译**
+  `main`/`exports` 指向 `src/index.ts`,server 用 tsx、web 用 vite alias 直接消费。
+  理由:单人项目免去 watch 编译链;代价是后续若发 npm 包需补 build 步骤。
+
+- **2026-10-28 dev 端口改用 5180**
+  本机 5173 被其他项目占用,`strictPort` 会让 `pnpm dev` 直接失败。生产端口仍为 8787。

@@ -1,0 +1,49 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: #f4f6fa;
+  color: #1f2937;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(920px 460px at 10% -10%, rgba(37, 99, 235, 0.1), transparent 62%),
+    radial-gradient(780px 400px at 94% -4%, rgba(14, 165, 233, 0.08), transparent 60%);
+}
+
+h1,
+h2,
+h3,
+p,
+ol,
+ul {
+  margin: 0;
+}
+
+code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: #eef2f7;
+  font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  font-size: 12px;
+}
