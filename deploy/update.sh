@@ -12,6 +12,9 @@ pnpm install
 echo "==> 构建前端"
 pnpm build
 
+echo "==> 字体自检"
+pnpm check:font || echo "字体自检未通过:PDF 导出可能失败,按上面列出的候选位置补字体后再重启"
+
 echo "==> 重启服务"
 if command -v pm2 > /dev/null 2>&1; then
   pm2 restart srdi

@@ -182,8 +182,11 @@ cd /www/wwwroot/srdi
 git pull
 pnpm install
 pnpm build
+pnpm check:font
 pm2 restart srdi
 ```
+
+`pnpm check:font` 会验证 PDF 中文字体是否仍可用;老服务器升级到本版本时必须跑 `pnpm install`,字体自省新增了 `fontkit` 依赖。
 
 `data/` 不在版本库里,更新不会覆盖数据。**但删代码目录重传会** —— 重传前先备份 data。
 
