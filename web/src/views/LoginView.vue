@@ -1,14 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api, errorText } from '@/api'
+import { clearSavedLogin, loadSavedLogin, saveSavedLogin } from '@/savedLogin'
 
 const emit = defineEmits<{ done: [] }>()
 
 const username = ref('admin')
 const password = ref('')
+const remember = ref(false)
 const error = ref('')
 const busy = ref(false)
+
+onMounted(() => {
+  const saved = loadSavedLogin()
+  if (!saved) return
+  username.value = saved.username
+  password.value = saved.password
+  remember.value = true
+})
+
+watch(remember, (value) => {
+  if (!value) clearSavedLogin()
+})
 
 const submit = async () => {
   if (busy.value) return
@@ -20,6 +34,13 @@ const submit = async () => {
   error.value = ''
   try {
     await api.login(username.value.trim(), password.value)
+    if (remember.value) {
+      if (!saveSavedLogin(username.value.trim(), password.value)) {
+        ElMessage.warning('浏览器禁用了本地存储，本次不会记住密码')
+      }
+    } else {
+      clearSavedLogin()
+    }
     ElMessage.success('登录成功')
     emit('done')
   } catch (err) {
@@ -37,11 +58,11 @@ const submit = async () => {
       <h1>专精特新申报自评打分系统</h1>
       <p class="sub">上传材料 · 抽取证据 · 人工确认 · 参考打分</p>
 
-      <label>
+      <label class="field">
         <span>账号</span>
         <el-input v-model="username" autocomplete="username" placeholder="账号" />
       </label>
-      <label>
+      <label class="field">
         <span>密码</span>
         <el-input
           v-model="password"
@@ -51,6 +72,11 @@ const submit = async () => {
           show-password
         />
       </label>
+
+      <div class="remember">
+        <el-checkbox v-model="remember">记住密码</el-checkbox>
+        <span>仅存本机浏览器</span>
+      </div>
 
       <p v-if="error" class="err">{{ error }}</p>
 
@@ -112,7 +138,7 @@ h1 {
   color: #8a94a6;
 }
 
-label {
+.field {
   width: 100%;
   margin-bottom: 14px;
   display: flex;
@@ -120,7 +146,7 @@ label {
   gap: 6px;
 }
 
-label span {
+.field span {
   font-size: 12.5px;
   color: #5b6474;
   font-weight: 500;
@@ -130,6 +156,24 @@ label span {
   width: 100%;
   margin-top: 8px;
   letter-spacing: 6px;
+}
+
+.remember {
+  width: 100%;
+  margin: -2px 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.remember :deep(.el-checkbox__label) {
+  font-size: 12.5px;
+  color: #5b6474;
+}
+
+.remember span {
+  font-size: 11px;
+  color: #a3adbb;
 }
 
 .err {
