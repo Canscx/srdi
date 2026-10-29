@@ -120,6 +120,7 @@
 - 守卫条件取值为 `null` 表示字段缺失,必须走 `missing`;只有 `false` 才是真正的「不适用」。改前空证据项目会出 11 项 `notApplicable`,把「没填」伪装成「不适用」
 - `evidence.company` 目前没有任何写入点(只有 fixture 带),行业代码实际来自 `company.industryCode` 的 confirmed 字段;评分接口两处都读,别只读其一会踩空
 - `pdfkit` 加载 TTC 字体必须传 family(`registerFont(name, path, family)`),Windows 优先 `simhei.ttf`;Linux 没有中文字体会直接 500,靠 `REPORT_FONT_PATH` 兜底
+- `pdfkit` 无法嵌入 CFF 轮廓字体,报 "Not a supported font format or standard PDF font" —— Debian 的 fonts-noto-cjk 与 OpenCloudOS 的 google-noto-cjk 全系是 CFF,装了也用不了;文泉驿(wqy-zenhei)与 Windows 的 simhei.ttf 是 TrueType 可用。解法:dnf 装 wqy-zenhei-fonts 后软链到 `/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc`(fonts.ts 已有此候选),或上传 simhei.ttf 并设 `REPORT_FONT_PATH`
 - 报告 PDF 是 `application/pdf`,本机装了 IDM 时浏览器会把下载交给 IDM,无头浏览器与自动化看不到落盘文件。验收看服务端 200 + `%PDF-` 魔数 + pdfjs 文本提取,不要以下载目录判断成功
 - pdfkit 的表格必须在每行前 `ensure`,并且换页后重画表头;页脚要在 `bufferPages` 结束后用 `switchToPage` 统一画,提前画会被后续内容覆盖
 - 生成样本 PDF 时,行数组里不要再放表头行 —— `pdfTable` 已经统一画表头,重复传入会让表头出现两次

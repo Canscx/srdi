@@ -181,7 +181,8 @@ pm2 logs srdi --lines 200
 | 页面白屏 / 静态资源 404 | 没跑 `pnpm build` | 跑一次构建 |
 | 上传 PDF 报 413 | nginx 默认 1MB | 配 `client_max_body_size 60m` |
 | 解析进度条不动 | SSE 被缓冲 | 配 `proxy_buffering off` |
-| 导出 PDF 报 500 | 服务器无中文字体 | `apt install fonts-noto-cjk` |
+| 导出 PDF 报 "Not a supported font format" | 装的是 CFF 轮廓字体(Noto CJK 全系都是) | 换 TrueType 字体:`dnf install -y wqy-zenhei-fonts` 后软链到 `/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc`,或上传 `simhei.ttf` 并设 `REPORT_FONT_PATH` |
+| 导出 PDF 报 500 | 服务器无中文字体 | `apt install fonts-noto-cjk` 仅适用于 Debian;RHEL/OpenCloudOS 直接用上面的 TrueType 方案 |
 | 登录页之后白屏 | 用了面板「加密访问」 | 删掉它,反代用 `deploy/nginx-site.conf` |
 | 一直停在登录页 | 密码输错或 Cookie 被拦 | 确认 `AUTH_PASSWORD`,清浏览器 Cookie 重试 |
 | 任务进度错乱 / 文件损坏 | 开了多实例 | 实例数改回 1 |
