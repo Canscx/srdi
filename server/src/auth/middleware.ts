@@ -3,7 +3,7 @@ import type { AuthService } from './session'
 import { parseCookies } from './session'
 import { SESSION_COOKIE } from '../routes/auth'
 
-const PUBLIC_PATHS = new Set(['/auth/login', '/auth/logout', '/auth/status'])
+const PUBLIC_PATHS = new Set(['/auth/login', '/auth/logout', '/auth/status', '/health'])
 
 export const requireSession =
   (service: AuthService) => (req: Request, res: Response, next: NextFunction) => {

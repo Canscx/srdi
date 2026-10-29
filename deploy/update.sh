@@ -13,7 +13,11 @@ echo "==> 构建前端"
 pnpm build
 
 echo "==> 重启服务"
-pm2 restart srdi
+if command -v pm2 > /dev/null 2>&1; then
+  pm2 restart srdi
+else
+  echo "命令行没有 pm2,请在宝塔面板的 Node 项目里点击【重启】"
+fi
 
 sleep 3
 
@@ -22,8 +26,5 @@ if curl -sf http://127.0.0.1:8787/api/health > /dev/null; then
   echo "==> 部署完成,健康检查通过"
 else
   echo ""
-  echo "==> 健康检查未通过,执行 pm2 logs srdi 查看原因"
-  exit 1
+  echo "==> 健康检查未通过:若刚在面板点了重启,等几秒重试 curl http://127.0.0.1:8787/api/health"
 fi
-
-pm2 status srdi
