@@ -258,18 +258,38 @@ const recalc = async () => {
   }
 }
 
-const exportReport = (format: 'md' | 'pdf') => {
+const exportReport = async (format: 'md' | 'pdf') => {
   if (!record.value) {
     ElMessage.warning('先生成参考得分')
     return
   }
-  const link = document.createElement('a')
-  link.href = api.reportUrl(projectId.value, format)
-  link.download = ''
-  link.rel = 'noopener'
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
+  try {
+    const response = await fetch(api.reportUrl(projectId.value, format))
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as { message?: string } | null
+      throw new Error(body?.message ?? `导出失败（HTTP ${response.status}）`)
+    }
+    const blob = await response.blob()
+    const disposition = response.headers.get('content-disposition') ?? ''
+    const star = /filename\*=UTF-8''([^;]+)/i.exec(disposition)
+    const plain = /filename="([^"]+)"/i.exec(disposition)
+    const filename = star
+      ? decodeURIComponent(star[1])
+      : plain
+        ? plain[1]
+        : `自评报告.${format}`
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.rel = 'noopener'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    ElMessage.error(errorText(err))
+  }
 }
 
 onMounted(bootstrap)
