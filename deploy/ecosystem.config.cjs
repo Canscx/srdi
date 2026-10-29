@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'srdi',
-      script: 'node_modules/.bin/tsx',
+      script: 'server/node_modules/tsx/dist/cli.mjs',
       args: 'server/src/index.ts',
       cwd: '/www/wwwroot/srdi',
       instances: 1,
