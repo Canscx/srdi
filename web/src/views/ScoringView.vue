@@ -21,6 +21,7 @@ import {
   formatScoreRate
 } from '@/format'
 import { goto, useRoute } from '@/router'
+import RenameProjectDialog from '@/components/RenameProjectDialog.vue'
 import ScoreRadar from '@/components/ScoreRadar.vue'
 
 type StatusFilter = 'all' | 'scored' | 'estimated' | 'missing' | 'notApplicable' | 'excluded'
@@ -38,6 +39,7 @@ const filter = ref<StatusFilter>('all')
 const dimFilter = ref('all')
 const openRows = ref<string[]>([])
 const openGates = ref<string[]>([])
+const renameOpen = ref(false)
 
 const result = computed(() => record.value?.result ?? null)
 
@@ -222,6 +224,10 @@ const toggleGate = (id: string) => {
     : [...openGates.value, id]
 }
 
+const onRenamed = (name: string) => {
+  if (project.value) project.value = { ...project.value, name }
+}
+
 const bootstrap = async () => {
   if (!projectId.value) {
     goto('/projects')
@@ -301,6 +307,7 @@ onMounted(bootstrap)
       <div class="identity">
         <el-button text size="small" @click="goto(`/p/${projectId}/review`)">← 确认页</el-button>
         <h2>{{ project?.name ?? '加载中…' }}</h2>
+        <el-button v-if="project" text size="small" @click="renameOpen = true">重命名</el-button>
         <span v-if="periodText" class="period">{{ periodText }}</span>
         <span v-if="result" class="industry">{{ industryText }}</span>
       </div>
@@ -590,9 +597,15 @@ onMounted(bootstrap)
     </template>
 
     <el-empty v-else-if="!loading" description="尚无评分结果" :image-size="80" />
+
+    <RenameProjectDialog
+      v-model:visible="renameOpen"
+      :project-id="projectId"
+      :name="project?.name ?? ''"
+      @renamed="onRenamed"
+    />
   </section>
 </template>
-
 <style scoped>
 .score {
   display: flex;

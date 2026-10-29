@@ -4,12 +4,15 @@ import type { ProjectSummary } from '@srdi/shared'
 import { ElMessage } from 'element-plus'
 import { api, errorText } from '@/api'
 import { goto } from '@/router'
+import RenameProjectDialog from '@/components/RenameProjectDialog.vue'
 
 const projects = ref<ProjectSummary[]>([])
 const loading = ref(true)
 const error = ref('')
 const creating = ref(false)
 const name = ref('')
+const renameOpen = ref(false)
+const renameTarget = ref<ProjectSummary | null>(null)
 const currentYear = new Date().getFullYear()
 const endYear = ref(currentYear - 1)
 const yearOptions = Array.from({ length: 6 }, (_, index) => currentYear - 1 - index)
@@ -49,6 +52,15 @@ const create = async () => {
   }
 }
 
+const openRename = (project: ProjectSummary) => {
+  renameTarget.value = project
+  renameOpen.value = true
+}
+
+const onRenamed = () => {
+  void load()
+}
+
 onMounted(load)
 </script>
 
@@ -80,11 +92,15 @@ onMounted(load)
     </header>
 
     <div v-loading="loading" class="list">
-      <button
+      <div
         v-for="project in projects"
         :key="project.projectId"
         class="project"
+        role="button"
+        tabindex="0"
         @click="goto(`/p/${project.projectId}/review`)"
+        @keydown.enter="goto(`/p/${project.projectId}/review`)"
+        @keydown.space.prevent="goto(`/p/${project.projectId}/review`)"
       >
         <span class="title">{{ project.name }}</span>
         <span class="meta">
@@ -94,9 +110,19 @@ onMounted(load)
         </span>
         <span class="foot">
           更新于 {{ new Date(project.updatedAt).toLocaleString('zh-CN', { hour12: false }) }}
-          <b>进入确认 →</b>
+          <span class="ops">
+            <button
+              class="rename"
+              @click.stop="openRename(project)"
+              @keydown.enter.stop
+              @keydown.space.stop
+            >
+              重命名
+            </button>
+            <b>进入确认 →</b>
+          </span>
         </span>
-      </button>
+      </div>
 
       <el-empty
         v-if="!loading && projects.length === 0"
@@ -104,6 +130,13 @@ onMounted(load)
         :image-size="88"
       />
     </div>
+
+    <RenameProjectDialog
+      v-model:visible="renameOpen"
+      :project-id="renameTarget?.projectId ?? ''"
+      :name="renameTarget?.name ?? ''"
+      @renamed="onRenamed"
+    />
   </section>
 </template>
 
@@ -168,6 +201,11 @@ h2 {
   transform: translateY(-1px);
 }
 
+.project:focus-visible {
+  outline: 2px solid #bcd4fb;
+  outline-offset: 2px;
+}
+
 .title {
   font-size: 14.5px;
   font-weight: 600;
@@ -201,5 +239,25 @@ h2 {
 .foot b {
   color: #2563eb;
   font-weight: 600;
+}
+
+.ops {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rename {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.rename:hover {
+  color: #2563eb;
+  text-decoration: underline;
 }
 </style>

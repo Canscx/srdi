@@ -14,6 +14,7 @@ import type {
   JobProgressEvent,
   ProjectListResponse,
   ProjectMeta,
+  RenameProjectRequest,
   RulesMetaResponse,
   ScoreResponse,
   UploadFileResponse
@@ -69,6 +70,8 @@ export const api = {
   project: (projectId: string) => request<CreateProjectResponse>(`/api/projects/${projectId}`),
   createProject: (input: CreateProjectRequest = {}) =>
     request<CreateProjectResponse>('/api/projects', jsonInit('POST', input)),
+  renameProject: (projectId: string, input: RenameProjectRequest) =>
+    request<CreateProjectResponse>(`/api/projects/${projectId}`, jsonInit('PATCH', input)),
   evidence: (projectId: string) =>
     request<EvidenceDoc>(`/api/projects/${projectId}/evidence`),
   catalog: () => request<CatalogResponse>('/api/meta/catalog'),

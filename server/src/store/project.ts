@@ -48,10 +48,21 @@ const normalizePeriod = (input?: Partial<PeriodWindow>): PeriodWindow => {
   return period
 }
 
-const normalizeName = (input?: string) => {
-  const name = (input ?? '').trim() || `未命名项目 ${new Date().toISOString().slice(0, 10)}`
-  if (name.length > 80) throw badRequest('invalid_name', '项目名称不超过 80 个字符')
+const NAME_LIMIT = 80
+
+const assertName = (value: string) => {
+  const name = value.trim()
+  if (name.length === 0) throw badRequest('invalid_name', '项目名称不能为空')
+  if (name.length > NAME_LIMIT) {
+    throw badRequest('invalid_name', `项目名称不超过 ${NAME_LIMIT} 个字符`)
+  }
   return name
+}
+
+const normalizeName = (input?: string) => {
+  const name = (input ?? '').trim()
+  if (name.length === 0) return `未命名项目 ${new Date().toISOString().slice(0, 10)}`
+  return assertName(name)
 }
 
 export interface AddFileResult {
@@ -69,6 +80,7 @@ export interface ProjectStore {
   list: () => Promise<ProjectSummary[]>
   save: (meta: ProjectMeta) => Promise<void>
   update: <T>(projectId: string, mutate: (meta: ProjectMeta) => T | Promise<T>) => Promise<T>
+  rename: (projectId: string, name: string) => Promise<ProjectMeta>
   addFile: (projectId: string, file: ProjectFile) => Promise<AddFileResult>
   removeFile: (projectId: string, fileId: string) => Promise<ProjectFile>
   assertPageBudget: (projectId: string, incoming: number, excludeFileId?: string) => Promise<void>
@@ -159,6 +171,12 @@ export const createProjectStore = (dataDir: string, lock: LockTable): ProjectSto
       return result
     })
 
+  const rename = (projectId: string, name: string): Promise<ProjectMeta> =>
+    update(projectId, (meta) => {
+      meta.name = assertName(name)
+      return meta
+    })
+
   const addFile = async (projectId: string, file: ProjectFile): Promise<AddFileResult> =>
     update(projectId, (meta) => {
       const existing = meta.files.find((item) => item.sha256 === file.sha256)
@@ -204,6 +222,7 @@ export const createProjectStore = (dataDir: string, lock: LockTable): ProjectSto
     list,
     save,
     update,
+    rename,
     addFile,
     removeFile,
     assertPageBudget

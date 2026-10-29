@@ -49,6 +49,18 @@ const parseCreate = (body: unknown): CreateProjectRequest => {
   return input
 }
 
+const parseRename = (body: unknown): string => {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    throw badRequest('invalid_body', '请求体必须是 JSON 对象')
+  }
+  const raw = body as Record<string, unknown>
+  for (const key of Object.keys(raw)) {
+    if (key !== 'name') throw badRequest('invalid_body', `不认识的字段 ${key}`)
+  }
+  if (typeof raw.name !== 'string') throw badRequest('invalid_name', '项目名称必须是字符串')
+  return raw.name
+}
+
 export const projectsRouter = (store: AppStore) => {
   const router = Router()
   const benchmarksVersion = loadBenchmarksVersion()
@@ -69,6 +81,13 @@ export const projectsRouter = (store: AppStore) => {
 
   router.get('/projects/:projectId', async (req, res) => {
     const project = await store.projects.get(req.params.projectId)
+    const payload: CreateProjectResponse = { projectId: project.projectId, project }
+    res.json(payload)
+  })
+
+  router.patch('/projects/:projectId', async (req, res) => {
+    const name = parseRename(req.body)
+    const project = await store.projects.rename(req.params.projectId, name)
     const payload: CreateProjectResponse = { projectId: project.projectId, project }
     res.json(payload)
   })

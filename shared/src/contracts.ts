@@ -111,6 +111,10 @@ export interface CreateProjectRequest {
   period?: Partial<PeriodWindow>
 }
 
+export interface RenameProjectRequest {
+  name: string
+}
+
 export interface ProjectSummary {
   projectId: string
   name: string

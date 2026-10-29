@@ -98,6 +98,38 @@ describe('项目仓库', () => {
   })
 })
 
+describe('项目重命名', () => {
+  it('空名与超长都拒绝', async () => {
+    await withTempDir(async (dir) => {
+      const store = createStore(dir)
+      const project = await store.projects.create({ name: '校验' })
+
+      await expect(store.projects.rename(project.projectId, '   ')).rejects.toMatchObject({
+        code: 'invalid_name'
+      })
+      await expect(
+        store.projects.rename(project.projectId, 'a'.repeat(81))
+      ).rejects.toMatchObject({ code: 'invalid_name' })
+    })
+  })
+
+  it('改名去空格、保留创建时间并落盘', async () => {
+    await withTempDir(async (dir) => {
+      const store = createStore(dir)
+      const project = await store.projects.create({ name: '旧名' })
+      const renamed = await store.projects.rename(project.projectId, '  新名字  ')
+
+      expect(renamed.name).toBe('新名字')
+      expect(renamed.createdAt).toBe(project.createdAt)
+
+      const onDisk = JSON.parse(
+        readFileSync(path.join(dir, 'projects', project.projectId, 'project.json'), 'utf8')
+      ) as { name: string }
+      expect(onDisk.name).toBe('新名字')
+    })
+  })
+})
+
 describe('证据仓库', () => {
   it('人工填值会清洗千分位并标记 user', async () => {
     await withTempDir(async (dir) => {

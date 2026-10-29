@@ -18,6 +18,7 @@ import { goto, useRoute } from '@/router'
 import type { FieldRow, FilterKey } from '@/types'
 import CandidateCard from '@/components/CandidateCard.vue'
 import EvidenceFieldRow from '@/components/EvidenceFieldRow.vue'
+import RenameProjectDialog from '@/components/RenameProjectDialog.vue'
 import SourceViewer from '@/components/SourceViewer.vue'
 
 const route = useRoute()
@@ -28,6 +29,7 @@ const evidence = ref<EvidenceDoc | null>(null)
 const catalog = ref<CatalogResponse | null>(null)
 const loading = ref(true)
 const busy = ref(false)
+const renameOpen = ref(false)
 const loadError = ref('')
 
 const filter = ref<FilterKey>('pending')
@@ -346,6 +348,10 @@ const reloadEvidence = async () => {
   else jumpNext(0)
 }
 
+const onRenamed = (name: string) => {
+  if (project.value) project.value = { ...project.value, name }
+}
+
 const load = async () => {
   if (!projectId.value) {
     goto('/projects')
@@ -463,6 +469,7 @@ onBeforeUnmount(closeStream)
       <div class="identity">
         <el-button text size="small" @click="goto('/projects')">← 项目</el-button>
         <h2>{{ project?.name ?? '加载中…' }}</h2>
+        <el-button v-if="project" text size="small" @click="renameOpen = true">重命名</el-button>
         <span v-if="project" class="period">
           {{ project.period.y2 }}–{{ project.period.y0 }}
         </span>
@@ -668,6 +675,13 @@ onBeforeUnmount(closeStream)
         <el-empty v-else description="左侧选一个字段开始确认" :image-size="72" />
       </aside>
     </div>
+
+    <RenameProjectDialog
+      v-model:visible="renameOpen"
+      :project-id="projectId"
+      :name="project?.name ?? ''"
+      @renamed="onRenamed"
+    />
   </section>
 </template>
 
