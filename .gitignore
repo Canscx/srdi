@@ -24,3 +24,5 @@ desktop.ini
 .tmp/
 
 release/
+
+/*.zip
