@@ -1,5 +1,11 @@
+import path from 'node:path'
 import { createApp } from './app'
-import { DATA_DIR, WEB_DIST } from './paths'
+import { DATA_DIR, PROJECT_ROOT, WEB_DIST } from './paths'
+
+try {
+  process.loadEnvFile(path.join(PROJECT_ROOT, '.env'))
+} catch {
+}
 
 const port = Number(process.env.PORT ?? 8787)
 const auth = {
