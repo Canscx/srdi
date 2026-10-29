@@ -85,6 +85,7 @@ data/
 POST   /api/projects                      → { projectId, project }
 GET    /api/projects                      → { projects[] }
 GET    /api/projects/:id                  → { projectId, project }
+PATCH  /api/projects/:id                  { name } → { projectId, project }(仅改名,空名 400,不回退默认名)
 POST   /api/projects/:id/files            multipart → { fileId, sha256, dup }
 DELETE /api/projects/:id/files/:fileId    → 204
 POST   /api/projects/:id/parse            → { jobId, reused }
@@ -107,6 +108,8 @@ GET    /api/health                        → 运行时、规则摘要与数据�
 ```
 
 接口契约以 `shared/src/contracts.ts` 的 TS 类型为准,前后端共享同一份定义。模型配置落 `data/ai-settings.json`,读取时页面配置 > 环境变量 > 默认值,Key 只回显掩码。
+
+改名只写 `project.json` 的 `name`,走 `project:<id>` 同一把锁,不触碰目录名(目录是 `projectId`)、证据与得分;报告标题与下载文件名在导出时实时拼,改完下一次导出即新名。
 
 ## 六、进程与长任务
 

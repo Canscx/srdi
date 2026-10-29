@@ -78,6 +78,8 @@
 - [x] 新建项目支持「统计截止年」(向前取三年),避免跨年后期间与材料错位
 - [x] 模型设置:右上角弹窗填 API 地址 / Key / 模型名,保存落 `data/ai-settings.json` 并即时生效;`GET/PUT /api/settings/ai` + `POST /api/settings/ai/test` 连接自检;Key 只回显掩码;未配置时抽取按钮引导打开设置;server 测试 95 条(新增 7 条设置)
 - [x] 便携分发包:`pnpm pack:portable` 产出免安装目录(内置 node.exe + 实体化生产依赖 + 前端产物 + 规则配置 + 样本材料),`pnpm pack:zip` 压成 74 MB 分发包;已在含中文与空格的隔离路径实测上传 / 解析 8 页 / 打分 / MD 与 PDF 报告全链路,浏览器自动打开正常
+- [x] 登录页「记住密码」:勾选且**本次登录成功**才把账号密码写入 `localStorage`(base64 轻编码,非加密),下次打开自动回填并保持勾选;取消勾选立即清除,登录失败不写不删
+- [x] 项目重命名:`PATCH /api/projects/:id`(空名 400,不回退默认名)+ 共用 `RenameProjectDialog`,入口在项目列表卡片与确认 / 评分页标题;server 测试 114 条(新增 10 条改名)
 
 ## 待办(按优先级)
 
@@ -128,6 +130,8 @@
 - 页面里的「模型设置」也算配置,优先级高于环境变量;排查 `ai_not_configured` 时先看右上角状态点,不要只查终端环境
 - 设置接口只回显掩码,前端表单留空表示「不修改」;要清空必须显式 `clearKey: true`,不能靠提交空串
 - 推理型模型的 `max_tokens` 先被 `reasoning_content` 吃掉:给 8 个 token 时 HTTP 200、`finish_reason=length`、`content` 为空,客户端报「模型返回空内容」,看着像 Key 错其实不是。连通性测试已固定 256,排查时直接看原始响应而不是只信这条错误文案
+- 项目改名必须走 `store.projects.update`(锁内重读-改-写),不能 `get` + 改 + `save`:解析 / 抽取任务也用同一把 `project:<id>` 锁回写 `files[]`,裸 `save` 会互相覆盖
+- 登录页原来的 `label { display:flex; flex-direction:column }` 会命中 Element Plus 复选框的根 `<label>`,把「记住密码」挤成勾选框上一行、文字下一行。样式已改成 `.field` 类名隔离,新增表单项不要再写裸标签选择器
 
 ## 决策记录
 
@@ -304,6 +308,11 @@
   实现:cookie 会话(HttpOnly + SameSite=Lax + 30 天),`crypto.randomBytes` 发 token、`timingSafeEqual` 比对密码、失败延迟 0.8s 挡爆破;静态资源不拦(登录页自身要能加载),`/api/*` 除 auth 三接口外全拦,前端 `api.ts` 统一 401 → 跳 `#/login`。  
   **关键取舍**:`createApp` 的 `auth` 选项默认关闭,仅 `index.ts` 生产入口显式开启 —— 95 条存量测试零改动,鉴权行为单独由 `auth.spec.ts`(5 条)覆盖。nginx 层不再加 `auth_basic`,面板「加密访问」仍然禁止。  
   后果:会话存内存,服务重启全员重新登录(可接受);nginx 配置模板已同步去掉 auth_basic,两把锁只留一把。
+- **2026-10-29 记住密码只做 base64 轻编码,不做加密**  
+  与会话分层:`HttpOnly` 的 30 天 Cookie 才是访问控制本体,本地凭证只负责表单预填。base64 挡不住 XSS,也挡不住能读浏览器配置的人 —— 但真要拿口令,攻击者直接读登录请求即可,再包一层加密只是自欺。  
+  **行为约定**:只有登录成功才写入;失败不写不删;取消勾选立即清除(共用电脑上取消后即使不登录也不残留);默认不勾选。
+- **2026-10-29 改名空值返回 400,不回退默认名**  
+  创建时 `normalizeName` 把空名回落成「未命名项目 YYYY-MM-DD」,是为了「先建项目后起名」;改名场景下静默生成默认名会让用户以为改失败了。故抽出 `assertName`(非空 + ≤80 字)给 `rename` 专用,创建仍保留兜底。
 
 ## 回退记录(2026-10-29 16:05)
 
