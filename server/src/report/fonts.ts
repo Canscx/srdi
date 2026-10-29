@@ -14,6 +14,7 @@ const CANDIDATES: ReportFont[] = [
   { path: '/System/Library/Fonts/PingFang.ttc', family: 'PingFang SC' },
   { path: '/System/Library/Fonts/Hiragino Sans GB.ttc', family: 'Hiragino Sans GB' },
   { path: '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', family: 'Noto Sans CJK SC' },
+  { path: '/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc', family: 'Noto Sans CJK SC' },
   { path: '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc', family: 'Noto Sans CJK SC' },
   { path: '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc', family: 'WenQuanYi Zen Hei' }
 ].filter((candidate) => candidate.path.length > 0)
