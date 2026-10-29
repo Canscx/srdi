@@ -77,6 +77,7 @@
 - [x] 样本导入验收:两家各 5 份文件全部上传、判型正确(audit / application / patent / cert / standard)、解析 ≤1.1s;未配 Key 时抽取作业明确报「尚未配置模型 API Key」
 - [x] 新建项目支持「统计截止年」(向前取三年),避免跨年后期间与材料错位
 - [x] 模型设置:右上角弹窗填 API 地址 / Key / 模型名,保存落 `data/ai-settings.json` 并即时生效;`GET/PUT /api/settings/ai` + `POST /api/settings/ai/test` 连接自检;Key 只回显掩码;未配置时抽取按钮引导打开设置;server 测试 95 条(新增 7 条设置)
+- [x] 便携分发包:`pnpm pack:portable` 产出免安装目录(内置 node.exe + 实体化生产依赖 + 前端产物 + 规则配置 + 样本材料),`pnpm pack:zip` 压成 74 MB 分发包;已在含中文与空格的隔离路径实测上传 / 解析 8 页 / 打分 / MD 与 PDF 报告全链路,浏览器自动打开正常
 
 ## 待办(按优先级)
 
@@ -284,3 +285,16 @@
   优先级:页面配置 > 环境变量 > 默认值。理由:非技术用户改不了环境变量,而「改完要重启」在现场就是一次求助。  
   Key 只回显掩码(前 4 + 后 4),完整值不出服务端;「测试连接」复用抽取同一个客户端,避免测通了但抽取走另一条路。  
   代价:Key 明文落盘(本地单机、数据不出本机),上云前必须换成密钥托管或系统钥匙串。
+- **2026-10-28 交付形态定为绿色便携包,不做安装程序**  
+  `pnpm pack:portable` 产出免安装目录(内置 node.exe 83MB + 实体化生产依赖 + 前端产物 + 规则配置 + 样本材料),`pnpm pack:zip` 压成 74MB;接收方解压双击 `启动.bat` 即用,不需要装 Node、不需要碰命令行。  
+  理由:使用者是不懂配置环境的非技术用户,而本项目是本地单机版,数据必须留在对方机器上。  
+  **三个踩过的坑**:  
+  1. pnpm workspace 的 `node_modules` 全是指向 `.pnpm` 的绝对路径符号链接,整目录复制到别的电脑必崩。`pnpm deploy` 也不能解决(它产出的顶层仍是符号链接)。改用 npm 扁平安装,`@srdi/shared` 手动复制成实体目录,构建脚本用 `lstat` 校验零符号链接。  
+  2. `启动.bat` 必须存 **GBK + CRLF**。UTF-8 的 bat 在中文 Windows 上会被 cmd 按 936 逐字节解析,中文字节把行切碎,`start` 被截成 `tart-Sleep`、`set "URL="` 直接失效。同理 bat 内不要用 `timeout`(装了 Git Bash 的机器会命中 GNU 同名命令),延迟改用 `pause`。  
+  3. 打包前必须排除 `data/ai-settings.json`(明文 Key),脚本已加断言,命中即中止。  
+  **附带的产品决策**:`启动.bat` 从 8787 起自动避让占用端口;若该端口已有本系统在跑(探 `/api/health` 的 `service` 字段),只打开浏览器不再启第二个实例 —— 两个进程写同一份 `data/` 会互相覆盖,而 store 的项目锁只在进程内有效。
+- **2026-10-29 上公网采用「共享账号 + Basic Auth」,不做用户体系**  
+  访问者是本人、老板与几名固定同事,材料本就互相可见,数据隔离在这个场景下没有收益。  
+  鉴权放 nginx 层(`auth_basic`),不进应用代码 —— `server/src` 至今零鉴权,这一层与业务完全解耦,以后真要做多租户时整层替换即可,不用回改路由。  
+  **踩坑**:宝塔面板的「加密访问」功能会让该目录下的反向代理失效(它用 `location ^~ /` 抢匹配),表现为输对密码后白屏。必须把 `auth_basic` 写进反代 location 内部。  
+  部署参数已固化进 `deploy/`:`nginx-site.conf` 整体替换 `#PROXY-START` 段(`client_max_body_size 60m`、`/api/jobs/` 单独关 `proxy_buffering`)、`ecosystem.config.cjs` 锁 PM2 单实例、`README.md` 记录 `fonts-noto-cjk` 兜底 PDF 中文字体与 `pnpm install` 不可加 `--prod`(tsx 在 devDependencies)。

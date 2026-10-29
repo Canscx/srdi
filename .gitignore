@@ -22,3 +22,5 @@ desktop.ini
 *.swp
 
 .tmp/
+
+release/
