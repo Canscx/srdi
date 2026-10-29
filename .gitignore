@@ -4,6 +4,7 @@ coverage/
 *.tsbuildinfo
 
 data/
+fonts/
 
 .env
 .env.*

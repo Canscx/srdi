@@ -113,16 +113,16 @@ export const renderPdf = async (model: ReportModel): Promise<Buffer> => {
   })
 
   try {
-    doc.registerFont('report', font.path, font.family)
+    doc.registerFont('report', font.path, font.postscriptName)
+    doc.font('report')
   } catch (err) {
     throw new AppError(
       500,
       'report_font_invalid',
       '中文字体加载失败,无法生成 PDF',
-      (err as Error).message
+      `${font.path} · ${(err as Error).message} · 执行 pnpm check:font 复检字体`
     )
   }
-  doc.font('report')
 
   const chunks: Buffer[] = []
   doc.on('data', (chunk: Buffer) => chunks.push(chunk))

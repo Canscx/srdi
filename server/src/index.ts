@@ -1,11 +1,7 @@
-import path from 'node:path'
+import './env'
 import { createApp } from './app'
-import { DATA_DIR, PROJECT_ROOT, WEB_DIST } from './paths'
-
-try {
-  process.loadEnvFile(path.join(PROJECT_ROOT, '.env'))
-} catch {
-}
+import { DATA_DIR, WEB_DIST } from './paths'
+import { describeReportFont } from './report/fonts'
 
 const port = Number(process.env.PORT ?? 8787)
 const auth = {
@@ -13,6 +9,7 @@ const auth = {
   password: process.env.AUTH_PASSWORD ?? 'abc123456/'
 }
 const app = createApp({ webDist: WEB_DIST, port, dataDir: DATA_DIR, auth })
+const reportFont = describeReportFont()
 
 const server = app.listen(port, () => {
   console.log('')
@@ -23,6 +20,13 @@ const server = app.listen(port, () => {
   console.log(`  数据目录   ${DATA_DIR}`)
   console.log(`  静态目录   ${WEB_DIST}`)
   console.log(`  访问保护   已启用,账号 ${auth.user}`)
+  console.log(
+    `  报告字体   ${
+      reportFont
+        ? `${reportFont.family}${reportFont.postscriptName ? ` (${reportFont.postscriptName})` : ''} · ${reportFont.path}`
+        : '未找到,PDF 导出会失败,执行 pnpm check:font 查看候选'
+    }`
+  )
   console.log(`  运行模式   ${process.env.NODE_ENV ?? 'development'}`)
   console.log('')
 })
