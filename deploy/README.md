@@ -177,16 +177,31 @@ tar -czf /www/backup/srdi-$(date +%F).tar.gz -C /www/wwwroot/srdi data
 
 ### 更新
 
+服务器上只跑这一条:
+
 ```bash
-cd /www/wwwroot/srdi
-git pull
-pnpm install
-pnpm build
-pnpm check:font
-pm2 restart srdi
+bash deploy/update.sh
 ```
 
-`pnpm check:font` 会验证 PDF 中文字体是否仍可用;老服务器升级到本版本时必须跑 `pnpm install`,字体自省新增了 `fontkit` 依赖。
+它按顺序做完:检查工作区是否干净 → `git pull --ff-only` → `pnpm install` → `pnpm build` → `pnpm check:font` → 重启(有 pm2 就 `pm2 restart srdi`,没有就提示去面板点) → 轮询 `/api/health`。
+
+**不需要先手动 `git pull`** —— 脚本第一步就是它;手动拉过再跑也不出错,只是那句 `Already up to date` 白跑一遍。脚本会从自己所在位置反推项目根目录,装到别的路径也能用。
+
+什么时候不走脚本:
+
+| 场景 | 做法 |
+| --- | --- |
+| 只看有没有新提交 | `git fetch && git log --oneline HEAD..origin/main` |
+| 回滚到某个提交 | `git reset --hard <sha>` → `pnpm install && pnpm build` → 面板重启 |
+| 只改端口 / 密码 / 字体路径 | 改 `.env` → 面板重启,不必跑脚本 |
+
+脚本里有三处刻意设计,别删:
+
+1. `git pull --ff-only` —— 服务器上有本地改动时直接失败,不会悄悄生成合并提交;
+2. 工作区检查 —— 有未提交改动就停下并列出文件,避免把服务器上的手改覆盖掉;
+3. 没有 pm2 时不假装成功 —— 老进程还在跑,健康检查也会通过,所以脚本明确说「进程未重启」并让你去面板点,不会报「部署完成」。
+
+`pnpm check:font` 会验证 PDF 中文字体是否仍可用;老服务器升级时必须跑 `pnpm install`,字体自省新增了 `fontkit` 依赖。
 
 `data/` 不在版本库里,更新不会覆盖数据。**但删代码目录重传会** —— 重传前先备份 data。
 
