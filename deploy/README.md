@@ -56,14 +56,36 @@ pnpm config set registry https://registry.npmmirror.com
 
 ### 4. 装中文字体
 
+查找顺序:`REPORT_FONT_PATH` → 项目根 `fonts/` 目录 → 系统字体(Noto CJK / 文泉驿 / 黑体 / 苹方)→ `fc-match`。三条路任选,最省事的是往项目根丢一个中文 ttf。
+
+Debian / Ubuntu:
+
 ```bash
 apt install -y fonts-noto-cjk
 ```
 
-不装的话导出 PDF 会返回 500 `report_font_missing`。
-装完代码会自动命中 `/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc`,不用配环境变量。
+RHEL / CentOS / OpenCloudOS / 麒麟:
 
-自定义字体位置时再设 `REPORT_FONT_PATH`。
+```bash
+dnf install -y wqy-zenhei-fonts
+```
+
+没有包管理权限,或想彻底摆脱系统字体,就把字体传到项目里:
+
+```bash
+mkdir -p /www/wwwroot/srdi/fonts
+# 上传 simhei.ttf / SourceHanSansSC-Regular.otf 等任意中文 ttf / ttc / otf 到该目录
+chown -R www:www /www/wwwroot/srdi/fonts
+```
+
+装完必须自检一次。它会打印全部候选与失败原因,并真的生成一张中文 PDF:
+
+```bash
+cd /www/wwwroot/srdi
+pnpm check:font
+```
+
+`.ttc` 集合字体由程序读取内部 PostScript 名,不用手工指定 family —— 手填显示名(例如 `Noto Sans CJK SC`)正是老版本报 `Not a supported font format` 的原因。字体变动后重启进程生效。
 
 ### 5. 起进程
 
@@ -181,8 +203,9 @@ pm2 logs srdi --lines 200
 | 页面白屏 / 静态资源 404 | 没跑 `pnpm build` | 跑一次构建 |
 | 上传 PDF 报 413 | nginx 默认 1MB | 配 `client_max_body_size 60m` |
 | 解析进度条不动 | SSE 被缓冲 | 配 `proxy_buffering off` |
-| 导出 PDF 报 "Not a supported font format" | 装的是 CFF 轮廓字体(Noto CJK 全系都是) | 换 TrueType 字体:`dnf install -y wqy-zenhei-fonts` 后软链到 `/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc`,或上传 `simhei.ttf` 并设 `REPORT_FONT_PATH` |
-| 导出 PDF 报 500 | 服务器无中文字体 | `apt install fonts-noto-cjk` 仅适用于 Debian;RHEL/OpenCloudOS 直接用上面的 TrueType 方案 |
+| 导出 PDF 报 "Not a supported font format" | 旧版本把 `.ttc` 的显示名当 PostScript 名传给 pdfkit,集合里找不到该字面 | 更新代码后 `pnpm check:font` 复检;仍失败就换 `fonts/simhei.ttf` |
+| 导出 PDF 报 500 `report_font_missing` | 所有候选位置都没有可用中文字体 | 做第 4 步;`pnpm check:font` 会逐条列出位置与失败原因 |
+| 导出 PDF 报 500 `report_font_invalid` | 字体文件损坏或格式异常 | 换一个字体文件,再跑 `pnpm check:font` 冒烟 |
 | 登录页之后白屏 | 用了面板「加密访问」 | 删掉它,反代用 `deploy/nginx-site.conf` |
 | 一直停在登录页 | 密码输错或 Cookie 被拦 | 确认 `AUTH_PASSWORD`,清浏览器 Cookie 重试 |
 | 任务进度错乱 / 文件损坏 | 开了多实例 | 实例数改回 1 |

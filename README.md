@@ -29,6 +29,12 @@ export AI_API_KEY=sk-...
 
 没有真实材料时,可先用 `samples/` 里两套虚构企业材料跑通全流程,见 `samples/README.md`。
 
+导出 PDF 需要一个中文字体。查找顺序:`REPORT_FONT_PATH` → 项目根 `fonts/` 目录 → 系统字体(Windows 黑体 / macOS 苹方 / Linux Noto CJK、文泉驿)→ `fc-match`。字体集合(.ttc)会按字体内部的 PostScript 名解析,不用手工填 family。一条命令自检:
+
+```bash
+pnpm check:font   # 打印候选、选中项,并真的生成一张 PDF 验证中文可写可提取
+```
+
 ## 部署
 
 三种形态,按场景选:
@@ -74,6 +80,7 @@ shared/     零依赖纯函数:打分引擎 + Schema
 server/     Express 服务
 web/        Vue3 前端
 samples/    两套虚构企业材料样本(可直接导入)
+fonts/      可选:自带中文字体(不入库,缺字体时优先用它)
 data/       项目运行时数据(永不入库)
 ```
 
@@ -89,7 +96,7 @@ data/       项目运行时数据(永不入库)
 | `docs/architecture.md` | 五层架构、接口契约、状态机、路线图与风险 |
 | `docs/scoring.md` | 打分数学、七种打分器、B 类曲线、三口径、手算样例 |
 | `docs/pipeline.md` | 解析链路、扫描件识别、AI 契约、校验阶梯 |
-| `deploy/README.md` | 宝塔部署:服务器要求、安装顺序、Basic Auth、排错对照表 |
+| `deploy/README.md` | 宝塔部署:服务器要求、安装顺序、单账号登录、排错对照表 |
 
 **配置即文档**,不再单写 markdown:
 

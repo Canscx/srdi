@@ -34,4 +34,5 @@ pnpm workspaces:`shared` / `server` / `web`。
 `docs/architecture.md` 架构与接口 · `docs/scoring.md` 打分数学 · `docs/pipeline.md` 解析与 AI 契约
 `config/rules/` 23 项指标参数 · `config/catalog/` 40 字段 · `config/benchmarks/` 行业基准
 `samples/` 两套虚构企业材料 · `server/scripts/generate-samples.ts` 样本生成器(`pnpm samples`)
+`server/scripts/check-font.ts` 中文字体自检(`pnpm check:font`)· `docs/HANDOVER-font-bug.md` PDF 字体故障复盘
 `deploy/` 宝塔部署手册 + nginx/PM2 配置 · `scripts/build-portable.mjs` 便携包构建(`pnpm pack:portable`)

@@ -119,8 +119,8 @@
 - 雷达轴上限必须取维度内 `effectiveWeight` 之和,不能取 `dimension.weight`。排除项重归一后维度分会超过名义权重(专业化 15.93 > 15、成长性 15.93 > 15),按名义值设上限会把顶点裁到网格外
 - 守卫条件取值为 `null` 表示字段缺失,必须走 `missing`;只有 `false` 才是真正的「不适用」。改前空证据项目会出 11 项 `notApplicable`,把「没填」伪装成「不适用」
 - `evidence.company` 目前没有任何写入点(只有 fixture 带),行业代码实际来自 `company.industryCode` 的 confirmed 字段;评分接口两处都读,别只读其一会踩空
-- `pdfkit` 加载 TTC 字体必须传 family(`registerFont(name, path, family)`),Windows 优先 `simhei.ttf`;Linux 没有中文字体会直接 500,靠 `REPORT_FONT_PATH` 兜底
-- `pdfkit` 无法嵌入 CFF 轮廓字体,报 "Not a supported font format or standard PDF font" —— Debian 的 fonts-noto-cjk 与 OpenCloudOS 的 google-noto-cjk 全系是 CFF,装了也用不了;文泉驿(wqy-zenhei)与 Windows 的 simhei.ttf 是 TrueType 可用。解法:dnf 装 wqy-zenhei-fonts 后软链到 `/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc`(fonts.ts 已有此候选),或上传 simhei.ttf 并设 `REPORT_FONT_PATH`
+- `pdfkit` 加载 TTC 字体时,`registerFont(name, path, family)` 的第三个参数会被 fontkit 当成 **PostScript 名**做精确比较,传显示名一律返回 null,再被 pdfkit 包装成 "Not a supported font format or standard PDF font"。名字从文件里读,不要手写;`fonts.ts` 现在用 fontkit 自省后取 `postscriptName`
+- `pdfkit` **可以**嵌入 CFF 轮廓字体(NotoSansCJKsc-Regular.otf 实测产出含 CIDFontType0 的 PDF,中文可提取)。此前"CFF 不可嵌入"的结论是误判,真实原因是 TTC 名字不匹配,详见 `docs/HANDOVER-font-bug.md`
 - 报告 PDF 是 `application/pdf`,本机装了 IDM 时浏览器会把下载交给 IDM,无头浏览器与自动化看不到落盘文件。验收看服务端 200 + `%PDF-` 魔数 + pdfjs 文本提取,不要以下载目录判断成功
 - pdfkit 的表格必须在每行前 `ensure`,并且换页后重画表头;页脚要在 `bufferPages` 结束后用 `switchToPage` 统一画,提前画会被后续内容覆盖
 - 生成样本 PDF 时,行数组里不要再放表头行 —— `pdfTable` 已经统一画表头,重复传入会让表头出现两次
@@ -307,7 +307,15 @@
 
 ## 回退记录(2026-10-29 16:05)
 
-- **main 已硬回退至 `700f8cc`**(force push),修复尝试保留在分支 `backup-fbb024d-fontfix`
-- 回退原因:PDF 字体链修复(fbb024d)未达预期,用户要求回退后交由更强模型重修
-- **完整故障现场与修复方向见 `docs/HANDOVER-font-bug.md`**(含三个根因、失败清单、验收标准)
-- 当前可用:登录 / 上传 / 解析 / 打分 / 导出 MD;**PDF 导出故障未修**(根因见交接文档)
+- **main 曾硬回退至 `700f8cc`**(force push),失败尝试保留在分支 `backup-fbb024d-fontfix`
+- 回退原因:PDF 字体链修复(fbb024d)未达预期
+- 该故障已于同日结案,结论见下节;分支仅作历史对照,勿再按其思路修
+
+## 字体故障结案(2026-10-29)
+
+- **根因**:`registerFont(name, src, family)` 的第三个参数被 fontkit 当作 **PostScript 名**在 TTC 集合里逐字面精确比较。老候选表传的是 `Noto Sans CJK SC` / `WenQuanYi Zen Hei` / `PingFang SC` 这类显示名,一个都对不上 → 返回 null → pdfkit 包装成 `Not a supported font format or standard PDF font`。Windows 因首个候选 `simhei.ttf` 是单体 TrueType,永远走不到 TTC 分支,所以本地复现不了
+- **叠加缺陷**:`fonts.ts` 在模块顶层读 `REPORT_FONT_PATH`,`.env` 却要等 `index.ts` 的 `loadEnvFile` 才加载 → 服务器上传的 `fonts/simhei.ttf` 从未被用上,只能落到 Noto TTC;`doc.font()` 又在 try 之外,真出错时只回 `internal_error`,把可诊断信息吞掉
+- **修复**:候选惰性收集(`REPORT_FONT_PATH` → 项目 `fonts/` → 系统字体 → `fc-match`),fontkit 打开自省、校验中文字形、取 PostScript 名,坏文件跳过并记录原因;`.env` 抽到 `server/src/env.ts` 由 `index.ts` 首行引入;启动日志打印实际字体与来源;新增 `pnpm check:font` 自检(候选清单 + 真渲染 + pdfjs 文本提取)
+- **验证**:`simhei.ttf`(单体 TTF)、`msyh.ttc`(集合)、`NotoSansCJKsc-Regular.otf`(CFF)三种各跑一次均「PDF 导出可用」;`pnpm validate` 17 个文件 104 条全绿
+- **误判更正**:CFF 可以嵌入;`unicode-properties@1.4.0` 的 exports 拼写错误真实存在,但 pdfkit 0.20.2 的 Node 入口已打包 fontkit,不走该 require 分支,不是本次故障来源。详见 `docs/HANDOVER-font-bug.md`
+- **运维入口**:换机器或换字体后先跑 `pnpm check:font`,再看启动日志的「报告字体」一行
