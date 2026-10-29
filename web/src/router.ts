@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-export type RouteName = 'projects' | 'review' | 'score' | 'status'
+export type RouteName = 'login' | 'projects' | 'review' | 'score' | 'status'
 
 export interface RouteState {
   name: RouteName
@@ -9,6 +9,7 @@ export interface RouteState {
 
 const parse = (): RouteState => {
   const hash = window.location.hash.replace(/^#/, '')
+  if (/^\/login\/?$/.test(hash)) return { name: 'login' }
   const review = /^\/p\/([A-Za-z0-9_-]+)\/review\/?$/.exec(hash)
   if (review) return { name: 'review', projectId: review[1] }
   const score = /^\/p\/([A-Za-z0-9_-]+)\/score\/?$/.exec(hash)

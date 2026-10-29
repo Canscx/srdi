@@ -298,3 +298,8 @@
   鉴权放 nginx 层(`auth_basic`),不进应用代码 —— `server/src` 至今零鉴权,这一层与业务完全解耦,以后真要做多租户时整层替换即可,不用回改路由。  
   **踩坑**:宝塔面板的「加密访问」功能会让该目录下的反向代理失效(它用 `location ^~ /` 抢匹配),表现为输对密码后白屏。必须把 `auth_basic` 写进反代 location 内部。  
   部署参数已固化进 `deploy/`:`nginx-site.conf` 整体替换 `#PROXY-START` 段(`client_max_body_size 60m`、`/api/jobs/` 单独关 `proxy_buffering`)、`ecosystem.config.cjs` 锁 PM2 单实例、`README.md` 记录 `fonts-noto-cjk` 兜底 PDF 中文字体与 `pnpm install` 不可加 `--prod`(tsx 在 devDependencies)。
+- **2026-10-29 访问保护从 nginx Basic Auth 改为应用层登录页**  
+  使用方明确不要浏览器原生弹窗,要页面登录;单账号 `admin`,密码走 `AUTH_PASSWORD`(默认值在 `.env.example`),全员共用。  
+  实现:cookie 会话(HttpOnly + SameSite=Lax + 30 天),`crypto.randomBytes` 发 token、`timingSafeEqual` 比对密码、失败延迟 0.8s 挡爆破;静态资源不拦(登录页自身要能加载),`/api/*` 除 auth 三接口外全拦,前端 `api.ts` 统一 401 → 跳 `#/login`。  
+  **关键取舍**:`createApp` 的 `auth` 选项默认关闭,仅 `index.ts` 生产入口显式开启 —— 95 条存量测试零改动,鉴权行为单独由 `auth.spec.ts`(5 条)覆盖。nginx 层不再加 `auth_basic`,面板「加密访问」仍然禁止。  
+  后果:会话存内存,服务重启全员重新登录(可接受);nginx 配置模板已同步去掉 auth_basic,两把锁只留一把。

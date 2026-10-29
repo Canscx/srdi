@@ -2,6 +2,7 @@ import type {
   AiSettingsPatchRequest,
   AiSettingsResponse,
   AiTestResponse,
+  AuthStatusResponse,
   AutoConfirmResponse,
   CatalogResponse,
   CreateProjectRequest,
@@ -42,6 +43,9 @@ const toError = async (response: Response) => {
 
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(path, init)
+  if (response.status === 401 && !path.startsWith('/api/auth')) {
+    if (window.location.hash !== '#/login') window.location.hash = '#/login'
+  }
   if (!response.ok) throw await toError(response)
   return (await response.json()) as T
 }
@@ -57,6 +61,10 @@ export interface JobStateResponse {
 }
 
 export const api = {
+  login: (username: string, password: string) =>
+    request<{ ok: true }>('/api/auth/login', jsonInit('POST', { username, password })),
+  logout: () => request<{ ok: true }>('/api/auth/logout', jsonInit('POST')),
+  authStatus: () => request<AuthStatusResponse>('/api/auth/status'),
   projects: () => request<ProjectListResponse>('/api/projects'),
   project: (projectId: string) => request<CreateProjectResponse>(`/api/projects/${projectId}`),
   createProject: (input: CreateProjectRequest = {}) =>

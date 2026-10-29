@@ -2,7 +2,11 @@ import { createApp } from './app'
 import { DATA_DIR, WEB_DIST } from './paths'
 
 const port = Number(process.env.PORT ?? 8787)
-const app = createApp({ webDist: WEB_DIST, port, dataDir: DATA_DIR })
+const auth = {
+  user: process.env.AUTH_USER ?? 'admin',
+  password: process.env.AUTH_PASSWORD ?? 'abc123456/'
+}
+const app = createApp({ webDist: WEB_DIST, port, dataDir: DATA_DIR, auth })
 
 const server = app.listen(port, () => {
   console.log('')
@@ -12,6 +16,7 @@ const server = app.listen(port, () => {
   console.log(`  SSE 通道   http://localhost:${port}/api/jobs/demo/stream`)
   console.log(`  数据目录   ${DATA_DIR}`)
   console.log(`  静态目录   ${WEB_DIST}`)
+  console.log(`  访问保护   已启用,账号 ${auth.user}`)
   console.log(`  运行模式   ${process.env.NODE_ENV ?? 'development'}`)
   console.log('')
 })

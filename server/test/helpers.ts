@@ -21,7 +21,8 @@ export interface TestServer {
 export const startServer = async (
   dataDir: string,
   maxFileBytes?: number,
-  aiClient?: ModelClient
+  aiClient?: ModelClient,
+  auth?: { user: string; password: string }
 ): Promise<TestServer> => {
   const app = createApp({
     webDist: path.join(dataDir, 'dist'),
@@ -29,7 +30,8 @@ export const startServer = async (
     dataDir,
     maxFileBytes,
     aiClient,
-    aiModel: aiClient ? 'mock-model' : undefined
+    aiModel: aiClient ? 'mock-model' : undefined,
+    auth: auth ?? null
   })
   const server = app.listen(0)
   await new Promise<void>((resolve) => server.once('listening', () => resolve()))

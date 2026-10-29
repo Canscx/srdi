@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { goto, useRoute } from '@/router'
+import { api } from '@/api'
 import { useAiSettings } from '@/composables/useAiSettings'
 import AiSettingsDialog from '@/components/AiSettingsDialog.vue'
+import LoginView from '@/views/LoginView.vue'
 import ProjectsView from '@/views/ProjectsView.vue'
 import ReviewView from '@/views/ReviewView.vue'
 import ScoringView from '@/views/ScoringView.vue'
@@ -10,6 +12,7 @@ import StatusView from '@/views/StatusView.vue'
 
 const route = useRoute()
 const { hasKey, state: aiState, ensure, open: openAiSettings } = useAiSettings()
+const authChecked = ref(false)
 
 const view = computed(() => {
   if (route.value.name === 'review') return ReviewView
@@ -20,13 +23,43 @@ const view = computed(() => {
 
 const navClass = (name: string) => (route.value.name === name ? 'on' : '')
 
-onMounted(() => {
+const onLoggedIn = () => {
+  goto('/projects')
+  void ensure()
+}
+
+const signOut = async () => {
+  try {
+    await api.logout()
+  } catch {
+  }
+  goto('/login')
+}
+
+onMounted(async () => {
+  try {
+    const status = await api.authStatus()
+    if (!status.authenticated) {
+      goto('/login')
+      authChecked.value = true
+      return
+    }
+  } catch {
+    goto('/login')
+    authChecked.value = true
+    return
+  }
+  authChecked.value = true
   void ensure()
 })
 </script>
 
 <template>
-  <div class="shell">
+  <div v-if="!authChecked" class="boot" />
+
+  <LoginView v-else-if="route.name === 'login'" @done="onLoggedIn" />
+
+  <div v-else class="shell">
     <header class="masthead">
       <div class="brand">
         <span class="mark">专</span>
@@ -43,6 +76,7 @@ onMounted(() => {
           模型设置
           <em v-if="aiState.loading">…</em>
         </button>
+        <button class="exit" @click="signOut">退出</button>
       </nav>
     </header>
 
@@ -57,6 +91,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.boot {
+  min-height: 100vh;
+}
+
 .shell {
   position: relative;
   z-index: 1;
@@ -144,6 +182,10 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.nav button.exit:hover {
+  color: #dc2626;
 }
 
 .dot {

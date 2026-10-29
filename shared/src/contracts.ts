@@ -284,3 +284,12 @@ export interface AiTestResponse {
   latencyMs: number
   message: string
 }
+
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+export interface AuthStatusResponse {
+  authenticated: boolean
+}

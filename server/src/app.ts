@@ -24,6 +24,9 @@ import { settingsRouter } from './routes/settings'
 import { createJobQueue } from './jobs/queue'
 import { requestLogger } from './logger'
 import { parseProject } from './pipeline/parse'
+import { requireSession } from './auth/middleware'
+import { createAuthService } from './auth/session'
+import { authRouter } from './routes/auth'
 import { createStore } from './store'
 
 export interface AppOptions {
@@ -33,6 +36,7 @@ export interface AppOptions {
   maxFileBytes?: number
   aiClient?: ModelClient
   aiModel?: string
+  auth?: { user: string; password: string } | null
 }
 
 const missingDistHtml = `<!doctype html>
@@ -45,7 +49,7 @@ const missingDistHtml = `<!doctype html>
 </body>
 </html>`
 
-export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiModel }: AppOptions) => {
+export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiModel, auth }: AppOptions) => {
   const app = express()
   const store = createStore(dataDir)
   const modelClient = aiClient ?? createModelClient({ resolve: () => resolveAiConfig(dataDir) })
@@ -80,6 +84,12 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
   app.disable('x-powered-by')
   app.use(express.json({ limit: '2mb' }))
   app.use(requestLogger)
+
+  if (auth) {
+    const service = createAuthService(auth)
+    app.use(API_PREFIX, authRouter(service))
+    app.use(API_PREFIX, requireSession(service))
+  }
 
   app.use(API_PREFIX, healthRouter(port, dataDir))
   app.use(API_PREFIX, jobsRouter(queue))

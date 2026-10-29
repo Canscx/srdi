@@ -107,45 +107,29 @@ nginx -t && nginx -s reload
 
 ## 三、访问保护
 
-### 1. 生成密码文件
+访问保护内置在应用里:打开域名先看到登录页,单账号全员共用。
 
-```bash
-apt install -y apache2-utils      # CentOS 用 yum install -y httpd-tools
-mkdir -p /www/server/pass
-htpasswd -c /www/server/pass/srdi.pass admin
+| 项 | 值 |
+| --- | --- |
+| 默认账号 | `admin` |
+| 默认密码 | `abc123456/` |
+| 会话有效期 | 30 天(HttpOnly Cookie,服务重启后需重新登录) |
+| 修改方式 | 环境变量 `AUTH_USER` / `AUTH_PASSWORD`,改完 `pm2 restart srdi` |
+
+改密码示例(ecosystem.config.cjs 的 `env` 里加一行,或在宝塔 Node 项目的环境变量里加):
+
+```
+AUTH_PASSWORD=新密码
 ```
 
-按提示输两遍密码。`-c` 会覆盖同名文件,第二次加人要省略 `-c`:
+行为细节:
 
-```bash
-htpasswd /www/server/pass/srdi.pass 第二个用户名
-```
+- 登录失败有约 0.8 秒延迟,自动爆破每秒最多试一次
+- 密码比对用恒定时间比较,不存在逐位探测
+- 会话凭证是 32 字节随机数,存在 HttpOnly Cookie 里,前端脚本读不到
+- **不要**再开宝塔面板的「加密访问」——那个功能会让反向代理失效,表现为登录页之后白屏
 
-非交互写法(密码进 shell history,用完 `history -c`):
-
-```bash
-htpasswd -cb /www/server/pass/srdi.pass admin '改成你的密码'
-```
-
-### 2. 生效
-
-`deploy/nginx-site.conf` 里两条 `location` 都带 `auth_basic`,替换后自动生效。
-
-```bash
-chmod 640 /www/server/pass/srdi.pass
-chown root:www /www/server/pass/srdi.pass
-nginx -t && nginx -s reload
-```
-
-### 3. 验证
-
-浏览器打开域名,应弹出「此网站要求你登录」的框。输错三次返回 401。
-
-**不要用宝塔面板的「加密访问」功能配这个站。** 那个功能会让目录下的反向代理失效,表现为输对密码后白屏。
-
-### 4. 必须配 HTTPS
-
-Basic Auth 的密码只做 base64 编码,不是加密。走 HTTP 等于明文广播。强制 HTTPS 是硬性要求,不是优化项。
+强改 HTTPS 依然是硬要求:登录请求虽然走 POST body,不设 Secure 的 Cookie 在混合内容下也可能被降级会话劫持利用,HTTPS 消掉这一整类问题。
 
 ## 四、AI 模型配置
 
@@ -196,7 +180,8 @@ pm2 logs srdi --lines 200
 | 上传 PDF 报 413 | nginx 默认 1MB | 配 `client_max_body_size 60m` |
 | 解析进度条不动 | SSE 被缓冲 | 配 `proxy_buffering off` |
 | 导出 PDF 报 500 | 服务器无中文字体 | `apt install fonts-noto-cjk` |
-| 输对密码仍白屏 | 用了面板「加密访问」 | 删掉它,改用 `auth_basic` |
+| 登录页之后白屏 | 用了面板「加密访问」 | 删掉它,反代用 `deploy/nginx-site.conf` |
+| 一直停在登录页 | 密码输错或 Cookie 被拦 | 确认 `AUTH_PASSWORD`,清浏览器 Cookie 重试 |
 | 任务进度错乱 / 文件损坏 | 开了多实例 | 实例数改回 1 |
 | 上传后立刻 500 | `data/` 无写权限 | `chown -R www:www` |
 
