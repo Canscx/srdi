@@ -75,6 +75,8 @@ pnpm validate       # 17 个测试文件、104 条全绿
 服务器侧:把 `REPORT_FONT_PATH=/www/wwwroot/srdi/fonts/simhei.ttf` 留在 `.env` 或不设都行(`fonts/` 目录本身就在候选里),重启后启动日志会打印
 `报告字体 SimHei · /www/wwwroot/srdi/fonts/simhei.ttf`。
 
+**实机结果(2026-10-29)**:宝塔 / OpenCloudOS 服务器按上述步骤更新后,评分页导出 PDF 正常,故障关闭。`deploy/update.sh` 已把 `pnpm check:font` 固化为更新步骤,下次换机或换字体能提前发现,不必等用户点导出。
+
 ## 七、对上一轮结论的更正
 
 | 上一轮结论 | 实际情况 |
