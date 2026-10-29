@@ -304,3 +304,10 @@
   实现:cookie 会话(HttpOnly + SameSite=Lax + 30 天),`crypto.randomBytes` 发 token、`timingSafeEqual` 比对密码、失败延迟 0.8s 挡爆破;静态资源不拦(登录页自身要能加载),`/api/*` 除 auth 三接口外全拦,前端 `api.ts` 统一 401 → 跳 `#/login`。  
   **关键取舍**:`createApp` 的 `auth` 选项默认关闭,仅 `index.ts` 生产入口显式开启 —— 95 条存量测试零改动,鉴权行为单独由 `auth.spec.ts`(5 条)覆盖。nginx 层不再加 `auth_basic`,面板「加密访问」仍然禁止。  
   后果:会话存内存,服务重启全员重新登录(可接受);nginx 配置模板已同步去掉 auth_basic,两把锁只留一把。
+
+## 回退记录(2026-10-29 16:05)
+
+- **main 已硬回退至 `700f8cc`**(force push),修复尝试保留在分支 `backup-fbb024d-fontfix`
+- 回退原因:PDF 字体链修复(fbb024d)未达预期,用户要求回退后交由更强模型重修
+- **完整故障现场与修复方向见 `docs/HANDOVER-font-bug.md`**(含三个根因、失败清单、验收标准)
+- 当前可用:登录 / 上传 / 解析 / 打分 / 导出 MD;**PDF 导出故障未修**(根因见交接文档)
