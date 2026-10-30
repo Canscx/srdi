@@ -56,6 +56,7 @@ const missingDistHtml = `<!doctype html>
 
 export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiModel, auth }: AppOptions) => {
   const app = express()
+  app.set('trust proxy', 1)
   const store = createStore(dataDir)
   const modelClient = aiClient ?? createModelClient({ resolve: () => resolveAiConfig(dataDir) })
   const currentModel = () => (aiClient ? aiModel ?? defaultModel() : resolveAiConfig(dataDir).model)
