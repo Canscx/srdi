@@ -1,4 +1,5 @@
 import type {
+  AdminPortalResult,
   AiSettingsPatchRequest,
   AiSettingsResponse,
   AiTestResponse,
@@ -12,6 +13,12 @@ import type {
   EvidencePatchResponse,
   FilePages,
   JobProgressEvent,
+  PortalConfig,
+  PortalCreateRequest,
+  PortalListResponse,
+  PortalLookupRequest,
+  PortalLookupResponse,
+  PortalResultResponse,
   ProjectListResponse,
   ProjectMeta,
   RenameProjectRequest,
@@ -59,6 +66,32 @@ const jsonInit = (method: string, body?: unknown): RequestInit => ({
 
 export interface JobStateResponse {
   job: JobProgressEvent & { error?: string }
+}
+
+export interface PortalConfigResponse {
+  config: PortalConfig
+  defaultPeriod: { y0: number; y1: number; y2: number }
+}
+
+export interface PortalJobResponse {
+  job: JobProgressEvent & { error?: string; queueAhead: number }
+}
+
+export interface SubmissionRow {
+  projectId: string
+  companyName: string
+  creditCode: string
+  phone: string
+  industryCode: string
+  industryName: string
+  fileCount: number
+  official: number | null
+  optimistic: number | null
+  passed: boolean | null
+  weakestDimension: string
+  weakestGap: number
+  submittedAt: string
+  hasScore: boolean
 }
 
 export const api = {
@@ -117,9 +150,44 @@ export const api = {
   },
   pageImageUrl: (projectId: string, fileId: string, page: number) =>
     `/api/files/${fileId}/page/${page}?projectId=${projectId}`,
-  reportUrl: (projectId: string, format: 'md' | 'pdf') =>
-    `/api/projects/${projectId}/report?format=${format}`,
-  streamUrl: (jobId: string) => `/api/jobs/${jobId}/stream`
+  streamUrl: (jobId: string) => `/api/jobs/${jobId}/stream`,
+  adminResult: (projectId: string) =>
+    request<AdminPortalResult>(`/api/admin/projects/${projectId}/result`),
+  adminReportUrl: (projectId: string) => `/api/admin/projects/${projectId}/report`,
+  portalConfig: () => request<PortalConfigResponse>('/api/portal/config'),
+  createPortalProject: (body: PortalCreateRequest) =>
+    request<{ projectId: string; name: string }>('/api/portal/projects', jsonInit('POST', body)),
+  portalProjects: () => request<PortalListResponse>('/api/portal/projects'),
+  portalLookup: (body: PortalLookupRequest) =>
+    request<PortalLookupResponse>('/api/portal/lookup', jsonInit('POST', body)),
+  portalUpload: async (projectId: string, slot: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    const response = await fetch(
+      `/api/portal/projects/${projectId}/files?slot=${encodeURIComponent(slot)}`,
+      { method: 'POST', body: form }
+    )
+    if (!response.ok) throw await toError(response)
+    return (await response.json()) as UploadFileResponse
+  },
+  portalAssess: (projectId: string) =>
+    request<{ jobId: string; reused: boolean; queueAhead: number }>(
+      `/api/portal/projects/${projectId}/assess`,
+      jsonInit('POST')
+    ),
+  portalJob: (jobId: string) => request<PortalJobResponse>(`/api/portal/jobs/${jobId}`),
+  portalResult: (projectId: string) =>
+    request<PortalResultResponse>(`/api/portal/projects/${projectId}/result`),
+  portalReportUrl: (projectId: string) => `/api/portal/projects/${projectId}/report`,
+  adminSubmissions: (query: string) =>
+    request<{ passLine: number; items: SubmissionRow[] }>(
+      `/api/admin/submissions?q=${encodeURIComponent(query)}`
+    ),
+  fixIndustry: (projectId: string, industryCode: string) =>
+    request<{ official: number; industryName: string | null }>(
+      `/api/admin/projects/${projectId}/industry`,
+      jsonInit('PATCH', { industryCode })
+    )
 }
 
 export const fileLabel = (project: ProjectMeta | null, fileId: string) =>

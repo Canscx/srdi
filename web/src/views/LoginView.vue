@@ -6,11 +6,24 @@ import { clearSavedLogin, loadSavedLogin, saveSavedLogin } from '@/savedLogin'
 
 const emit = defineEmits<{ done: [] }>()
 
-const username = ref('admin')
-const password = ref('')
+const username = ref('customer')
+const password = ref('vip666666')
+const mode = ref<'customer' | 'admin'>('customer')
 const remember = ref(false)
 const error = ref('')
 const busy = ref(false)
+
+const useRole = (next: 'customer' | 'admin') => {
+  mode.value = next
+  error.value = ''
+  if (next === 'customer') {
+    username.value = 'customer'
+    password.value = 'vip666666'
+  } else {
+    username.value = 'admin'
+    password.value = ''
+  }
+}
 
 onMounted(() => {
   const saved = loadSavedLogin()
@@ -55,8 +68,21 @@ const submit = async () => {
   <div class="gate">
     <form class="card" @submit.prevent="submit">
       <span class="mark">专</span>
-      <h1>专精特新申报自评打分系统</h1>
-      <p class="sub">上传材料 · 抽取证据 · 人工确认 · 参考打分</p>
+      <h1>专精特新自评</h1>
+      <p class="sub">上传材料 · 自动打分 · 出具补足建议</p>
+
+      <div class="roles">
+        <button
+          type="button"
+          :class="{ on: mode === 'customer' }"
+          @click="useRole('customer')"
+        >
+          我是客户
+        </button>
+        <button type="button" :class="{ on: mode === 'admin' }" @click="useRole('admin')">
+          管理员
+        </button>
+      </div>
 
       <label class="field">
         <span>账号</span>
@@ -133,9 +159,38 @@ h1 {
 }
 
 .sub {
-  margin: 6px 0 26px;
+  margin: 6px 0 18px;
   font-size: 12px;
   color: #8a94a6;
+}
+
+.roles {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 18px;
+  border-radius: 10px;
+  background: #f1f5f9;
+}
+
+.roles button {
+  padding: 7px 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  font-size: 12.5px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.roles button.on {
+  background: #fff;
+  color: #2563eb;
+  font-weight: 600;
+  box-shadow: 0 2px 8px -4px rgba(15, 23, 42, 0.4);
 }
 
 .field {
