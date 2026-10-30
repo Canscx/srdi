@@ -21,7 +21,7 @@
   "effectiveTo": null,
   "status": "active",
   "supersedes": null,
-  "passLine": 50,
+  "passLine": 60,
   "benchmarksRef": {
     "file": "industry-benchmarks.v1.2.0.json",
     "version": "1.2.0"
@@ -160,8 +160,8 @@
       "id": "GATE_6",
       "name": "专精特新发展评价得分",
       "type": "scoreGate",
-      "passLine": 50,
-      "totalKey": "conservative",
+      "passLine": 60,
+      "totalKey": "official",
       "unknownPolicy": "notPass"
     }
   ],
@@ -719,6 +719,16 @@
       "id": "A6",
       "text": "行业基准数值来自公开统计与行业报告估算,非官方数据,每项标注来源、年份与样本量。",
       "impact": "基准偏差会系统性影响 8 项 B 类指标约 32 分,报告以三口径区间呈现。"
+    },
+    {
+      "id": "A7",
+      "text": "客户自行申报的软件著作权数量按 3 件折算 1 件发明专利参与指标 17 计分,折算上限 3 件,与近三年发明专利授权数合并后按加权公式计算。",
+      "impact": "仅影响指标 17 的得分率,折算结果在报告中标注为参考折算,不得作为官方认定依据。"
+    },
+    {
+      "id": "A8",
+      "text": "达标线设为 60 分,判定口径为正常得分(official)。官方未公布统一自评达标线,60 分为本工具的客户自查参考线。",
+      "impact": "达标结论仅用于客户自评与差距分析,不等同于主管部门的认定结果。"
     }
   ]
 }

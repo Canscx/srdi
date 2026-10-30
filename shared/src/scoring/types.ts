@@ -26,10 +26,17 @@ export interface FieldCandidate {
 }
 
 export interface FieldResolution {
-  strategy: 'auto_unit_merge' | 'auto_single' | 'manual' | 'none'
+  strategy: 'auto_unit_merge' | 'auto_single' | 'auto_series' | 'manual' | 'declared' | 'none'
   pickedCandidateId?: string | null
-  resolvedBy?: 'auto' | 'user'
+  pickedCandidateIds?: string[]
+  resolvedBy?: 'auto' | 'user' | 'client'
   resolvedAt?: string
+}
+
+export interface FieldDeclaration {
+  by: 'client'
+  at: string
+  note?: string
 }
 
 export interface FieldEntry {
@@ -42,6 +49,7 @@ export interface FieldEntry {
   value?: number | string | boolean | unknown[] | Record<string, unknown> | null
   candidates?: FieldCandidate[]
   resolution?: FieldResolution
+  declared?: FieldDeclaration
   flags?: string[]
   manualNote?: string
 }

@@ -194,7 +194,7 @@ describe('行业基准', () => {
 
     const indicators = body.dimensions.flatMap((dimension) => dimension.indicators)
     expect(indicators).toHaveLength(23)
-    expect(body.passLine).toBe(50)
+    expect(body.passLine).toBe(60)
 
     const excluded = indicators.find((item) => item.id === 'IND_18')
     expect(excluded?.fallback?.type).toBe('exclude')

@@ -79,13 +79,13 @@ export const evaluateExprGate = (gate: ExprGate, ctx: EvalContext): GateResult =
 }
 
 export const evaluateScoreGate = (gate: ScoreGate, totals: Totals): GateResult => {
-  const official = totals.official
-  const conservative = totals.conservative
   const line = gate.passLine
+  const primary = totals[gate.totalKey]
+  const upper = gate.totalKey === 'conservative' ? totals.official : totals.optimistic
 
   let verdict: GateVerdict
-  if (conservative >= line) verdict = 'pass'
-  else if (official >= line) verdict = 'pending'
+  if (primary >= line) verdict = 'pass'
+  else if (upper >= line) verdict = 'pending'
   else verdict = 'fail'
 
   return {
@@ -95,7 +95,7 @@ export const evaluateScoreGate = (gate: ScoreGate, totals: Totals): GateResult =
     effective: verdict,
     basis: 'score',
     checks: [],
-    explain: `conservative ${conservative} / official ${official} / 线 ${line}`
+    explain: `${gate.totalKey} ${primary} / 线 ${line}(official ${totals.official} / conservative ${totals.conservative} / optimistic ${totals.optimistic})`
   }
 }
 
