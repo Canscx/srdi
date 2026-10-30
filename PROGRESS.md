@@ -328,3 +328,68 @@
 - **验证**:`simhei.ttf`(单体 TTF)、`msyh.ttc`(集合)、`NotoSansCJKsc-Regular.otf`(CFF)三种各跑一次均「PDF 导出可用」;`pnpm validate` 17 个文件 104 条全绿
 - **误判更正**:CFF 可以嵌入;`unicode-properties@1.4.0` 的 exports 拼写错误真实存在,但 pdfkit 0.20.2 的 Node 入口已打包 fontkit,不走该 require 分支,不是本次故障来源。详见 `docs/HANDOVER-font-bug.md`
 - **运维入口**:换机器或换字体后先跑 `pnpm check:font`,再看启动日志的「报告字体」一行
+
+## 客户轻流程改造(2026-10-30)
+
+把单账号专家工具劈成两个入口:admin 保留完整后台,`customer`(默认 `vip666666`)走 5 屏轻流程,一次点击跑完解析 → 抽取 → 合并 → 打分 → 出报告。方案见 `docs/PLAN-customer-portal.md`。
+
+**新增能力**
+- 双角色鉴权:`AuthConfig{accounts}` 取代单账号,`{user,password}` 旧写法仍归一化为 admin;会话带 `role`;`requireRole` 守卫 `/api/portal/*`(customer)与其余接口(admin);`ensureClientId` 下发 `srdi_client` cookie 做浏览器级隔离
+- 一键编排 `JobKind='assess'`:七阶段独立 try/catch,解析或打分失败判 `failed`、抽取失败判 `partial`,结果落 `assess.json`;queue 支持 stage 透传与 `concurrency`(默认 1,生产建议 2)
+- `confirmSeries`:把同 key 多期候选合并成 `{2024:x,2025:y}`,**不做则成长性 15 分全废**;`declareValue` 承接客户自述数据(strategy=`declared`,不计入证据齐备率)
+- 客户版自动确认 `rankCandidate`:quote 命中 30 / 置信度×20 / 数值 +6 / 零值 -8 / 文本通道 +1,阈值降到 0.5
+- 行业推断:税表文本先去 CJK 间空格,再按 `config/industry-map.json` 全名优先、关键词兜底;admin 可改行业一键重算
+- 客户版 PDF(`report/portal.ts` + `radar.ts`):4 页,矢量雷达双系列、23 项 √○× 清单、建议每条 ≤150 字、末页二维码
+- AI 建议(`ai/advice.ts`):AI 只写文字,数字白名单校验(整型 0-12、年份、与事实值 5% 内),不过则重试一次再回落 `config/advice.json` 兜底话术;按事实哈希缓存
+
+**关键取舍**
+- **及格线 50 → 60,判定口径 `conservative` → `official`**:`gates.ts` 原先硬编码 conservative,`totalKey` 字段是摆设,已改为真正读取;保留三态(主口径达标 pass / 次口径达标 pending / 否则 fail)。因这套语义,firm-a/b/c 的 golden 快照无需改动
+- **PDF 勾圈叉用 `√ ○ ×`,网页用 emoji**:实测 msyh/simhei/Deng/simsun 均无 ✓✗ 也无 ✅❌⭕,但都有 √○×;彩色 emoji 是位图字形(pdfkit 嵌不进去),唯一含 ✓✗ 的 `seguisym.ttf` 是 Windows 专有
+- **字体探测增加 √○× 三个码点**:缺符号的字体直接淘汰,避免"中文正常但符号豆腐块"
+- **二维码走英文路径** `assets/consult-qr.png`:中文名经 Windows 打包 + 宝塔解压易乱码,`doc.image` 找不到时静默空白
+- 客户版达标判定不复用 `result.conclusion`(六门槛含资格项,会把只传财务的企业判成"待定"),另算 `official >= 60`
+
+**踩过的坑**
+- pdfkit 在页脚写 `PAGE.height-30` 超出下边距会**自动加页**,报告从 4 页变 12 页;解法是临时把 `page.margins.bottom` 置 0
+- `App.vue` 路由守卫在会话未返回时误判未登录,把 hash 改成 `/login`,会话回来后又被"已在登录页"挡住 → 登录态刷新永远停在登录页;加 `sessionReady` 闸门
+- 客户自述不能用 `declareValue` 写 `fin.revenue` 这类数值字段(类型校验会拒对象),该类字段只能用 `confirmSeries`
+- `express-serve-static-core` 的模块增强在 pnpm 布局下解析不到,改用 `AuthedRequest` 交叉类型 + `authed(req)`
+
+**验证**
+- `pnpm validate` 全绿:配置 7 个文件、shared 114 条、server 127 条(新增 series 5 条 / portal 4 条 / auth 角色 4 条)
+- 端到端:客户登录 → 传 PDF → assess → 结果(三年营收增速 4244%、软著折算后发明专利项非零)→ PDF 4 页,`√ ○ ×` 全部可提取
+- 真实浏览器:客户首页 4 个材料卡正常渲染、无 console 错误;登录页角色切换正常
+- 报告版式已逐页渲染成图目视验收(封面/五维+清单/建议/材料与二维码)
+
+## 结果页补雷达图 + 信用代码改选填(2026-10-30)
+
+- **客户结果页「五个维度」改为雷达 + 横条并排**(`components/portal/DimensionRadar.vue`,400px 固定宽):深色实线 `#1d4ed8` = 当前得分,浅色虚线 `#7dd3fc` = 补齐后可达;轴上限取维度 `effectiveWeight` 之和,与 PDF 雷达一致,所以五个轴的"满格"含义相同但分值不同。横条保留,负责看具体数值。
+- **统一社会信用代码改选填**:前端仅在企业名称为空时报错,代码非空时才校验 18 位;`normalizeCompany` 同步放宽;报告抬头与结果页在代码为空时整段省略,不出现"——"。新增一条测试用例守着"只填名称也能建项目"。
+
+## 历史报告找回(2026-10-30)
+
+客户"退出后看不到之前的报告",根因不是 cookie 失效,而是首页从未调用已存在的 `GET /api/portal/projects` —— 接口一直好着,只是没人用。
+
+- **两层覆盖**:同浏览器直接出「我的历史报告」列表(约 90% 场景);换设备用「企业全称 + 手机号后四位」找回(约 10%)。
+- **为什么不用企业名单独查**:企业名是公开信息(企查查/名片),单名即可拉取等于把客户营收与净资产挂公网。名称只定位,手机后四位验人。也不做模糊匹配,只做归一化后精确相等,避免误命中同行。
+- **归一化**:`normalizeCompanyName` 去空白/全角转半角/去括号/去间隔号/大写,写在 `store/project.ts` 供复用。
+- **多浏览器**:`ProjectMeta.claims` 存可访问的 clientId 列表,`claimsOf()` 在 claims 为空时回落到老字段 `clientId`,存量数据零迁移。输对一次即 `withClaim` 追加,下次无需再输。
+- **手机号转必填**:没有手机号,"找回"在系统上不成立。`normalizeCompany` 空值直接 400。
+- **防枚举**:名称不存在与后四位错误返回**同一个** 404 `lookup_failed`;新增固定窗口限流(`config/portal.json` 的 `lookup`,默认 10 次/10 分钟),超限 429 + `Retry-After`。1 万种后四位按此速率单 IP 需 7 天。
+- **PDF**:末页说明加一行找回指引,不印任何码。
+
+**验证**:`pnpm validate` 全绿(shared 114 / server 131,新增 4 条:换浏览器找回并自动绑定、错误提示一致、限流 429、旧数据无 claims 仍可访问);真机截图确认首页历史卡片与找回弹窗渲染正常、控制台零报错。
+
+## 评分页与客户结果页统一(2026-10-30)
+
+两页长得不一样的根因不是样式，是**两套数据源**：客户页走 `buildPortalResult()` 得到已整理的结构，管理员页走 `ScoreRecord` 拿引擎原始输出。字段对不上，调样式只会错位。
+
+- **共用一套数据**：新增 `GET /api/admin/projects/:id/result`，内部复用 `loadPortalDetail()`（新文件 `portal/detail.ts`），与客户页同一个 `buildPortalResult`。DTO 用 `AdminPortalResult extends PortalResultResponse` 再包 `professional: { record, rules }`，客户契约 `PortalResultResponse` 一行没改。
+- **共用一套组件**：把结果页主体抽成 `components/portal/ScoreReport.vue`（`data` + `saved` props + `ops` 插槽）。客户页传 `saved=true`、按钮组是「重新评估 / 下载 PDF」；管理员页传 `saved=false`、按钮组是「返回工作台 / 导出报告」。
+- **专业信息折叠**：六道门槛、三口径、23 项明细、口径假设、低证据警告全部塞进底部 `el-collapse`「专业视图」，默认收起。不展开时两页视觉一致（已截图比对，容器同为 980px）。
+- **导出统一**：管理员只导客户版 4 页 PDF（`GET /api/admin/projects/:id/report`），与页面同源，避免页面有建议而 PDF 空。PDF 的 Content-Disposition 抽成 `sendPortalPdf()`，客户版与 admin 共用，中文文件名规则不再两处维护。
+- **advices 来源**：优先读 `assess.json`（与客户页文案完全一致）；管理员自建项目没有 assess.json 时，`generateAdvice` 不传 client 直接落规则模板——零 token、不写缓存，GET 无副作用。
+- **语义变化**：旧页面每次打开都 `POST /score` 重算落盘，新页面改成 GET 只读。无评分记录时（409）自动补算一次再重取，另保留「重新计算」按钮显式触发。
+- 删掉 `components/ScoreRadar.vue`（唯一引用是旧 hero）；`api.reportUrl` 移除，旧 8 章报告的服务端接口保留（`report.spec.ts` 依赖，排障也用得上）。
+
+**验证**：`pnpm validate` 全绿（shared 114 / server 134，新增 3 条 admin 用例：结果结构与专业数据、客户版 PDF 导出、customer 打 admin 接口 403、未评分 409）；真机截图确认管理员页与客户页 hero/雷达/横条/清单/建议区一致，折叠区展开后三口径与 23 项表格无横向溢出。

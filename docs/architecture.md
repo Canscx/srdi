@@ -105,7 +105,29 @@ GET    /api/settings/ai                   → { baseUrl, model, hasKey, keyMaske
 PUT    /api/settings/ai                   { baseUrl?, apiKey?, model?, clearKey? } → 同上
 POST   /api/settings/ai/test              → { ok, model, latencyMs, message }
 GET    /api/health                        → 运行时、规则摘要与数据目录
+
+# 客户轻流程(仅 customer 角色,浏览器身份靠 srdi_client cookie)
+GET    /api/portal/config                        → { config, defaultPeriod }
+POST   /api/portal/projects                      { company, period? } → { projectId, name }
+GET    /api/portal/projects                      → { projects[] }(按 claims 过滤)
+POST   /api/portal/projects/:id/files?slot=      slot ∈ finance|tax|ledger|extra
+DELETE /api/portal/projects/:id/files/:fileId    → 204
+POST   /api/portal/projects/:id/assess           → { jobId, reused, queueAhead }
+GET    /api/portal/jobs/:jobId                   → { job, queueAhead }(客户读不到 /api/jobs)
+GET    /api/portal/projects/:id/result           → PortalResultResponse
+GET    /api/portal/projects/:id/report           → 客户版 4 页 PDF
+POST   /api/portal/lookup                        { companyName, phoneTail } → { projects[] }
+
+# 管理员
+GET    /api/admin/submissions?q=                 → { passLine, items[] }
+GET    /api/admin/projects/:id/result            → AdminPortalResult(客户视图 + professional)
+GET    /api/admin/projects/:id/report            → 客户版 4 页 PDF(与页面同源)
+PATCH  /api/admin/projects/:id/industry          { industryCode } → 重算
 ```
+
+**角色分区**:除 `/api/auth/*` 与 `/api/health` 外,`/api/portal/*` 走 `requireRole('customer')`,其余走 `requireRole('admin')`。客户访问后台接口得 403,后台访问客户接口同样 403,两套入口在路由层就分开,不靠前端隐藏。
+
+客户身份不是账号而是浏览器:首次进 `/api/portal/*` 时下发 `srdi_client`(HttpOnly,两年),项目的 `claims[]` 记录所有可访问该项目的浏览器身份。输对企业全称 + 手机号后四位后会把当前浏览器追加进 `claims`,`/api/portal/lookup` 有 10 次/10 分钟的 IP 限流(参数在 `config/portal.json`)。
 
 接口契约以 `shared/src/contracts.ts` 的 TS 类型为准,前后端共享同一份定义。模型配置落 `data/ai-settings.json`,读取时页面配置 > 环境变量 > 默认值,Key 只回显掩码。
 
@@ -142,11 +164,15 @@ confirmed ──重新解析──> candidate(旧值保留,不丢历史)
 ## 八、报告形态
 
 ```
+客户版   4 页 A4:封面(分数+双系列雷达) / 五维+23 项自查 / 补足建议 / 材料与说明
+         管理员在评分页点「导出报告」下载的就是这一份,与页面同源
+内部版   Markdown / PDF,8 章完整报告,数字全部来自 score-result.json
 主视图   条件匹配度:六项门槛逐条 满足/不满足/材料不足/需人工确认
          材料完整度:40 字段中已确认多少,缺哪些佐证
 次视图   参考得分:63.4(区间 51.2 – 71.8),标注非官方口径
-导出    Markdown / PDF,由同一 ReportModel 渲染,数字全部来自 score-result.json
 ```
+
+**评分页与客户结果页是同一个组件**(`web/src/components/portal/ScoreReport.vue`),数据都来自 `server/src/portal/detail.ts` 的 `loadPortalDetail()` → `buildPortalResult()`,只是管理员多一层 `professional`(引擎原始结果 + 规则元数据)放在底部折叠区。这样两页不会各自漂移。
 
 四态必须区分"材料不足"与"需人工确认":前者是客户没给,后者是我们识别到但拿不准。
 

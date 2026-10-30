@@ -7,10 +7,10 @@
 ```
 第一层  六项门槛   逐条 pass / fail / unknown,全过才有资格
 第二层  23 项得分  加权求和,得三口径区间
-第三层  门槛 6     用 conservative 判是否 ≥50 分
+第三层  门槛 6     用 official 判是否 ≥60 分(乐观口径兜底为 pending)
 ```
 
-门槛与得分完全独立。**门槛不过,分数再高也没用**;门槛全过,分数不到 50 一样不通过。
+门槛与得分完全独立。**门槛不过,分数再高也没用**;门槛全过,分数不到 60 一样不通过。
 
 ## 二、权重归一
 
@@ -105,13 +105,15 @@ optimistic    = Σ w_i × s_i   (估算/缺失一律记 1)
 confidence    = 1 - Σ w_i(信用不足项) / 100
 ```
 
-门槛 6 判定只看 `conservative`:
+门槛 6 的判据由 `totalKey` 决定,当前配 `official`(政策原文的"评价得分"就是这一个口径,conservative / optimistic 是我们自造的下限与上限,不能拿来当判据):
 
 | 条件 | verdict | 报告措辞 |
 | --- | --- | --- |
-| `conservative ≥ 50` | pass | 达标,下限已过线,结论稳健 |
-| `conservative < 50 ≤ official` | pending | 有条件达标,取决于 N 项待补证指标 |
-| `official < 50` | fail | 未达线,需补强 Top 差距 |
+| `official ≥ 60` | pass | 已过 60 分参考线,补齐缺口还能再提 |
+| `official < 60 ≤ optimistic` | pending | 有条件达标,取决于 N 项待补证指标 |
+| `optimistic < 60` | fail | 未达线,需补强 Top 差距 |
+
+`totalKey` 写什么,`passLine` 就按那个口径比;想改回保守判定只需把 `totalKey` 改成 `conservative`,代码不用动。
 
 **信心与分数分离**:证据置信度低只降 `confidence` 和打标,不二次缩放分数。双重惩罚会让分数失去可解释性。
 
