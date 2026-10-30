@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type {
+  AdminPortalResult,
   GateResult,
   IndicatorResult,
-  ProjectMeta,
   RulesMetaIndicator,
-  RulesMetaResponse,
   ScoreRecord
 } from '@srdi/shared'
 import { formatValue } from '@srdi/shared'
 import { ElMessage } from 'element-plus'
-import { api, errorText } from '@/api'
+import { ApiError, api, errorText } from '@/api'
 import {
   CONCLUSION_TEXT,
   FLAG_TEXT,
@@ -22,16 +21,14 @@ import {
 } from '@/format'
 import { goto, useRoute } from '@/router'
 import RenameProjectDialog from '@/components/RenameProjectDialog.vue'
-import ScoreRadar from '@/components/ScoreRadar.vue'
+import ScoreReport from '@/components/portal/ScoreReport.vue'
 
 type StatusFilter = 'all' | 'scored' | 'estimated' | 'missing' | 'notApplicable' | 'excluded'
 
 const route = useRoute()
 const projectId = computed(() => route.value.projectId ?? '')
 
-const project = ref<ProjectMeta | null>(null)
-const meta = ref<RulesMetaResponse | null>(null)
-const record = ref<ScoreRecord | null>(null)
+const data = ref<AdminPortalResult | null>(null)
 const loading = ref(true)
 const busy = ref(false)
 const error = ref('')
@@ -39,9 +36,13 @@ const filter = ref<StatusFilter>('all')
 const dimFilter = ref('all')
 const openRows = ref<string[]>([])
 const openGates = ref<string[]>([])
+const openPro = ref<string[]>([])
 const renameOpen = ref(false)
 
+const record = computed<ScoreRecord | null>(() => data.value?.professional.record ?? null)
+const meta = computed(() => data.value?.professional.rules ?? null)
 const result = computed(() => record.value?.result ?? null)
+const projectName = computed(() => data.value?.projectName ?? '加载中…')
 
 const metaMap = computed(() => {
   const map = new Map<string, RulesMetaIndicator>()
@@ -52,7 +53,7 @@ const metaMap = computed(() => {
 })
 
 const periodText = computed(() => {
-  const period = result.value?.period ?? project.value?.period
+  const period = result.value?.period ?? data.value?.period
   return period ? `${period.y2}–${period.y0}` : ''
 })
 
@@ -87,16 +88,6 @@ const dimensionMax = (dimensionId: string, fallback: number) => {
     .reduce((total, item) => total + item.effectiveWeight, 0)
   return sum > 0 ? Math.round(sum * 100) / 100 : fallback
 }
-
-const radarPoints = computed(() =>
-  (result.value?.dimensions ?? []).map((dimension) => ({
-    name: dimension.name,
-    max: dimensionMax(dimension.id, dimension.weight),
-    official: dimension.score.official,
-    conservative: dimension.score.conservative,
-    optimistic: dimension.score.optimistic
-  }))
-)
 
 interface IndicatorRow {
   item: IndicatorResult
@@ -225,7 +216,7 @@ const toggleGate = (id: string) => {
 }
 
 const onRenamed = (name: string) => {
-  if (project.value) project.value = { ...project.value, name }
+  if (data.value) data.value = { ...data.value, projectName: name }
 }
 
 const bootstrap = async () => {
@@ -236,16 +227,21 @@ const bootstrap = async () => {
   loading.value = true
   error.value = ''
   try {
-    const [projectRes, rulesRes, scored] = await Promise.all([
-      api.project(projectId.value),
-      api.rules(),
-      api.score(projectId.value)
-    ])
-    project.value = projectRes.project
-    meta.value = rulesRes
-    record.value = scored.record
+    data.value = await api.adminResult(projectId.value)
   } catch (err) {
-    error.value = errorText(err)
+    if (err instanceof ApiError && err.status === 409) {
+      try {
+        await api.score(projectId.value)
+        data.value = await api.adminResult(projectId.value)
+      } catch (inner) {
+        error.value = errorText(inner)
+      }
+    } else if (err instanceof ApiError && err.status === 404) {
+      goto('/projects')
+      return
+    } else {
+      error.value = errorText(err)
+    }
   } finally {
     loading.value = false
   }
@@ -255,7 +251,8 @@ const recalc = async () => {
   if (busy.value) return
   busy.value = true
   try {
-    record.value = (await api.score(projectId.value)).record
+    await api.score(projectId.value)
+    data.value = await api.adminResult(projectId.value)
     ElMessage.success('已按当前证据重新计算')
   } catch (err) {
     ElMessage.error(errorText(err))
@@ -264,38 +261,12 @@ const recalc = async () => {
   }
 }
 
-const exportReport = async (format: 'md' | 'pdf') => {
+const exportPdf = () => {
   if (!record.value) {
     ElMessage.warning('先生成参考得分')
     return
   }
-  try {
-    const response = await fetch(api.reportUrl(projectId.value, format))
-    if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as { message?: string } | null
-      throw new Error(body?.message ?? `导出失败（HTTP ${response.status}）`)
-    }
-    const blob = await response.blob()
-    const disposition = response.headers.get('content-disposition') ?? ''
-    const star = /filename\*=UTF-8''([^;]+)/i.exec(disposition)
-    const plain = /filename="([^"]+)"/i.exec(disposition)
-    const filename = star
-      ? decodeURIComponent(star[1])
-      : plain
-        ? plain[1]
-        : `自评报告.${format}`
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    link.rel = 'noopener'
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
-  } catch (err) {
-    ElMessage.error(errorText(err))
-  }
+  window.open(api.adminReportUrl(projectId.value), '_blank')
 }
 
 onMounted(bootstrap)
@@ -305,294 +276,290 @@ onMounted(bootstrap)
   <section v-loading="loading" class="score">
     <header class="topbar">
       <div class="identity">
+        <el-button text size="small" @click="goto('/projects')">← 工作台</el-button>
         <el-button text size="small" @click="goto(`/p/${projectId}/review`)">← 确认页</el-button>
-        <h2>{{ project?.name ?? '加载中…' }}</h2>
-        <el-button v-if="project" text size="small" @click="renameOpen = true">重命名</el-button>
+        <h2>{{ projectName }}</h2>
+        <el-button v-if="data" text size="small" @click="renameOpen = true">重命名</el-button>
         <span v-if="periodText" class="period">{{ periodText }}</span>
         <span v-if="result" class="industry">{{ industryText }}</span>
       </div>
       <div class="actions">
         <span v-if="record" class="stamp">打分于 {{ savedText }}</span>
-        <el-button size="small" :disabled="!record" @click="exportReport('md')">
-          导出 MD
-        </el-button>
-        <el-button size="small" :disabled="!record" @click="exportReport('pdf')">
-          导出 PDF
-        </el-button>
+        <el-button size="small" :disabled="!record" @click="exportPdf">导出报告</el-button>
         <el-button size="small" type="primary" plain :loading="busy" @click="recalc">
           重新计算
         </el-button>
       </div>
     </header>
 
-    <p class="disclaimer">
-      <b>参考得分 · 非官方口径</b>
-      <span>
-        五个一级维度权重取自政策文件；三级指标政策未公布权重，本工具按维度内等权处理。
-        得分为纯函数规则引擎算出的自查参考值，与主管部门的评审结果不可直接比对。
-      </span>
-    </p>
-
     <div v-if="error" class="error">
       <span>{{ error }}</span>
       <el-button size="small" @click="bootstrap">重试</el-button>
     </div>
 
-    <template v-else-if="result && record">
-      <p v-if="lowEvidence" class="warn">
-        <b>证据偏少</b>
-        <span>
-          40 个字段仅确认 {{ evidenceStats?.confirmed ?? 0 }} 项，缺失项按 0.5 权重的中性值计入参考分。
-          回确认页补齐证据后重新计算，分数结构会明显变化。
-        </span>
-      </p>
+    <template v-else-if="data">
+      <ScoreReport :data="data" :saved="false">
+        <template #ops>
+          <el-button @click="goto('/projects')">返回工作台</el-button>
+          <el-button type="primary" :disabled="!record" @click="exportPdf">导出报告</el-button>
+        </template>
+      </ScoreReport>
 
-      <div class="hero">
-        <section class="panel radar-panel">
-          <header class="panel-head">
-            <h3>五维参考得分</h3>
-            <span>轴上限为重归一后的维度满分</span>
-          </header>
-          <ScoreRadar :points="radarPoints" />
-          <ul class="dim-list">
-            <li v-for="dimension in result.dimensions" :key="dimension.id">
-              <span class="dim-name">{{ dimension.name }}</span>
-              <span class="dim-weight">
-                满分 {{ dimensionMax(dimension.id, dimension.weight).toFixed(2) }}
-              </span>
-              <span class="dim-score">{{ dimension.score.official.toFixed(2) }}</span>
-            </li>
-          </ul>
-        </section>
+      <section v-if="result" class="pro">
+        <el-collapse v-model="openPro">
+          <el-collapse-item
+            name="pro"
+            title="专业视图 · 六道门槛 / 三口径 / 23 项明细 / 口径与假设"
+          >
+            <div class="pro-body">
+              <p v-if="lowEvidence" class="warn">
+                <b>证据偏少</b>
+                <span>
+                  40 个字段仅确认 {{ evidenceStats?.confirmed ?? 0 }} 项，缺失项按 0.5 权重的中性值计入参考分。
+                  回确认页补齐证据后重新计算，分数结构会明显变化。
+                </span>
+              </p>
 
-        <section class="panel score-panel">
-          <div class="calibers">
-            <div>
-              <span>保守口径</span>
-              <b>{{ result.totals.conservative.toFixed(2) }}</b>
-            </div>
-            <div class="main">
-              <span>参考得分</span>
-              <b>{{ result.totals.official.toFixed(2) }}</b>
-            </div>
-            <div>
-              <span>乐观口径</span>
-              <b>{{ result.totals.optimistic.toFixed(2) }}</b>
-            </div>
-          </div>
+              <section class="panel">
+                <header class="panel-head">
+                  <h3>三口径与证据</h3>
+                  <span>{{ rangeLabel }}</span>
+                </header>
 
-          <div class="verdict" :class="result.conclusion">
-            <span>{{ CONCLUSION_TEXT[result.conclusion] }}</span>
-            <em>
-              六门槛 {{ gateFailureCount }} 项不满足 · {{ gatePendingCount }} 项待补
-              · {{ rangeLabel }}
-            </em>
-          </div>
-
-          <dl class="facts">
-            <div>
-              <dt>行业基准</dt>
-              <dd>{{ industryText }}</dd>
-            </div>
-            <div>
-              <dt>确认字段</dt>
-              <dd>{{ evidenceStats?.confirmed }} / {{ evidenceStats?.total }}（{{ completeness }}%）</dd>
-            </div>
-            <div>
-              <dt>证据可信度</dt>
-              <dd>{{ (result.totals.confidence * 100).toFixed(1) }}%</dd>
-            </div>
-            <div>
-              <dt>引擎</dt>
-              <dd>v{{ result.meta.engineVersion }} · {{ result.rulesId }}</dd>
-            </div>
-          </dl>
-
-          <p class="caliber-note">
-            保守口径把估算项与缺失项记 0，乐观口径把它们记满权重；参考口径中缺失项按半个权重、估算项按估算分计入。
-            三者重合说明当前没有估算项与缺失项。
-          </p>
-
-          <div class="states">
-            <span v-for="option in filterOptions.slice(1)" :key="option.key" :class="option.key">
-              {{ option.text }}<b>{{ option.count }}</b>
-            </span>
-          </div>
-        </section>
-      </div>
-
-      <p v-if="result.excluded.length" class="weight-note">
-        <b>权重排除</b>
-        <span v-for="item in result.excluded" :key="item.indicatorId">
-          {{ item.indicatorId }} {{ nameOf(item.indicatorId) }} · 原权重
-          {{ item.baseWeight.toFixed(2) }} · {{ item.reason }}
-        </span>
-        <em>其余 {{ result.indicators.length - result.excluded.length }} 项等比放大，有效权重合计 100。</em>
-      </p>
-
-      <section class="panel">
-        <header class="panel-head">
-          <h3>六道门槛判词</h3>
-          <span>判词只看证据与规则，不由得分反推 · 点行展开检查项</span>
-        </header>
-        <table class="gate-grid">
-          <thead>
-            <tr>
-              <th style="width: 230px">门槛</th>
-              <th style="width: 92px">判词</th>
-              <th style="width: 108px">依据</th>
-              <th>说明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="gate in result.gates" :key="gate.id">
-              <tr class="gate-row" @click="toggleGate(gate.id)">
-                <td class="gate-name">
-                  <b>{{ gate.id }}</b>{{ gate.name }}
-                </td>
-                <td>
-                  <span class="verdict-chip" :class="gate.effective">
-                    {{ gateVerdictText(gate) }}
-                  </span>
-                </td>
-                <td class="basis">{{ gateBasisText(gate) }}</td>
-                <td class="gate-explain">
-                  {{ gate.explain }}
-                  <em v-if="gate.passedVia">（经 {{ gate.passedVia }} 通过）</em>
-                </td>
-              </tr>
-              <tr v-if="isGateOpen(gate.id)" class="gate-detail">
-                <td colspan="4">
-                  <div v-if="gate.checks.length" class="checks">
-                    <div v-for="check in gate.checks" :key="check.id" :class="check.verdict">
-                      <span class="dot" />
-                      <b>{{ check.id }}</b>
-                      {{ check.label }}
-                      <em>{{ GATE_VERDICT_TEXT[check.verdict] }}</em>
-                    </div>
+                <div class="calibers">
+                  <div>
+                    <span>保守口径</span>
+                    <b>{{ result.totals.conservative.toFixed(2) }}</b>
                   </div>
-                  <p v-else class="gate-note">该门槛按三口径分数判定，无独立检查项。</p>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </section>
+                  <div class="main">
+                    <span>参考得分</span>
+                    <b>{{ result.totals.official.toFixed(2) }}</b>
+                  </div>
+                  <div>
+                    <span>乐观口径</span>
+                    <b>{{ result.totals.optimistic.toFixed(2) }}</b>
+                  </div>
+                </div>
 
-      <section class="panel">
-        <header class="panel-head table-head">
-          <h3>23 项指标明细</h3>
-          <div class="filters">
-            <button
-              v-for="option in filterOptions"
-              :key="option.key"
-              :class="{ on: filter === option.key }"
-              @click="filter = option.key"
-            >
-              {{ option.text }} {{ option.count }}
-            </button>
-            <el-select v-model="dimFilter" size="small" style="width: 118px">
-              <el-option label="全部维度" value="all" />
-              <el-option
-                v-for="dimension in result.dimensions"
-                :key="dimension.id"
-                :label="dimension.name"
-                :value="dimension.id"
-              />
-            </el-select>
-          </div>
-        </header>
+                <div class="verdict" :class="result.conclusion">
+                  <span>{{ CONCLUSION_TEXT[result.conclusion] }}</span>
+                  <em>
+                    六门槛 {{ gateFailureCount }} 项不满足 · {{ gatePendingCount }} 项待补
+                    · {{ rangeLabel }}
+                  </em>
+                </div>
 
-        <table class="grid">
-          <thead>
-            <tr>
-              <th class="num" style="width: 44px">编号</th>
-              <th style="width: 300px">指标</th>
-              <th style="width: 84px">状态</th>
-              <th class="num" style="width: 120px">原始值</th>
-              <th class="num" style="width: 76px">得分率</th>
-              <th class="num" style="width: 64px">权重</th>
-              <th class="num" style="width: 76px">有效权重</th>
-              <th>标记</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="group in groups" :key="group.id">
-              <tr class="dim-row">
-                <td colspan="8">
-                  <b>{{ group.name }}</b>
-                  <span>
-                    名义权重 {{ group.weight }} · 重归一满分
-                    {{ dimensionMax(group.id, group.weight).toFixed(2) }} · 参考
-                    {{ group.score.official.toFixed(2) }} · {{ dimensionRange(group.score) }}
+                <dl class="facts">
+                  <div>
+                    <dt>行业基准</dt>
+                    <dd>{{ industryText }}</dd>
+                  </div>
+                  <div>
+                    <dt>确认字段</dt>
+                    <dd>
+                      {{ evidenceStats?.confirmed }} / {{ evidenceStats?.total }}（{{ completeness }}%）
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>证据可信度</dt>
+                    <dd>{{ (result.totals.confidence * 100).toFixed(1) }}%</dd>
+                  </div>
+                  <div>
+                    <dt>引擎</dt>
+                    <dd>v{{ result.meta.engineVersion }} · {{ result.rulesId }}</dd>
+                  </div>
+                </dl>
+
+                <p class="caliber-note">
+                  保守口径把估算项与缺失项记 0，乐观口径把它们记满权重；参考口径中缺失项按半个权重、估算项按估算分计入。
+                  三者重合说明当前没有估算项与缺失项。
+                </p>
+
+                <div class="states">
+                  <span v-for="option in filterOptions.slice(1)" :key="option.key" :class="option.key">
+                    {{ option.text }}<b>{{ option.count }}</b>
                   </span>
-                </td>
-              </tr>
-              <template v-for="row in group.rows" :key="row.item.id">
-                <tr class="item" :class="row.item.status" @click="toggleRow(row.item.id)">
-                  <td class="num">{{ row.item.code }}</td>
-                  <td class="name">
-                    {{ row.item.name }}
-                    <em>{{ row.item.id }}</em>
-                  </td>
-                  <td>
-                    <span class="badge" :class="row.item.status">
-                      {{ INDICATOR_STATUS_TEXT[row.item.status] }}
-                    </span>
-                  </td>
-                  <td class="num">{{ rawText(row) }}</td>
-                  <td class="num">{{ formatScoreRate(row.item.score) }}</td>
-                  <td class="num muted">{{ row.item.weight.toFixed(2) }}</td>
-                  <td class="num">{{ row.item.effectiveWeight.toFixed(2) }}</td>
-                  <td class="flags">
-                    <span v-for="flag in flagList(row)" :key="flag.key">{{ flag.text }}</span>
-                  </td>
-                </tr>
-                <tr v-if="isRowOpen(row.item.id)" class="detail">
-                  <td colspan="8">
-                    <div class="detail-grid">
-                      <p><span>引擎说明</span>{{ row.item.explain.text }}</p>
-                      <p v-if="row.formula"><span>公式</span><code>{{ row.formula }}</code></p>
-                      <p v-if="row.refs.length"><span>证据字段</span>{{ row.refs.join('、') }}</p>
-                      <p v-if="row.missingKeys.length">
-                        <span>缺失字段</span>{{ row.missingKeys.join('、') }}
-                      </p>
-                      <p v-if="row.item.benchmark">
-                        <span>行业基准</span>
-                        {{ row.item.benchmark.key }} = {{ benchmarkText(row) }} ·
-                        {{ row.item.benchmark.source === 'industry' ? '行业值' : '中性估算' }}
-                      </p>
-                      <p><span>三口径贡献</span>{{ contributionText(row) }}</p>
-                      <p v-if="row.item.reason"><span>判定原因</span>{{ row.item.reason }}</p>
-                    </div>
-                  </td>
-                </tr>
-              </template>
-            </template>
-          </tbody>
-        </table>
-        <el-empty
-          v-if="groups.length === 0"
-          description="当前筛选下没有指标"
-          :image-size="64"
-        />
-      </section>
+                </div>
+              </section>
 
-      <section class="panel notes">
-        <header class="panel-head">
-          <h3>口径与假设</h3>
-          <span>{{ meta?.rulesId }} · 生效 {{ meta?.version }}</span>
-        </header>
-        <ol>
-          <li v-for="item in meta?.assumptions ?? []" :key="item.id">
-            <b>{{ item.id }}</b>{{ item.text }}
-            <em>{{ item.impact }}</em>
-          </li>
-        </ol>
-        <p class="foot-note">
-          参考得分非官方口径：三级指标采用维度内等权，排除项按策略不计分并把其余指标权重等比放大到 100；
-          缺失项以中性值参与三口径区间。分数只作申报前自查，不能作为对外承诺。
-        </p>
+              <p v-if="result.excluded.length" class="weight-note">
+                <b>权重排除</b>
+                <span v-for="item in result.excluded" :key="item.indicatorId">
+                  {{ item.indicatorId }} {{ nameOf(item.indicatorId) }} · 原权重
+                  {{ item.baseWeight.toFixed(2) }} · {{ item.reason }}
+                </span>
+                <em>
+                  其余 {{ result.indicators.length - result.excluded.length }} 项等比放大，有效权重合计 100。
+                </em>
+              </p>
+
+              <section class="panel">
+                <header class="panel-head">
+                  <h3>六道门槛判词</h3>
+                  <span>判词只看证据与规则，不由得分反推 · 点行展开检查项</span>
+                </header>
+                <table class="gate-grid">
+                  <thead>
+                    <tr>
+                      <th style="width: 210px">门槛</th>
+                      <th style="width: 88px">判词</th>
+                      <th style="width: 104px">依据</th>
+                      <th>说明</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template v-for="gate in result.gates" :key="gate.id">
+                      <tr class="gate-row" @click="toggleGate(gate.id)">
+                        <td class="gate-name">
+                          <b>{{ gate.id }}</b>{{ gate.name }}
+                        </td>
+                        <td>
+                          <span class="verdict-chip" :class="gate.effective">
+                            {{ gateVerdictText(gate) }}
+                          </span>
+                        </td>
+                        <td class="basis">{{ gateBasisText(gate) }}</td>
+                        <td class="gate-explain">
+                          {{ gate.explain }}
+                          <em v-if="gate.passedVia">（经 {{ gate.passedVia }} 通过）</em>
+                        </td>
+                      </tr>
+                      <tr v-if="isGateOpen(gate.id)" class="gate-detail">
+                        <td colspan="4">
+                          <div v-if="gate.checks.length" class="checks">
+                            <div v-for="check in gate.checks" :key="check.id" :class="check.verdict">
+                              <span class="dot" />
+                              <b>{{ check.id }}</b>
+                              {{ check.label }}
+                              <em>{{ GATE_VERDICT_TEXT[check.verdict] }}</em>
+                            </div>
+                          </div>
+                          <p v-else class="gate-note">该门槛按三口径分数判定，无独立检查项。</p>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </section>
+
+              <section class="panel">
+                <header class="panel-head table-head">
+                  <h3>23 项指标明细</h3>
+                  <div class="filters">
+                    <button
+                      v-for="option in filterOptions"
+                      :key="option.key"
+                      :class="{ on: filter === option.key }"
+                      @click="filter = option.key"
+                    >
+                      {{ option.text }} {{ option.count }}
+                    </button>
+                    <el-select v-model="dimFilter" size="small" style="width: 118px">
+                      <el-option label="全部维度" value="all" />
+                      <el-option
+                        v-for="dimension in result.dimensions"
+                        :key="dimension.id"
+                        :label="dimension.name"
+                        :value="dimension.id"
+                      />
+                    </el-select>
+                  </div>
+                </header>
+
+                <table class="grid">
+                  <thead>
+                    <tr>
+                      <th class="num" style="width: 40px">编号</th>
+                      <th style="width: 240px">指标</th>
+                      <th style="width: 76px">状态</th>
+                      <th class="num" style="width: 110px">原始值</th>
+                      <th class="num" style="width: 70px">得分率</th>
+                      <th class="num" style="width: 58px">权重</th>
+                      <th class="num" style="width: 70px">有效权重</th>
+                      <th>标记</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template v-for="group in groups" :key="group.id">
+                      <tr class="dim-row">
+                        <td colspan="8">
+                          <b>{{ group.name }}</b>
+                          <span>
+                            名义权重 {{ group.weight }} · 重归一满分
+                            {{ dimensionMax(group.id, group.weight).toFixed(2) }} · 参考
+                            {{ group.score.official.toFixed(2) }} · {{ dimensionRange(group.score) }}
+                          </span>
+                        </td>
+                      </tr>
+                      <template v-for="row in group.rows" :key="row.item.id">
+                        <tr class="item" :class="row.item.status" @click="toggleRow(row.item.id)">
+                          <td class="num">{{ row.item.code }}</td>
+                          <td class="name">
+                            {{ row.item.name }}
+                            <em>{{ row.item.id }}</em>
+                          </td>
+                          <td>
+                            <span class="badge" :class="row.item.status">
+                              {{ INDICATOR_STATUS_TEXT[row.item.status] }}
+                            </span>
+                          </td>
+                          <td class="num">{{ rawText(row) }}</td>
+                          <td class="num">{{ formatScoreRate(row.item.score) }}</td>
+                          <td class="num muted">{{ row.item.weight.toFixed(2) }}</td>
+                          <td class="num">{{ row.item.effectiveWeight.toFixed(2) }}</td>
+                          <td class="flags">
+                            <span v-for="flag in flagList(row)" :key="flag.key">{{ flag.text }}</span>
+                          </td>
+                        </tr>
+                        <tr v-if="isRowOpen(row.item.id)" class="detail">
+                          <td colspan="8">
+                            <div class="detail-grid">
+                              <p><span>引擎说明</span>{{ row.item.explain.text }}</p>
+                              <p v-if="row.formula"><span>公式</span><code>{{ row.formula }}</code></p>
+                              <p v-if="row.refs.length"><span>证据字段</span>{{ row.refs.join('、') }}</p>
+                              <p v-if="row.missingKeys.length">
+                                <span>缺失字段</span>{{ row.missingKeys.join('、') }}
+                              </p>
+                              <p v-if="row.item.benchmark">
+                                <span>行业基准</span>
+                                {{ row.item.benchmark.key }} = {{ benchmarkText(row) }} ·
+                                {{ row.item.benchmark.source === 'industry' ? '行业值' : '中性估算' }}
+                              </p>
+                              <p><span>三口径贡献</span>{{ contributionText(row) }}</p>
+                              <p v-if="row.item.reason"><span>判定原因</span>{{ row.item.reason }}</p>
+                            </div>
+                          </td>
+                        </tr>
+                      </template>
+                    </template>
+                  </tbody>
+                </table>
+                <el-empty
+                  v-if="groups.length === 0"
+                  description="当前筛选下没有指标"
+                  :image-size="64"
+                />
+              </section>
+
+              <section class="panel notes">
+                <header class="panel-head">
+                  <h3>口径与假设</h3>
+                  <span>{{ meta?.rulesId }} · 生效 {{ meta?.version }}</span>
+                </header>
+                <ol>
+                  <li v-for="item in meta?.assumptions ?? []" :key="item.id">
+                    <b>{{ item.id }}</b>{{ item.text }}
+                    <em>{{ item.impact }}</em>
+                  </li>
+                </ol>
+                <p class="foot-note">
+                  参考得分非官方口径：三级指标采用维度内等权，排除项按策略不计分并把其余指标权重等比放大到 100；
+                  缺失项以中性值参与三口径区间。分数只作申报前自查，不能作为对外承诺。
+                </p>
+              </section>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
       </section>
     </template>
 
@@ -601,16 +568,55 @@ onMounted(bootstrap)
     <RenameProjectDialog
       v-model:visible="renameOpen"
       :project-id="projectId"
-      :name="project?.name ?? ''"
+      :name="data?.projectName ?? ''"
       @renamed="onRenamed"
     />
   </section>
 </template>
+
 <style scoped>
 .score {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.pro {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.pro :deep(.el-collapse) {
+  border: 1px solid #e8eef6;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.pro :deep(.el-collapse-item__header) {
+  height: 46px;
+  padding: 0 18px;
+  border-bottom: none;
+  background: #fcfdff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.pro :deep(.el-collapse-item__wrap) {
+  border-bottom: none;
+}
+
+.pro :deep(.el-collapse-item__content) {
+  padding: 0 18px 16px;
+}
+
+.pro-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
 }
 
 .topbar {
@@ -727,12 +733,6 @@ h2 {
   font-size: 13px;
 }
 
-.hero {
-  display: grid;
-  grid-template-columns: 372px minmax(0, 1fr);
-  gap: 12px;
-}
-
 .panel {
   background: #fff;
   border: 1px solid #e6ebf2;
@@ -756,51 +756,6 @@ h2 {
 .panel-head span {
   font-size: 11px;
   color: #a3adbb;
-}
-
-.radar-panel {
-  display: flex;
-  flex-direction: column;
-}
-
-.dim-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 6px;
-  padding-top: 8px;
-  border-top: 1px dashed #eef2f7;
-  list-style: none;
-}
-
-.dim-list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 2px 0;
-  font-size: 12px;
-  color: #4b5563;
-}
-
-.dim-name {
-  width: 54px;
-}
-
-.dim-weight {
-  font-size: 11px;
-  color: #a3adbb;
-}
-
-.dim-score {
-  margin-left: auto;
-  font-weight: 600;
-  color: #1f2937;
-  font-variant-numeric: tabular-nums;
-}
-
-.score-panel {
-  display: flex;
-  flex-direction: column;
 }
 
 .calibers {
