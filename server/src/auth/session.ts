@@ -2,14 +2,35 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
-export interface AuthCredentials {
+export type Role = 'admin' | 'customer'
+
+export interface AuthAccount {
   user: string
   password: string
+  role?: Role
+}
+
+export interface AuthConfig {
+  user?: string
+  password?: string
+  accounts?: AuthAccount[]
+}
+
+export interface SessionInfo {
+  user: string
+  role: Role
+  expiresAt: number
+}
+
+export interface LoginOutcome {
+  token: string
+  user: string
+  role: Role
 }
 
 export interface AuthService {
-  login: (username: string, password: string) => string | null
-  verify: (token: string) => boolean
+  login: (username: string, password: string) => LoginOutcome | null
+  verify: (token: string) => SessionInfo | null
   revoke: (token: string) => void
 }
 
@@ -20,24 +41,42 @@ const safeEqual = (left: string, right: string) => {
   return timingSafeEqual(a, b)
 }
 
-export const createAuthService = ({ user, password }: AuthCredentials): AuthService => {
-  const sessions = new Map<string, number>()
+const normalizeAccounts = (config: AuthConfig): AuthAccount[] => {
+  const accounts = (config.accounts ?? []).map((account) => ({
+    user: account.user,
+    password: account.password,
+    role: account.role ?? 'admin'
+  }))
+  const legacy = config.user?.trim()
+  if (legacy && !accounts.some((account) => account.user === legacy)) {
+    accounts.push({ user: legacy, password: config.password ?? '', role: 'admin' })
+  }
+  return accounts
+}
+
+export const createAuthService = (config: AuthConfig): AuthService => {
+  const sessions = new Map<string, SessionInfo>()
+  const accounts = normalizeAccounts(config)
 
   return {
     login: (username, input) => {
-      if (!safeEqual(username, user) || !safeEqual(input, password)) return null
+      const account = accounts.find(
+        (item) => safeEqual(username, item.user) && safeEqual(input, item.password)
+      )
+      if (!account) return null
+      const role = account.role ?? 'admin'
       const token = randomBytes(32).toString('base64url')
-      sessions.set(token, Date.now() + SESSION_TTL_MS)
-      return token
+      sessions.set(token, { user: account.user, role, expiresAt: Date.now() + SESSION_TTL_MS })
+      return { token, user: account.user, role }
     },
     verify: (token) => {
-      const expiresAt = sessions.get(token)
-      if (expiresAt === undefined) return false
-      if (Date.now() > expiresAt) {
+      const info = sessions.get(token)
+      if (!info) return null
+      if (Date.now() > info.expiresAt) {
         sessions.delete(token)
-        return false
+        return null
       }
-      return true
+      return info
     },
     revoke: (token) => {
       sessions.delete(token)

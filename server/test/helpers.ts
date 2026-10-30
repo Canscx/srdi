@@ -2,6 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { ModelClient } from '../src/ai/client'
+import type { AuthConfig } from '../src/auth/session'
 import { createApp } from '../src/app'
 
 export const withTempDir = async <T>(run: (dir: string) => Promise<T>): Promise<T> => {
@@ -22,7 +23,7 @@ export const startServer = async (
   dataDir: string,
   maxFileBytes?: number,
   aiClient?: ModelClient,
-  auth?: { user: string; password: string }
+  auth?: AuthConfig
 ): Promise<TestServer> => {
   const app = createApp({
     webDist: path.join(dataDir, 'dist'),
