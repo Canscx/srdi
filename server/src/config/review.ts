@@ -3,9 +3,16 @@ import path from 'node:path'
 import type { AutoConfirmPolicy } from '@srdi/shared'
 import { CONFIG_ROOT } from '../paths'
 
+export interface PortalConfirmPolicy {
+  enabled: boolean
+  minConfidence: number
+  mergePeriods: boolean
+}
+
 export interface ReviewPolicy {
   version: string
   autoConfirm: AutoConfirmPolicy
+  portal: PortalConfirmPolicy
   review: {
     defaultFilter: 'pending' | 'confirmed' | 'missing' | 'all'
     autoJumpToNext: boolean
@@ -17,6 +24,7 @@ const REVIEW_FILE = 'review.json'
 const FALLBACK: ReviewPolicy = {
   version: '0.0.0',
   autoConfirm: { enabled: false, minConfidence: 1, rejectUnverifiedQuote: true },
+  portal: { enabled: true, minConfidence: 0.5, mergePeriods: true },
   review: { defaultFilter: 'pending', autoJumpToNext: true }
 }
 
@@ -39,6 +47,14 @@ export const loadReviewPolicy = (): ReviewPolicy => {
             : FALLBACK.autoConfirm.minConfidence,
         rejectUnverifiedQuote: autoConfirm?.rejectUnverifiedQuote !== false
       },
+      portal: {
+        enabled: raw.portal?.enabled !== false,
+        minConfidence:
+          typeof raw.portal?.minConfidence === 'number'
+            ? Math.min(1, Math.max(0, raw.portal.minConfidence))
+            : FALLBACK.portal.minConfidence,
+        mergePeriods: raw.portal?.mergePeriods !== false
+      },
       review: {
         defaultFilter: raw.review?.defaultFilter ?? FALLBACK.review.defaultFilter,
         autoJumpToNext: raw.review?.autoJumpToNext !== false
@@ -51,3 +67,5 @@ export const loadReviewPolicy = (): ReviewPolicy => {
 }
 
 export const autoConfirmPolicy = () => loadReviewPolicy().autoConfirm
+
+export const portalConfirmPolicy = () => loadReviewPolicy().portal

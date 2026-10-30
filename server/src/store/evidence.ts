@@ -7,7 +7,7 @@ import type {
   FieldEntry,
   ProjectMeta
 } from '@srdi/shared'
-import { EVIDENCE_SCHEMA_VERSION } from '@srdi/shared'
+import { EVIDENCE_SCHEMA_VERSION, FLAG } from '@srdi/shared'
 import { catalogFields, findCatalogField, type CatalogField } from '../config/catalog'
 import { AppError, badRequest, notFound } from '../errors'
 import { readJson, writeJson } from './atomic'
@@ -59,11 +59,53 @@ const coerceValue = (
   return String(input).trim()
 }
 
+const normalizeDeclared = (
+  field: CatalogField,
+  input: FieldEntry['value']
+): FieldEntry['value'] => {
+  if (field.type === 'list') {
+    if (!Array.isArray(input)) throw badRequest('invalid_value', `${field.label} 需要数组`)
+    return input as unknown[]
+  }
+  if (NUMERIC_TYPES.has(field.type)) {
+    if (typeof input !== 'number' || !Number.isFinite(input)) {
+      throw badRequest('invalid_value', `${field.label} 需要数值`)
+    }
+    if (field.type === 'int' && !Number.isInteger(input)) {
+      throw badRequest('invalid_value', `${field.label} 需要整数`)
+    }
+    return input
+  }
+  return input ?? null
+}
+
+export interface SeriesPick {
+  period: number
+  candidateId: string
+}
+
+export interface SeriesMeta {
+  strategy?: 'auto_series' | 'manual'
+  resolvedBy?: 'auto' | 'user'
+}
+
+export interface DeclareInput {
+  value: FieldEntry['value']
+  note: string
+}
+
 export interface EvidenceStore {
   path: (projectId: string) => string
   get: (project: ProjectMeta) => Promise<EvidenceDoc>
   save: (doc: EvidenceDoc) => Promise<void>
   patch: (project: ProjectMeta, key: string, input: EvidencePatchRequest) => Promise<FieldEntry>
+  confirmSeries: (
+    project: ProjectMeta,
+    key: string,
+    picks: SeriesPick[],
+    meta?: SeriesMeta
+  ) => Promise<FieldEntry>
+  declareValue: (project: ProjectMeta, key: string, input: DeclareInput) => Promise<FieldEntry>
   appendCandidates: (
     project: ProjectMeta,
     key: string,
@@ -200,6 +242,99 @@ export const createEvidenceStore = (dataDir: string, lock: LockTable): EvidenceS
       return entry
     })
 
+  const confirmSeries = async (
+    project: ProjectMeta,
+    key: string,
+    picks: SeriesPick[],
+    meta?: SeriesMeta
+  ): Promise<FieldEntry> =>
+    lock(`evidence:${project.projectId}`, async () => {
+      const field = findCatalogField(key)
+      if (!field) throw notFound('field_not_found', `字段 ${key} 不在字段目录中`)
+      if (!Array.isArray(picks) || picks.length === 0) {
+        throw badRequest('series_picks_required', '至少需要一个年份的候选')
+      }
+
+      const doc = await get(project)
+      const entry = doc.fields[key]
+      if (!entry) throw notFound('field_not_found', `字段 ${key} 不在字段目录中`)
+
+      const window = new Set(Object.values(doc.period))
+      const picked: Record<string, number> = {}
+      const pickedIds: string[] = []
+      const flags = new Set(entry.flags ?? [])
+
+      for (const pick of picks) {
+        if (!Number.isInteger(pick.period)) {
+          throw badRequest('invalid_period', '年份必须是整数')
+        }
+        const candidate = (entry.candidates ?? []).find(
+          (item) => item.candidateId === pick.candidateId
+        )
+        if (!candidate) {
+          throw badRequest('candidate_not_found', `候选 ${pick.candidateId} 不存在`)
+        }
+        if (typeof candidate.value !== 'number' || !Number.isFinite(candidate.value)) {
+          throw badRequest('candidate_not_numeric', `候选 ${pick.candidateId} 没有可用的数值`)
+        }
+        if (!window.has(pick.period)) {
+          flags.add(FLAG.OUT_OF_WINDOW_DROPPED)
+          continue
+        }
+        if (picked[String(pick.period)] !== undefined) {
+          flags.add(FLAG.SERIES_PERIOD_CONFLICT)
+          continue
+        }
+        picked[String(pick.period)] = candidate.value
+        pickedIds.push(candidate.candidateId)
+      }
+
+      if (pickedIds.length === 0) {
+        throw badRequest('series_empty', '所有候选年份都在统计窗口之外')
+      }
+
+      entry.value = picked
+      entry.status = 'confirmed'
+      entry.resolution = {
+        strategy: meta?.strategy ?? 'auto_series',
+        pickedCandidateId: null,
+        pickedCandidateIds: pickedIds,
+        resolvedBy: meta?.resolvedBy ?? 'auto',
+        resolvedAt: new Date().toISOString()
+      }
+      if (flags.size > 0) entry.flags = [...flags]
+      await save(doc)
+      return entry
+    })
+
+  const declareValue = async (
+    project: ProjectMeta,
+    key: string,
+    input: DeclareInput
+  ): Promise<FieldEntry> =>
+    lock(`evidence:${project.projectId}`, async () => {
+      const field = findCatalogField(key)
+      if (!field) throw notFound('field_not_found', `字段 ${key} 不在字段目录中`)
+      const doc = await get(project)
+      const entry = doc.fields[key]
+      if (!entry) throw notFound('field_not_found', `字段 ${key} 不在字段目录中`)
+
+      const value = normalizeDeclared(field, input.value)
+      const at = new Date().toISOString()
+      entry.value = value
+      entry.status = 'confirmed'
+      entry.declared = { by: 'client', at, note: input.note }
+      entry.resolution = {
+        strategy: 'declared',
+        pickedCandidateId: null,
+        resolvedBy: 'client',
+        resolvedAt: at
+      }
+      entry.flags = [...new Set([...(entry.flags ?? []), FLAG.DECLARED_VALUE])]
+      await save(doc)
+      return entry
+    })
+
   const appendCandidates = async (
     project: ProjectMeta,
     key: string,
@@ -243,5 +378,5 @@ export const createEvidenceStore = (dataDir: string, lock: LockTable): EvidenceS
       await save(doc)
     })
 
-  return { path: pathOf, get, save, patch, appendCandidates, syncFile }
+  return { path: pathOf, get, save, patch, confirmSeries, declareValue, appendCandidates, syncFile }
 }

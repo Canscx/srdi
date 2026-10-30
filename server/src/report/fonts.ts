@@ -21,7 +21,7 @@ export interface FontProbe {
 }
 
 const FONT_EXTENSIONS = new Set(['.ttf', '.ttc', '.otf'])
-const CJK_PROBES = [0x4e2d, 0x6587, 0x9879, 0x8bc1]
+const CJK_PROBES = [0x4e2d, 0x6587, 0x9879, 0x8bc1, 0x221a, 0x25cb, 0x00d7]
 const SIMPLIFIED_HINT = /SC|sc-|sc_|Simplified|GB/
 
 const WIN_FONTS = [

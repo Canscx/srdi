@@ -52,7 +52,10 @@ export const FLAG_TEXT: Record<string, string> = {
   not_finite: '非有限值',
   excluded: '按策略排除',
   gate_passed_by_policy: '策略放行',
-  quote_unverified: '原文未匹配'
+  quote_unverified: '原文未匹配',
+  series_period_conflict: '同年重复候选',
+  out_of_window_dropped: '超窗年份已丢弃',
+  declared_value: '客户自述值'
 }
 
 export const FIELD_GROUP_TITLES: Record<string, string> = {

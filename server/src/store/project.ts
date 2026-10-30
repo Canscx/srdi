@@ -3,6 +3,7 @@ import path from 'node:path'
 import type {
   CreateProjectRequest,
   PeriodWindow,
+  ProjectCompany,
   ProjectFile,
   ProjectMeta,
   ProjectSummary
@@ -65,6 +66,52 @@ const normalizeName = (input?: string) => {
   return assertName(name)
 }
 
+const CREDIT_CODE_PATTERN = /^[0-9A-Z]{18}$/
+
+export const normalizeCompanyName = (value: string): string =>
+  value
+    .replace(/[\uFF01-\uFF5E]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0))
+    .replace(/[\s\u3000]/g, '')
+    .replace(/[（）()【】\[\]]/g, '')
+    .replace(/[·・•]/g, '')
+    .toUpperCase()
+
+const countOf = (value: number | undefined, label: string) => {
+  if (value === undefined || value === null) return undefined
+  if (!Number.isInteger(value) || value < 0 || value > 9999) {
+    throw badRequest('invalid_company', `${label}需要 0 至 9999 之间的整数`)
+  }
+  return value
+}
+
+const normalizeCompany = (input: ProjectCompany): ProjectCompany => {
+  const name = input.name?.trim() ?? ''
+  if (name.length === 0) throw badRequest('invalid_company', '企业名称不能为空')
+  if (name.length > NAME_LIMIT) {
+    throw badRequest('invalid_company', `企业名称不超过 ${NAME_LIMIT} 个字符`)
+  }
+  const creditCode = (input.creditCode ?? '').trim().toUpperCase()
+  if (creditCode && !CREDIT_CODE_PATTERN.test(creditCode)) {
+    throw badRequest('invalid_company', '统一社会信用代码应为 18 位数字或大写字母')
+  }
+  const phoneRaw = input.phone?.replace(/[\s-]/g, '') ?? ''
+  if (!phoneRaw) {
+    throw badRequest('invalid_company', '请填写联系手机，用于换设备后找回报告')
+  }
+  if (!/^\d{6,20}$/.test(phoneRaw)) {
+    throw badRequest('invalid_company', '联系电话应为 6 至 20 位数字')
+  }
+  return {
+    name,
+    creditCode,
+    phone: phoneRaw,
+    industryCode: input.industryCode?.trim().toUpperCase() || undefined,
+    industryName: input.industryName?.trim() || undefined,
+    inventionCount: countOf(input.inventionCount, '发明专利数量'),
+    softCopyrightCount: countOf(input.softCopyrightCount, '软件著作权数量')
+  }
+}
+
 export interface AddFileResult {
   file: ProjectFile
   dup: boolean
@@ -81,6 +128,7 @@ export interface ProjectStore {
   save: (meta: ProjectMeta) => Promise<void>
   update: <T>(projectId: string, mutate: (meta: ProjectMeta) => T | Promise<T>) => Promise<T>
   rename: (projectId: string, name: string) => Promise<ProjectMeta>
+  findByCompanyName: (name: string) => Promise<ProjectSummary[]>
   addFile: (projectId: string, file: ProjectFile) => Promise<AddFileResult>
   removeFile: (projectId: string, fileId: string) => Promise<ProjectFile>
   assertPageBudget: (projectId: string, incoming: number, excludeFileId?: string) => Promise<void>
@@ -122,14 +170,18 @@ export const createProjectStore = (dataDir: string, lock: LockTable): ProjectSto
       )
     }
     const now = new Date().toISOString()
+    const company = input.company ? normalizeCompany(input.company) : undefined
     const meta: ProjectMeta = {
       schemaVersion: PROJECT_SCHEMA_VERSION,
       projectId: `p_${shortId()}`,
-      name: normalizeName(input.name),
+      name: normalizeName(input.name ?? company?.name),
       level,
       rulesId: RULES_ID,
       benchmarksVersion,
       period: normalizePeriod(input.period),
+      company,
+      clientId: input.clientId,
+      claims: input.clientId ? [input.clientId] : undefined,
       createdAt: now,
       updatedAt: now,
       files: []
@@ -152,11 +204,21 @@ export const createProjectStore = (dataDir: string, lock: LockTable): ProjectSto
         level: meta.level,
         period: meta.period,
         files: meta.files.length,
+        company: meta.company,
         createdAt: meta.createdAt,
         updatedAt: meta.updatedAt
       })
     }
     return items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  }
+
+  const findByCompanyName = async (name: string): Promise<ProjectSummary[]> => {
+    const target = normalizeCompanyName(name)
+    if (target.length === 0) return []
+    const items = await list()
+    return items.filter(
+      (item) => normalizeCompanyName(item.company?.name ?? item.name) === target
+    )
   }
 
   const update = async <T>(
@@ -223,6 +285,7 @@ export const createProjectStore = (dataDir: string, lock: LockTable): ProjectSto
     save,
     update,
     rename,
+    findByCompanyName,
     addFile,
     removeFile,
     assertPageBudget

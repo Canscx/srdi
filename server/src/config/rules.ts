@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { RULES_FILE } from '@srdi/shared'
-import type { RulesDoc, RulesSummary } from '@srdi/shared'
+import type { RulesDoc, RulesMetaResponse, RulesSummary } from '@srdi/shared'
 import { AppError } from '../errors'
 import { RULES_DIR } from '../paths'
 
@@ -31,6 +31,37 @@ export const loadRules = (): RulesDoc => {
     )
   }
   return cachedRules
+}
+
+export const rulesMeta = (): RulesMetaResponse => {
+  const rules = loadRules()
+  return {
+    rulesId: rules.rulesId,
+    version: rules.schemaVersion,
+    level: rules.level,
+    levelName: rules.levelName,
+    passLine: rules.passLine,
+    dimensions: rules.dimensions.map((dimension) => ({
+      id: dimension.id,
+      name: dimension.name,
+      weight: dimension.weight,
+      indicators: dimension.indicators.map((indicator) => ({
+        id: indicator.id,
+        code: indicator.code,
+        name: indicator.name,
+        unit: indicator.unit,
+        dataClass: indicator.dataClass,
+        share: indicator.share,
+        scoringType: indicator.scoring.type,
+        evidenceRefs: indicator.evidenceRefs ?? [],
+        formula: indicator.formula?.expr,
+        fallback: indicator.fallback
+          ? { type: indicator.fallback.type, reason: indicator.fallback.reason }
+          : undefined
+      }))
+    })),
+    assumptions: rules.assumptions ?? []
+  }
 }
 
 export const loadRulesSummary = (): RulesSummary | null => {

@@ -115,78 +115,100 @@ export interface FilesRouterOptions {
   maxFileBytes?: number
 }
 
+export interface UploadOutcome {
+  payload: UploadFileResponse
+  created: boolean
+}
+
+export const storeUploadedFile = async (
+  store: AppStore,
+  projectId: string,
+  req: Request,
+  maxBytes: number,
+  slot?: string
+): Promise<UploadOutcome> => {
+  const contentType = (req.headers['content-type'] ?? '').toLowerCase()
+  if (!contentType.includes('multipart/form-data')) {
+    throw badRequest(
+      'invalid_upload',
+      '上传接口只接受 multipart/form-data',
+      '请用名为 file 的字段提交文件'
+    )
+  }
+
+  await store.projects.get(projectId)
+  await ensureDir(store.tmpDir)
+
+  let tempPath: string | null = null
+
+  try {
+    const received = await receiveFile(req, store.tmpDir, maxBytes)
+    tempPath = received.tempPath
+
+    const detected = await detectFile(tempPath)
+    if (!detected.ok) {
+      throw new AppError(415, detected.code, detected.message, detected.hint)
+    }
+
+    const file: ProjectFile = {
+      fileId: newFileId(),
+      name: received.filename,
+      sha256: received.sha256,
+      size: received.size,
+      kind: detected.kind,
+      ext: detected.ext,
+      mime: detected.mime,
+      status: 'pending',
+      uploadedAt: new Date().toISOString(),
+      slot,
+      ...(detected.kind === 'image' ? { pages: 1 } : {})
+    }
+
+    if (file.pages) await store.projects.assertPageBudget(projectId, file.pages)
+
+    const target = store.projects.filePath(projectId, file)
+    await moveFile(tempPath, target)
+    tempPath = null
+
+    let added
+    try {
+      added = await store.projects.addFile(projectId, file)
+    } catch (err) {
+      await removeFile(target)
+      throw err
+    }
+
+    if (added.dup) await removeFile(target)
+
+    const payload: UploadFileResponse = {
+      fileId: added.file.fileId,
+      name: added.file.name,
+      sha256: added.file.sha256,
+      size: added.file.size,
+      kind: added.file.kind,
+      ext: added.file.ext,
+      mime: added.file.mime,
+      dup: added.dup
+    }
+    return { payload, created: !added.dup }
+  } finally {
+    if (tempPath) await rm(tempPath, { force: true }).catch(() => undefined)
+  }
+}
+
 export const filesRouter = (store: AppStore, options: FilesRouterOptions = {}) => {
   const router = Router()
   const maxBytes = options.maxFileBytes ?? MAX_FILE_BYTES
 
   router.post('/projects/:projectId/files', async (req, res) => {
-    const projectId = req.params.projectId
-    const contentType = (req.headers['content-type'] ?? '').toLowerCase()
-    if (!contentType.includes('multipart/form-data')) {
-      throw badRequest(
-        'invalid_upload',
-        '上传接口只接受 multipart/form-data',
-        '请用名为 file 的字段提交文件'
-      )
-    }
-
-    await store.projects.get(projectId)
-    await ensureDir(store.tmpDir)
-
-    let tempPath: string | null = null
-
-    try {
-      const received = await receiveFile(req, store.tmpDir, maxBytes)
-      tempPath = received.tempPath
-
-      const detected = await detectFile(tempPath)
-      if (!detected.ok) {
-        throw new AppError(415, detected.code, detected.message, detected.hint)
-      }
-
-      const file: ProjectFile = {
-        fileId: newFileId(),
-        name: received.filename,
-        sha256: received.sha256,
-        size: received.size,
-        kind: detected.kind,
-        ext: detected.ext,
-        mime: detected.mime,
-        status: 'pending',
-        uploadedAt: new Date().toISOString(),
-        ...(detected.kind === 'image' ? { pages: 1 } : {})
-      }
-
-      if (file.pages) await store.projects.assertPageBudget(projectId, file.pages)
-
-      const target = store.projects.filePath(projectId, file)
-      await moveFile(tempPath, target)
-      tempPath = null
-
-      let added
-      try {
-        added = await store.projects.addFile(projectId, file)
-      } catch (err) {
-        await removeFile(target)
-        throw err
-      }
-
-      if (added.dup) await removeFile(target)
-
-      const payload: UploadFileResponse = {
-        fileId: added.file.fileId,
-        name: added.file.name,
-        sha256: added.file.sha256,
-        size: added.file.size,
-        kind: added.file.kind,
-        ext: added.file.ext,
-        mime: added.file.mime,
-        dup: added.dup
-      }
-      res.status(added.dup ? 200 : 201).json(payload)
-    } finally {
-      if (tempPath) await rm(tempPath, { force: true }).catch(() => undefined)
-    }
+    const outcome = await storeUploadedFile(
+      store,
+      req.params.projectId,
+      req,
+      maxBytes,
+      typeof req.query.slot === 'string' ? req.query.slot : undefined
+    )
+    res.status(outcome.created ? 201 : 200).json(outcome.payload)
   })
 
   router.delete('/projects/:projectId/files/:fileId', async (req, res) => {

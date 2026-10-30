@@ -5,8 +5,18 @@ import { describeReportFont } from './report/fonts'
 
 const port = Number(process.env.PORT ?? 8787)
 const auth = {
-  user: process.env.AUTH_USER ?? 'admin',
-  password: process.env.AUTH_PASSWORD ?? 'abc123456/'
+  accounts: [
+    {
+      user: process.env.AUTH_USER ?? 'admin',
+      password: process.env.AUTH_PASSWORD ?? 'abc123456/',
+      role: 'admin' as const
+    },
+    {
+      user: process.env.AUTH_CUSTOMER ?? 'customer',
+      password: process.env.AUTH_CUSTOMER_PASSWORD ?? 'vip666666',
+      role: 'customer' as const
+    }
+  ]
 }
 const app = createApp({ webDist: WEB_DIST, port, dataDir: DATA_DIR, auth })
 const reportFont = describeReportFont()
@@ -19,7 +29,9 @@ const server = app.listen(port, () => {
   console.log(`  SSE 通道   http://localhost:${port}/api/jobs/demo/stream`)
   console.log(`  数据目录   ${DATA_DIR}`)
   console.log(`  静态目录   ${WEB_DIST}`)
-  console.log(`  访问保护   已启用,账号 ${auth.user}`)
+  console.log(
+    `  访问保护   已启用,账号 ${auth.accounts.map((item) => `${item.user}(${item.role})`).join(' / ')}`
+  )
   console.log(
     `  报告字体   ${
       reportFont

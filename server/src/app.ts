@@ -5,6 +5,7 @@ import path from 'node:path'
 import { API_PREFIX } from '@srdi/shared'
 import type { ApiError } from '@srdi/shared'
 import { createModelClient, type ModelClient } from './ai/client'
+import { generateAdvice } from './ai/advice'
 import { extractProject } from './ai/extract'
 import { resolveAiConfig } from './config/aiSettings'
 import { defaultModel } from './config/pricing'
@@ -24,9 +25,13 @@ import { settingsRouter } from './routes/settings'
 import { createJobQueue } from './jobs/queue'
 import { requestLogger } from './logger'
 import { parseProject } from './pipeline/parse'
-import { requireSession } from './auth/middleware'
-import { createAuthService } from './auth/session'
+import { requireRole, requireSession, ensureClientId } from './auth/middleware'
+import { createAuthService, type AuthConfig } from './auth/session'
 import { authRouter } from './routes/auth'
+import { portalRouter } from './routes/portal'
+import { adminRouter } from './routes/admin'
+import { assessProject } from './portal/assess'
+import { loadPortalConfig } from './config/portal'
 import { createStore } from './store'
 
 export interface AppOptions {
@@ -36,7 +41,7 @@ export interface AppOptions {
   maxFileBytes?: number
   aiClient?: ModelClient
   aiModel?: string
-  auth?: { user: string; password: string } | null
+  auth?: AuthConfig | null
 }
 
 const missingDistHtml = `<!doctype html>
@@ -78,6 +83,28 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
         message: parts.join(','),
         error: outcome.warnings.length > 0 ? outcome.warnings.join('\n') : undefined
       }
+    },
+    assess: async (projectId, report) => {
+      const outcome = await assessProject(store, projectId, report, {
+        client: modelClient,
+        model: currentModel(),
+        advise: ({ project, record }) =>
+          generateAdvice({
+            store,
+            project,
+            record,
+            client: modelClient,
+            model: currentModel()
+          })
+      })
+      const failed = outcome.stages.filter((stage) => !stage.ok).map((stage) => stage.name)
+      return {
+        message:
+          outcome.official === null
+            ? '评估未完成'
+            : `评估完成,当前得分 ${outcome.official},补齐后可达 ${outcome.optimistic}`,
+        error: failed.length > 0 ? `未完成环节:${failed.join('、')}` : undefined
+      }
     }
   })
 
@@ -89,6 +116,19 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
     const service = createAuthService(auth)
     app.use(API_PREFIX, authRouter(service))
     app.use(API_PREFIX, requireSession(service))
+    app.use(
+      `${API_PREFIX}/portal`,
+      requireRole('customer'),
+      ensureClientId(),
+      portalRouter(store, {
+        maxFileBytes,
+        queue,
+        aiClient: modelClient,
+        aiModel: currentModel
+      })
+    )
+    app.use(API_PREFIX, requireRole('admin'))
+    app.use(`${API_PREFIX}/admin`, adminRouter(store, loadPortalConfig().passLine))
   }
 
   app.use(API_PREFIX, healthRouter(port, dataDir))

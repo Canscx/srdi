@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "note": "客户轻流程的可调参数。软著折算比与上限改动后需重启进程。",
+  "passLine": 60,
+  "softCopyright": {
+    "ratio": 3,
+    "cap": 3
+  },
+  "lookup": {
+    "windowMinutes": 10,
+    "maxAttempts": 10
+  },
+  "slots": [
+    {
+      "id": "finance",
+      "title": "财务报表（近三年年报）",
+      "hint": "资产负债表、利润表、现金流量表；电子税务局导出的「财务会计报告报送」PDF 也行。三年各传一份最准，只有一年也能算。",
+      "required": true,
+      "accept": ["pdf", "xlsx", "xls", "docx", "jpg", "jpeg", "png"]
+    },
+    {
+      "id": "tax",
+      "title": "企业所得税年度申报表",
+      "hint": "A 类年报，最好带「研发费用加计扣除优惠明细表(A107012)」，研发投入以这张表为准。",
+      "required": true,
+      "accept": ["pdf", "xlsx", "xls", "docx", "jpg", "jpeg", "png"]
+    },
+    {
+      "id": "ledger",
+      "title": "账簿与科目余额表",
+      "hint": "科目余额表、序时账、记账凭证，财务软件导出 Excel 即可。有助核对研发费用归集。",
+      "required": false,
+      "accept": ["pdf", "xlsx", "xls", "docx", "jpg", "jpeg", "png"]
+    },
+    {
+      "id": "extra",
+      "title": "其他补充材料",
+      "hint": "专利清单、资质证书、荣誉证书、标准文本、申报书，有什么传什么，缺了不影响出分。",
+      "required": false,
+      "accept": ["pdf", "xlsx", "xls", "docx", "jpg", "jpeg", "png"]
+    }
+  ]
+}

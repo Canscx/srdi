@@ -33,7 +33,10 @@ const statsOf = (evidence: EvidenceDoc): ScoreEvidenceStats => {
   return stats
 }
 
-const resolveIndustryCode = (evidence: EvidenceDoc): string | undefined => {
+const resolveIndustryCode = (evidence: EvidenceDoc, project: ProjectMeta): string | undefined => {
+  const declared = project.company?.industryCode?.trim()
+  if (declared) return declared
+
   const fromCompany = evidence.company?.industryCode?.trim()
   if (fromCompany) return fromCompany
 
@@ -45,33 +48,36 @@ const resolveIndustryCode = (evidence: EvidenceDoc): string | undefined => {
   return undefined
 }
 
+export const buildScoreRecord = async (
+  store: AppStore,
+  project: ProjectMeta
+): Promise<ScoreRecord> => {
+  const evidence = await store.evidence.get(project)
+  const rules = loadRules()
+  const benchmarks = loadBenchmarks()
+
+  const result = evaluate(
+    { evidence, benchmarks, industryCode: resolveIndustryCode(evidence, project) },
+    rules
+  )
+
+  return {
+    schemaVersion: SCORE_RECORD_VERSION,
+    savedAt: new Date().toISOString(),
+    rulesId: rules.rulesId,
+    rulesVersion: rules.schemaVersion,
+    benchmarksVersion: benchmarks.version,
+    evidence: statsOf(evidence),
+    result
+  }
+}
+
 export const scoreRouter = (store: AppStore) => {
   const router = Router()
 
-  const buildRecord = async (project: ProjectMeta): Promise<ScoreRecord> => {
-    const evidence = await store.evidence.get(project)
-    const rules = loadRules()
-    const benchmarks = loadBenchmarks()
-
-    const result = evaluate(
-      { evidence, benchmarks, industryCode: resolveIndustryCode(evidence) },
-      rules
-    )
-
-    return {
-      schemaVersion: SCORE_RECORD_VERSION,
-      savedAt: new Date().toISOString(),
-      rulesId: rules.rulesId,
-      rulesVersion: rules.schemaVersion,
-      benchmarksVersion: benchmarks.version,
-      evidence: statsOf(evidence),
-      result
-    }
-  }
-
   router.post('/projects/:projectId/score', async (req, res) => {
     const project = await store.projects.get(req.params.projectId)
-    const record = await buildRecord(project)
+    const record = await buildScoreRecord(store, project)
     await store.scores.save(record)
     const payload: ScoreResponse = { record }
     res.json(payload)

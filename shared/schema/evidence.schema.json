@@ -98,10 +98,23 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "strategy": { "enum": ["auto_unit_merge", "auto_single", "manual", "none"] },
+            "strategy": {
+              "enum": ["auto_unit_merge", "auto_single", "auto_series", "manual", "declared", "none"]
+            },
             "pickedCandidateId": { "type": ["string", "null"] },
-            "resolvedBy": { "enum": ["auto", "user"] },
+            "pickedCandidateIds": { "type": "array", "items": { "type": "string" } },
+            "resolvedBy": { "enum": ["auto", "user", "client"] },
             "resolvedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "declared": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["by", "at"],
+          "properties": {
+            "by": { "enum": ["client"] },
+            "at": { "type": "string", "format": "date-time" },
+            "note": { "type": "string" }
           }
         },
         "flags": { "type": "array", "items": { "type": "string" } },

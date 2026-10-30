@@ -28,8 +28,16 @@ export interface HealthResponse {
   time: string
 }
 
-export type JobStage = 'queued' | 'parsing' | 'extracting' | 'scoring' | 'done' | 'failed'
-export type JobKind = 'parse' | 'extract'
+export type JobStage =
+  | 'queued'
+  | 'parsing'
+  | 'extracting'
+  | 'assessing'
+  | 'confirming'
+  | 'scoring'
+  | 'done'
+  | 'failed'
+export type JobKind = 'parse' | 'extract' | 'assess'
 
 export interface JobProgressEvent {
   jobId: string
@@ -83,6 +91,7 @@ export interface ProjectFile {
   ext: string
   mime: string
   docType?: DocType
+  slot?: string
   pages?: number
   route?: FileRoute
   status: FileStatus
@@ -90,6 +99,16 @@ export interface ProjectFile {
   truncated?: boolean
   visionSkipped?: boolean
   unreadable?: UnreadablePage[]
+}
+
+export interface ProjectCompany {
+  name: string
+  creditCode: string
+  phone: string
+  industryCode?: string
+  industryName?: string
+  inventionCount?: number
+  softCopyrightCount?: number
 }
 
 export interface ProjectMeta {
@@ -100,6 +119,9 @@ export interface ProjectMeta {
   rulesId: string
   benchmarksVersion?: string
   period: PeriodWindow
+  company?: ProjectCompany
+  clientId?: string
+  claims?: string[]
   createdAt: string
   updatedAt: string
   files: ProjectFile[]
@@ -109,6 +131,8 @@ export interface CreateProjectRequest {
   name?: string
   level?: ProjectLevel
   period?: Partial<PeriodWindow>
+  company?: ProjectCompany
+  clientId?: string
 }
 
 export interface RenameProjectRequest {
@@ -121,6 +145,7 @@ export interface ProjectSummary {
   level: ProjectLevel
   period: PeriodWindow
   files: number
+  company?: ProjectCompany
   createdAt: string
   updatedAt: string
 }
@@ -296,4 +321,7 @@ export interface LoginRequest {
 
 export interface AuthStatusResponse {
   authenticated: boolean
+  role?: 'admin' | 'customer'
+  user?: string
+  clientId?: string
 }

@@ -16,7 +16,10 @@ export const FLAG = {
   NOT_FINITE: 'not_finite',
   EXCLUDED: 'excluded',
   GATE_PASSED_BY_POLICY: 'gate_passed_by_policy',
-  QUOTE_UNVERIFIED: 'quote_unverified'
+  QUOTE_UNVERIFIED: 'quote_unverified',
+  SERIES_PERIOD_CONFLICT: 'series_period_conflict',
+  OUT_OF_WINDOW_DROPPED: 'out_of_window_dropped',
+  DECLARED_VALUE: 'declared_value'
 } as const
 
 export const GUARD_FLAG_BY_FIELD: Record<string, string> = {

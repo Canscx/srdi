@@ -39,21 +39,34 @@ export interface JobRunnerResult {
 
 export type JobRunner = (projectId: string, report: JobReport) => Promise<JobRunnerResult>
 
+export interface EnqueueResult {
+  job: JobRecord
+  reused: boolean
+  queueAhead: number
+}
+
+export interface JobQueueOptions {
+  concurrency?: number
+}
+
 export interface JobQueue {
-  enqueue: (projectId: string, kind: JobKind) => Promise<{ job: JobRecord; reused: boolean }>
+  enqueue: (projectId: string, kind: JobKind) => Promise<EnqueueResult>
   snapshot: (jobId: string) => JobProgressEvent | null
   get: (jobId: string) => JobRecord | null
   list: (projectId: string) => JobRecord[]
+  queueAhead: (jobId: string) => number
 }
 
 const STAGE_BY_KIND: Record<JobKind, JobStage> = {
   parse: 'parsing',
-  extract: 'extracting'
+  extract: 'extracting',
+  assess: 'assessing'
 }
 
 const VERB_BY_KIND: Record<JobKind, string> = {
   parse: '解析',
-  extract: '抽取'
+  extract: '抽取',
+  assess: '评估'
 }
 
 const toEvent = (job: JobRecord): JobProgressEvent => ({
@@ -71,12 +84,14 @@ const isLive = (job: JobRecord) => job.stage !== 'done' && job.stage !== 'failed
 
 export const createJobQueue = (
   store: AppStore,
-  runners: Record<JobKind, JobRunner>
+  runners: Partial<Record<JobKind, JobRunner>>,
+  options: JobQueueOptions = {}
 ): JobQueue => {
   const jobs = new Map<string, JobRecord>()
   const active = new Map<string, string>()
   const pending: string[] = []
-  let running = false
+  const concurrency = Math.min(4, Math.max(1, Math.floor(options.concurrency ?? 1)))
+  let activeCount = 0
   let persistChain: Promise<void> = Promise.resolve()
 
   const jobsFile = (projectId: string) => path.join(store.projects.dir(projectId), 'jobs.json')
@@ -100,72 +115,85 @@ export const createJobQueue = (
     publish(job.jobId, toEvent(job))
   }
 
-  const drain = async () => {
-    if (running) return
-    running = true
+  const runOne = async (job: JobRecord) => {
+    const runner = runners[job.kind]
+    if (!runner) {
+      touch(job, { stage: 'failed', pct: 100, message: `不支持的作业类型 ${job.kind}` })
+      active.delete(job.projectId)
+      return
+    }
+
+    touch(job, {
+      stage: STAGE_BY_KIND[job.kind],
+      pct: 1,
+      message: `开始${VERB_BY_KIND[job.kind]}`
+    })
     try {
-      while (pending.length > 0) {
-        const jobId = pending.shift()
-        if (!jobId) continue
-        const job = jobs.get(jobId)
-        if (!job) continue
-        const runner = runners[job.kind]
+      await persist(job)
+    } catch (err) {
+      console.error('任务状态写入失败', err)
+    }
 
+    try {
+      const result = await runner(job.projectId, (update) => {
         touch(job, {
-          stage: STAGE_BY_KIND[job.kind],
-          pct: 1,
-          message: `开始${VERB_BY_KIND[job.kind]}`
+          stage: update.stage ?? job.stage,
+          fileId: update.fileId ?? job.fileId,
+          page: update.page ?? job.page,
+          total: update.total ?? job.total,
+          pct: Math.max(job.pct, Math.min(99, Math.round(update.pct))),
+          message: update.message ?? job.message
         })
-        try {
-          await persist(job)
-        } catch (err) {
-          console.error('任务状态写入失败', err)
-        }
-
-        try {
-          const result = await runner(job.projectId, (update) => {
-            touch(job, {
-              fileId: update.fileId ?? job.fileId,
-              page: update.page ?? job.page,
-              total: update.total ?? job.total,
-              pct: Math.max(job.pct, Math.min(99, Math.round(update.pct))),
-              message: update.message ?? job.message
-            })
-          })
-          touch(job, {
-            stage: 'done',
-            pct: 100,
-            message: result.message,
-            error: result.error
-          })
-        } catch (err) {
-          touch(job, {
-            stage: 'failed',
-            message: `${VERB_BY_KIND[job.kind]}失败`,
-            error: (err as Error).message
-          })
-        } finally {
-          job.updatedAt = new Date().toISOString()
-          try {
-            await persist(job)
-          } catch (err) {
-            console.error('任务状态写入失败', err)
-          }
-          publish(job.jobId, toEvent(job))
-          active.delete(job.projectId)
-        }
-      }
+      })
+      touch(job, {
+        stage: 'done',
+        pct: 100,
+        message: result.message,
+        error: result.error
+      })
+    } catch (err) {
+      touch(job, {
+        stage: 'failed',
+        message: `${VERB_BY_KIND[job.kind]}失败`,
+        error: (err as Error).message
+      })
     } finally {
-      running = false
+      job.updatedAt = new Date().toISOString()
+      try {
+        await persist(job)
+      } catch (err) {
+        console.error('任务状态写入失败', err)
+      }
+      publish(job.jobId, toEvent(job))
+      active.delete(job.projectId)
+    }
+  }
+
+  const drain = () => {
+    while (activeCount < concurrency && pending.length > 0) {
+      const jobId = pending.shift()
+      if (!jobId) continue
+      const job = jobs.get(jobId)
+      if (!job) continue
+      activeCount += 1
+      void runOne(job)
+        .catch((err) => console.error('任务队列异常', err))
+        .finally(() => {
+          activeCount -= 1
+          drain()
+        })
     }
   }
 
   const enqueue = async (projectId: string, kind: JobKind) => {
     const project = await store.projects.get(projectId)
-    if (kind === 'parse' && project.files.length === 0) {
+    if ((kind === 'parse' || kind === 'assess') && project.files.length === 0) {
       throw badRequest('no_files', '请先上传材料再解析')
     }
-    if (kind === 'extract' && project.files.every((file) => file.status !== 'parsed')) {
+    if (
+      kind === 'extract' &&
+      project.files.every((file) => file.status !== 'parsed')
+    ) {
       throw badRequest('not_parsed', '没有已解析的文件,请先解析材料')
     }
 
@@ -174,7 +202,7 @@ export const createJobQueue = (
       const job = jobs.get(current)
       if (job && isLive(job)) {
         if (job.kind === kind && (job.stage === 'queued' || job.stage === STAGE_BY_KIND[kind])) {
-          return { job, reused: true }
+          return { job, reused: true, queueAhead: 0 }
         }
         throw conflict(
           'job_in_progress',
@@ -196,16 +224,17 @@ export const createJobQueue = (
       message: `排队中,${project.files.length} 个文件`
     }
 
+    const queueAhead = pending.length
     jobs.set(job.jobId, job)
     active.set(projectId, job.jobId)
     pending.push(job.jobId)
-    void drain().catch((err) => console.error('任务队列异常', err))
+    drain()
     try {
       await persist(job)
     } catch (err) {
       console.error('任务状态写入失败', err)
     }
-    return { job, reused: false }
+    return { job, reused: false, queueAhead }
   }
 
   const snapshot = (jobId: string) => {
@@ -217,5 +246,10 @@ export const createJobQueue = (
 
   const list = (projectId: string) => [...jobs.values()].filter((job) => job.projectId === projectId)
 
-  return { enqueue, snapshot, get, list }
+  const queueAhead = (jobId: string) => {
+    const index = pending.indexOf(jobId)
+    return index < 0 ? 0 : index
+  }
+
+  return { enqueue, snapshot, get, list, queueAhead }
 }
