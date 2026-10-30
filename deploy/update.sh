@@ -10,9 +10,9 @@ if [ ! -d .git ]; then
   exit 1
 fi
 
-if [ -n "$(git status --porcelain)" ]; then
-  echo "工作区有未提交的本地改动,先处理再更新:"
-  git status --short
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "有已跟踪文件被本地改过,先处理再更新:"
+  git status --short --untracked-files=no
   exit 1
 fi
 
