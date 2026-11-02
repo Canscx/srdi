@@ -347,16 +347,6 @@ const renderMaterials = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =>
     y += 18
   }
 
-  if (data.warnings.length > 0) {
-    y += 10
-    y = sectionTitle(doc, y, '需要留意')
-    doc.fontSize(8.5).fillColor(COLOR.gap)
-    for (const warning of data.warnings.slice(0, 6)) {
-      doc.text(`· ${warning}`, M, y, { width: CW, lineGap: 2 })
-      y += doc.heightOfString(warning, { width: CW }) + 4
-    }
-  }
-
   y += 18
   y = sectionTitle(doc, y, '说明')
 

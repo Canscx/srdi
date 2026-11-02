@@ -117,10 +117,6 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
       材料已更新，但这份报告是 {{ scoredAtText }} 的快照。重新评估后才会按新材料计分。
     </p>
 
-    <p v-for="warning in data.warnings.slice(0, 3)" :key="warning" class="alert soft">
-      {{ warning }}
-    </p>
-
     <section class="card">
       <h2>五个维度</h2>
       <p class="sub">深色为当前得分，浅色虚线为材料补齐并按每项 {{ targetRate }}% 得分率计分后的估算位置。</p>
@@ -137,18 +133,23 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
     </section>
 
     <section v-if="materials.length > 0" class="card">
-      <h2>本次收到的材料</h2>
-      <p class="sub">
-        共 {{ materials.length }} 份<template v-if="referenceCount > 0">，其中 {{ referenceCount }} 份为参考材料（不计入打分）</template>。
-      </p>
-      <ul class="materials">
-        <li v-for="item in materials" :key="item.fileId">
-          <span class="m-name">{{ item.name }}</span>
-          <span class="m-slot">{{ item.slotTitle ?? '未分槽' }}</span>
-          <span class="m-type">{{ item.docType ?? '待判型' }}</span>
-          <em v-if="item.referenceOnly" class="m-ref">参考</em>
-        </li>
-      </ul>
+      <details class="fold">
+        <summary>
+          <span class="fold-title">本次收到的材料</span>
+          <span class="fold-meta">
+            共 {{ materials.length }} 份<template v-if="referenceCount > 0">，参考 {{ referenceCount }} 份</template>
+          </span>
+          <span class="fold-toggle" />
+        </summary>
+        <ul class="materials">
+          <li v-for="item in materials" :key="item.fileId">
+            <span class="m-name">{{ item.name }}</span>
+            <span class="m-slot">{{ item.slotTitle ?? '未分槽' }}</span>
+            <span class="m-type">{{ item.docType ?? '待判型' }}</span>
+            <em v-if="item.referenceOnly" class="m-ref">参考</em>
+          </li>
+        </ul>
+      </details>
     </section>
 
     <section class="card">
@@ -165,6 +166,19 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
         </li>
       </ul>
       <p v-if="data.advices.length === 0" class="empty">本次没有生成建议。</p>
+    </section>
+
+    <section v-if="data.warnings.length > 0" class="card">
+      <details class="fold">
+        <summary>
+          <span class="fold-title">解析提示</span>
+          <span class="fold-meta">{{ data.warnings.length }} 条</span>
+          <span class="fold-toggle" />
+        </summary>
+        <ul class="warnings">
+          <li v-for="warning in data.warnings" :key="warning">{{ warning }}</li>
+        </ul>
+      </details>
     </section>
 
     <footer class="actions">
@@ -340,6 +354,65 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
   margin: 6px 0 18px;
   font-size: 11.5px;
   color: #a3adbb;
+}
+
+.fold > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.fold-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.fold-meta {
+  font-size: 11.5px;
+  color: #a3adbb;
+}
+
+.fold-toggle {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: #2563eb;
+}
+
+.fold-toggle::after {
+  content: '展开';
+}
+
+.fold[open] .fold-toggle::after {
+  content: '收起';
+}
+
+.fold[open] > summary {
+  margin-bottom: 12px;
+}
+
+.warnings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.warnings li {
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .dims {
