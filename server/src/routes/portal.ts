@@ -8,7 +8,7 @@ import type {
   PortalLookupResponse,
   ProjectMeta
 } from '@srdi/shared'
-import { MAX_FILE_BYTES } from '@srdi/shared'
+import { MAX_FILE_BYTES, isPortalPassed } from '@srdi/shared'
 import type { ModelClient } from '../ai/client'
 import { authed } from '../auth/types'
 import { loadPortalConfig } from '../config/portal'
@@ -71,7 +71,13 @@ const historyOf = async (
     companyName: meta.company?.name ?? meta.name,
     creditCode: meta.company?.creditCode ?? '',
     official: record ? Number(record.result.totals.official.toFixed(2)) : null,
-    passed: record ? record.result.totals.official >= passLine : null,
+    passed: record
+      ? isPortalPassed(
+          record.result.totals.official,
+          passLine,
+          record.result.totals.confidence
+        )
+      : null,
     submittedAt: meta.createdAt,
     period: meta.period,
     hasScore: Boolean(record)

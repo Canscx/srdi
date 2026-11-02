@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { isPortalPassed } from '@srdi/shared'
 import type { AdminPortalResult, ScoreResult } from '@srdi/shared'
 import { lookupIndustryName } from '../config/industryMap'
 import { rulesMeta } from '../config/rules'
@@ -69,7 +70,13 @@ export const adminRouter = (store: AppStore, passLine: number) => {
         fileCount: meta.files.length,
         official: record ? Number(record.result.totals.official.toFixed(2)) : null,
         optimistic: record ? Number(record.result.totals.optimistic.toFixed(2)) : null,
-        passed: record ? record.result.totals.official >= passLine : null,
+        passed: record
+          ? isPortalPassed(
+              record.result.totals.official,
+              passLine,
+              record.result.totals.confidence
+            )
+          : null,
         weakestDimension: weakest.name,
         weakestGap: weakest.gap,
         submittedAt: meta.createdAt,
@@ -129,7 +136,11 @@ export const adminRouter = (store: AppStore, passLine: number) => {
       industryCode: code,
       industryName: lookupIndustryName(code),
       official: Number(record.result.totals.official.toFixed(2)),
-      passed: record.result.totals.official >= passLine
+      passed: isPortalPassed(
+        record.result.totals.official,
+        passLine,
+        record.result.totals.confidence
+      )
     })
   })
 

@@ -60,15 +60,36 @@ for (const mapping of mappings) {
 const structural = [
   {
     file: 'config/portal.json',
-    check: (data) =>
-      typeof data.passLine === 'number' &&
-      typeof data.softCopyright?.ratio === 'number' &&
-      typeof data.softCopyright?.cap === 'number' &&
-      typeof data.lookup?.windowMinutes === 'number' &&
-      typeof data.lookup?.maxAttempts === 'number' &&
-      Array.isArray(data.slots) &&
-      data.slots.length >= 3 &&
-      data.slots.every((slot) => typeof slot.id === 'string' && typeof slot.title === 'string')
+    check: (data) => {
+      if ('passLine' in data) {
+        console.log('      passLine 已迁移到 config/rules,portal.json 不得重复声明')
+        return false
+      }
+      return (
+        typeof data.softCopyright?.ratio === 'number' &&
+        typeof data.softCopyright?.cap === 'number' &&
+        typeof data.lookup?.windowMinutes === 'number' &&
+        typeof data.lookup?.maxAttempts === 'number' &&
+        Array.isArray(data.slots) &&
+        data.slots.length >= 3 &&
+        data.slots.every((slot) => typeof slot.id === 'string' && typeof slot.title === 'string')
+      )
+    }
+  },
+  {
+    file: 'config/rules/rules.srdi.v1.0.0.json',
+    check: (data) => {
+      const gate = (data.gates ?? []).find((item) => item.id === 'GATE_6')
+      if (!gate || gate.type !== 'scoreGate') {
+        console.log('      缺少 scoreGate GATE_6')
+        return false
+      }
+      if (data.passLine !== gate.passLine) {
+        console.log(`      顶层 passLine ${data.passLine} 与 GATE_6 ${gate.passLine} 不一致`)
+        return false
+      }
+      return true
+    }
   },
   {
     file: 'config/industry-map.json',

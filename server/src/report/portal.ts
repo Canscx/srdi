@@ -120,9 +120,11 @@ const renderCover = (doc: PDFKit.PDFDocument, data: PortalResultResponse) => {
     width: 150
   })
 
-  const line = score?.passLine ?? 60
+  const line = score?.passLine ?? 0
   doc.fontSize(9).fillColor(COLOR.muted).text(`达标参考线 ${line} 分`, M + 380, y + 14, { width: 120 })
-  const verdict = score ? (score.passed ? '已达标' : `还差 ${num(score.gap)} 分`) : '待评估'
+  const reached = Boolean(score && score.official >= line)
+  const needsEvidence = Boolean(score && reached && !score.evidenceSufficient)
+  const verdict = !score ? '待评估' : score.passed ? '已达标' : needsEvidence ? '待补证' : `还差 ${num(score.gap)} 分`
   doc
     .fontSize(15)
     .fillColor(score?.passed ? COLOR.pass : COLOR.gap)
@@ -131,11 +133,13 @@ const renderCover = (doc: PDFKit.PDFDocument, data: PortalResultResponse) => {
   y += 112
 
   doc.fontSize(9).fillColor(COLOR.body)
-  const sentence = score
-    ? score.passed
+  const sentence = !score
+    ? '本次评估未完成，请检查材料后重新提交。'
+    : score.passed
       ? `当前得分已过 ${line} 分参考线。若能补齐下方列出的缺口，得分可提升约 ${num(score.potential)} 分，申报竞争力更稳。`
-      : `距离 ${line} 分参考线还差 ${num(score.gap)} 分。下方列出的缺口全部补齐后，得分预计可达 ${num(score.optimistic)} 分。`
-    : '本次评估未完成，请检查材料后重新提交。'
+      : needsEvidence
+        ? `当前得分已过 ${line} 分参考线，但材料覆盖率不足，请补齐下方缺口后再确认申报。`
+        : `距离 ${line} 分参考线还差 ${num(score.gap)} 分。下方列出的缺口全部补齐后，得分预计可达 ${num(score.optimistic)} 分。`
   doc.text(sentence, M, y, { width: CW, lineGap: 4 })
   y += 34
 

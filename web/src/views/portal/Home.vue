@@ -9,7 +9,7 @@ import MaterialSlot from '@/components/portal/MaterialSlot.vue'
 import HistoryList from '@/components/portal/HistoryList.vue'
 
 const slots = ref<PortalSlot[]>([])
-const passLine = ref(60)
+const passLine = ref<number | null>(null)
 const loading = ref(true)
 const loadError = ref('')
 
@@ -118,7 +118,7 @@ onMounted(load)
       <h1>专精特新自评，一次讲清楚</h1>
       <p>
         填企业信息、传几份材料，系统会自动识别财务数据并给出参考得分，
-        同时列出距离 {{ passLine }} 分参考线还差什么、怎么补。
+        同时列出距离 {{ passLine ?? '—' }} 分参考线还差什么、怎么补。
       </p>
     </header>
 

@@ -1,7 +1,6 @@
 {
   "version": "1.0.0",
-  "note": "客户轻流程的可调参数。软著折算比与上限改动后需重启进程。",
-  "passLine": 50,
+  "note": "客户轻流程的可调参数。达标线继承 config/rules 的 passLine,此处不再重复声明;软著折算比与上限改动后需重启进程。",
   "softCopyright": {
     "ratio": 3,
     "cap": 3

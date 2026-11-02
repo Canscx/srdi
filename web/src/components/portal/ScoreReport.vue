@@ -11,10 +11,25 @@ const props = withDefaults(defineProps<{ data: PortalResultResponse; saved?: boo
 
 const score = computed(() => props.data.score)
 
+const needsEvidence = computed(() => {
+  const value = score.value
+  return Boolean(value && value.official >= value.passLine && !value.evidenceSufficient)
+})
+
+const verdict = computed(() => {
+  const value = score.value
+  if (!value) return ''
+  if (value.passed) return '已达标'
+  return needsEvidence.value ? '待补证' : `差 ${value.gap.toFixed(1)} 分`
+})
+
 const headline = computed(() => {
   if (!score.value) return ''
   if (score.value.passed) {
     return `已过 ${score.value.passLine} 分参考线。补齐下面列出的缺口，还能再提 ${score.value.potential.toFixed(1)} 分。`
+  }
+  if (needsEvidence.value) {
+    return `分数已过 ${score.value.passLine} 分线，但材料覆盖不足，先补齐下方缺口再确认申报。`
   }
   return `距离 ${score.value.passLine} 分参考线还差 ${score.value.gap.toFixed(1)} 分。缺口全部补齐后，预计可达 ${score.value.optimistic.toFixed(1)} 分。`
 })
@@ -53,10 +68,10 @@ const missingText = computed(() =>
           </div>
           <div>
             <span class="cap">达标参考线</span>
-            <b>{{ score?.passLine ?? 60 }}</b>
+            <b>{{ score?.passLine ?? '—' }}</b>
           </div>
           <em :class="score?.passed ? 'ok' : 'warn'">
-            {{ score?.passed ? '已达标' : `差 ${score?.gap.toFixed(1)} 分` }}
+            {{ verdict }}
           </em>
         </div>
       </div>

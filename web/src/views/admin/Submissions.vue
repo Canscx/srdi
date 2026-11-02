@@ -5,7 +5,7 @@ import { api, errorText, type SubmissionRow } from '@/api'
 import { goto } from '@/router'
 
 const rows = ref<SubmissionRow[]>([])
-const passLine = ref(60)
+const passLine = ref<number | null>(null)
 const query = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -53,7 +53,7 @@ onMounted(load)
     <header class="bar">
       <div>
         <h2>客户提交</h2>
-        <p>所有通过客户入口提交的评估，按提交时间倒序。达标线 {{ passLine }} 分。</p>
+        <p>所有通过客户入口提交的评估，按提交时间倒序。达标线 {{ passLine ?? '—' }} 分。</p>
       </div>
       <div class="search">
         <el-input

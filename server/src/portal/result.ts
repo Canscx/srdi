@@ -1,3 +1,4 @@
+import { MIN_PASS_CONFIDENCE, isPortalPassed } from '@srdi/shared'
 import type {
   EvidenceDoc,
   IndicatorDef,
@@ -135,6 +136,7 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
 
   const official = Number(result.totals.official.toFixed(2))
   const optimistic = Number(result.totals.optimistic.toFixed(2))
+  const confidence = Number(result.totals.confidence.toFixed(4))
 
   return {
     projectId: project.projectId,
@@ -149,10 +151,11 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
       official,
       optimistic,
       passLine: config.passLine,
-      passed: official >= config.passLine,
+      passed: isPortalPassed(official, config.passLine, confidence),
+      evidenceSufficient: confidence >= MIN_PASS_CONFIDENCE,
       gap: Number(Math.max(0, config.passLine - official).toFixed(2)),
       potential: Number(Math.max(0, optimistic - official).toFixed(2)),
-      confidence: Number(result.totals.confidence.toFixed(4)),
+      confidence,
       materialRate: Number(materialRateOf(evidence).toFixed(4)),
       industry: {
         code: result.industry.code,

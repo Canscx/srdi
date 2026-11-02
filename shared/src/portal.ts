@@ -16,6 +16,14 @@ export interface PortalConfig {
   slots: PortalSlot[]
 }
 
+export const MIN_PASS_CONFIDENCE = 0.5
+
+export const isPortalPassed = (
+  official: number,
+  passLine: number,
+  confidence: number
+): boolean => official >= passLine && confidence >= MIN_PASS_CONFIDENCE
+
 export interface PortalCreateRequest {
   company: ProjectCompany
   period?: Partial<PeriodWindow>
@@ -63,6 +71,7 @@ export interface PortalScoreSummary {
   optimistic: number
   passLine: number
   passed: boolean
+  evidenceSufficient: boolean
   gap: number
   potential: number
   confidence: number

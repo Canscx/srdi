@@ -2,12 +2,13 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import type { PortalConfig, PortalSlot } from '@srdi/shared'
 import { CONFIG_ROOT } from '../paths'
+import { loadRules } from './rules'
 
 const PORTAL_FILE = 'portal.json'
 
 const FALLBACK: PortalConfig = {
   version: '0.0.0',
-  passLine: 60,
+  passLine: 50,
   softCopyright: { ratio: 3, cap: 3 },
   lookup: { windowMinutes: 10, maxAttempts: 10 },
   slots: []
@@ -25,14 +26,16 @@ let cached: PortalConfig | null = null
 
 export const loadPortalConfig = (): PortalConfig => {
   if (cached) return cached
+  // 达标线的唯一来源是规则包,portal.json 不再重复声明,避免两处口径漂移。
+  const rules = loadRules()
+  const passLine = rules.passLine ?? FALLBACK.passLine
   try {
     const raw = JSON.parse(
       readFileSync(path.join(CONFIG_ROOT, PORTAL_FILE), 'utf8')
     ) as Partial<PortalConfig>
     cached = {
       version: raw.version ?? FALLBACK.version,
-      passLine:
-        typeof raw.passLine === 'number' && raw.passLine > 0 ? raw.passLine : FALLBACK.passLine,
+      passLine,
       softCopyright: {
         ratio:
           typeof raw.softCopyright?.ratio === 'number' && raw.softCopyright.ratio > 0
@@ -56,7 +59,7 @@ export const loadPortalConfig = (): PortalConfig => {
       slots: Array.isArray(raw.slots) ? raw.slots.map(normalizeSlot) : FALLBACK.slots
     }
   } catch {
-    cached = FALLBACK
+    cached = { ...FALLBACK, passLine }
   }
-  return cached
+  return cached ?? FALLBACK
 }
