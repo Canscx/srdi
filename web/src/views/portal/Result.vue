@@ -34,6 +34,10 @@ onMounted(load)
   <div class="result" v-loading="loading">
     <p v-if="error" class="banner">{{ error }}</p>
 
+    <div class="topbar">
+      <el-button text @click="goto('/')">← 返回上传材料</el-button>
+    </div>
+
     <ScoreReport v-if="data" :data="data">
       <template #ops>
         <el-button @click="goto('/')">重新评估</el-button>
@@ -56,5 +60,10 @@ onMounted(load)
   background: #fef2f2;
   color: #b91c1c;
   font-size: 13px;
+}
+
+.topbar {
+  max-width: 980px;
+  margin: 0 auto 6px;
 }
 </style>
