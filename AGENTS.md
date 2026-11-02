@@ -36,6 +36,7 @@ pnpm workspaces:`shared` / `server` / `web`。
 `config/rules/` 23 项指标参数 · `config/catalog/` 40 字段 · `config/benchmarks/` 行业基准
 `config/portal.json` 客户流程参数(及格线/槽位/软著折算/查询限流) · `config/industry-map.json` 行业推断 · `config/advice.json` 兜底话术
 `web/src/components/portal/ScoreReport.vue` 评分页与结果页共用主体 · `server/src/portal/detail.ts` 两页共用数据装配
+`web/src/views/LoginView.vue` 登录页左右分栏版式(品牌区 + 表单区,EP 主色仅在本页覆盖为 `#2563eb`)
 `assets/consult-qr.png` 报告二维码(英文路径,勿改中文名)
 `samples/` 两套虚构企业材料 · `server/scripts/generate-samples.ts` 样本生成器(`pnpm samples`)
 `server/scripts/check-font.ts` 中文字体自检(`pnpm check:font`)· `docs/HANDOVER-font-bug.md` PDF 字体故障复盘

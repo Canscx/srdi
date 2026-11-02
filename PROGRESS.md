@@ -393,3 +393,34 @@
 - 删掉 `components/ScoreRadar.vue`（唯一引用是旧 hero）；`api.reportUrl` 移除，旧 8 章报告的服务端接口保留（`report.spec.ts` 依赖，排障也用得上）。
 
 **验证**：`pnpm validate` 全绿（shared 114 / server 134，新增 3 条 admin 用例：结果结构与专业数据、客户版 PDF 导出、customer 打 admin 接口 403、未评分 409）；真机截图确认管理员页与客户页 hero/雷达/横条/清单/建议区一致，折叠区展开后三口径与 23 项表格无横向溢出。
+
+## 登录页视觉重构（2026-11-02）
+
+单列 400px 小白卡换成 1080×680 的左右分栏浮卡：左栏讲产品（品牌 + 迷你评分报告预览 + 5/23/1 三项指标），右栏做登录。**只改 `views/LoginView.vue` 一个文件**，鉴权链路、`App.vue` 守卫、`savedLogin` 契约一行没动。
+
+**改法**
+- 左栏 480：渐变底 `linear-gradient(160deg,#fbfdff,#f5f9ff,#eef5ff)` + 左上径向光晕 + 32px 网格（`repeating-linear-gradient` 两层，alpha `.06`，用 `mask-image` 从左上向右下渐隐）；内容为品牌 lockup、`SRDI SELF-ASSESSMENT` kicker + 渐隐发丝线、两行标题、说明文、预览卡、底部三项指标、引擎状态行。
+- 预览卡纯 CSS 画：示例企业 54.3 分、五个维度条形（11.2/13.4/9.6/14.6/5.5，合计 54.3，权重与 `config/rules` 的 15/20/15/35/15 对齐）、第二张纸用 `::before{z-index:-1}` 只露右下 10px、两个悬浮 chip。
+- 右栏 600：右上角「仅限授权人员」、`CLIENT PORTAL`/`ADMIN CONSOLE` 随角色切换的 kicker、标题、角色分段、带内联 SVG 图标的 44px 输入框、记住密码行、渐变主按钮（右侧箭头 hover 位移 3px）、页脚。
+- 字号沿用旧登录页：标题 18 / 标签 12.5 / 副标 12 / 提示 11 / 按钮 14 / 输入 13.5；只把左栏品牌标题提到 20、预览卡分数 36（对齐报告页 56 的数字体系）。
+
+**关键取舍**
+- **不放大字号**：参考图的 10–11px 微排版在中文里读不动，客户登录是低频高犹豫动作；高级感交给留白、字距（kicker 2.4px）、层次和数字，不靠字号堆。
+- **EP 主色只在登录页换**：`--el-color-primary` 落在 `.gate` 上而不是 `:root`，`#/projects`、门户、报告页仍是 EP 默认 `#409eff`。全站统一会带来 6 个页面的回归面，收益与风险不成比例。
+- **状态灯用品牌蓝不用绿**：全局只有蓝白，绿点会凭空造出第二套语义色。
+- **条形渐变收 `#3b82f6` 而非 `#0ea5e9`**：青尾和浅灰轨道混色，条形看起来比实际短；同时与 `DimensionBars` 真实配色一致。
+- **浮标签探出量必须小于栏内边距**：`.card{overflow:hidden}` 要裁住左栏渐变，chip 偏移一旦大于 40px 就会被切角；「五个维度」从压在条形上改成骑在卡片下边缘。
+
+**踩过的坑**
+- `--el-input-height:44px` 改不动输入框：`.el-input--large` 在元素自身又声明了一次 `--el-input-height`，元素级压过继承；唯一有效杠杆是 `--el-component-size-large`。
+- `--el-border-radius-base:10px` 会把 14px 的 checkbox 变成药丸（它引用 `--el-border-radius-small`），必须把 small 压回 4px。
+- 自写的 `.field :deep(.el-input__wrapper)` 优先级 (0,3,0) 高于 EP 的 `.el-input__wrapper.is-focus` (0,2,0)：只写 hover 不补 `.is-focus` 会让输入框永远没有聚焦反馈；描边与光环写在同一个 `box-shadow` 里，避免 `border+outline` 在聚焦瞬间 1px 位移。
+- `.el-button.is-loading:before` 的白色蒙层把蓝渐变洗成粉蓝，覆盖成 `rgba(255,255,255,.14)`。
+- `.el-checkbox` 自带 `margin-right:30px`、`height:32px`，不覆盖会让「记住密码 / 仅存本机浏览器」两端忽远忽近且与 11px 提示不同基线。
+- 自绘 `.roles button` 必须 `font-family: inherit`，否则退回 UA 字体，和 EP 输入框字重明显不一致。
+
+**验证**
+- `pnpm validate` 全绿（配置校验 + 全仓 typecheck + 20 个测试文件 / 134 条用例）；`vite build` 通过（chunk 体积告警为存量）。
+- 真机 1280×800 CDP 实测：`scrollHeight === innerHeight === 800` 无纵向滚动，卡片 1080×680 居中；输入框 44px、主按钮 46px、聚焦环 `0 0 0 1px #2563eb + 0 0 0 4px rgba(37,99,235,.1)`；`.gate` 上 `--el-color-primary` 为 `#2563eb`，`documentElement` 上仍是 `#409eff`——换肤未泄漏。
+- 交互回归：切「管理员」→ `admin` + 空密码 + 标题与 `ADMIN CONSOLE` 同步；空密码提交出「请输入账号与密码」且不发请求；切回客户预填 `customer/vip666666`；提交后落到 `#/` 门户首页，控制台零报错。
+- 截图目视：浮标签不遮挡条形、`facts` 由 `margin-top:auto` 压到底、记住密码单行、错误条出现后按钮与页脚不被裁。
