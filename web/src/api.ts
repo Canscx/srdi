@@ -86,7 +86,7 @@ export interface SubmissionRow {
   industryName: string
   fileCount: number
   official: number | null
-  optimistic: number | null
+  goal: number | null
   passed: boolean | null
   weakestDimension: string
   weakestGap: number

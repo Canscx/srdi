@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import PDFDocument from 'pdfkit'
 import type { Response } from 'express'
+import { TARGET_RATE } from '@srdi/shared'
 import type { PortalCheck, PortalResultResponse } from '@srdi/shared'
 import { PROJECT_ROOT } from '../paths'
 import { resolveReportFont } from './fonts'
@@ -109,14 +110,16 @@ const renderCover = (doc: PDFKit.PDFDocument, data: PortalResultResponse) => {
   doc.rect(M, y, CW, 96).fill('#f8fafc')
   doc.rect(M, y, CW, 96).lineWidth(0.8).strokeColor(COLOR.line).stroke()
 
-  doc.fontSize(9).fillColor(COLOR.muted).text('当前参考得分', M + 16, y + 14, { width: 160 })
+  doc.fontSize(9).fillColor(COLOR.muted).text('当前参考得分（口径从严，参考分偏低）', M + 16, y + 14, {
+    width: 180
+  })
   doc.fontSize(44).fillColor(COLOR.brand).text(score ? num(score.official) : '—', M + 14, y + 26, {
     width: 180
   })
   doc.fontSize(9).fillColor(COLOR.muted).text('/ 100', M + 14, y + 74, { width: 180 })
 
-  doc.fontSize(9).fillColor(COLOR.muted).text('补齐缺口后可达', M + 214, y + 14, { width: 150 })
-  doc.fontSize(24).fillColor(COLOR.accent).text(score ? num(score.optimistic) : '—', M + 214, y + 32, {
+  doc.fontSize(9).fillColor(COLOR.muted).text('补齐并达标后可达', M + 214, y + 14, { width: 150 })
+  doc.fontSize(24).fillColor(COLOR.accent).text(score ? num(score.goal) : '—', M + 214, y + 32, {
     width: 150
   })
 
@@ -133,13 +136,16 @@ const renderCover = (doc: PDFKit.PDFDocument, data: PortalResultResponse) => {
   y += 112
 
   doc.fontSize(9).fillColor(COLOR.body)
+  const targetPct = Math.round(TARGET_RATE * 100)
   const sentence = !score
     ? '本次评估未完成，请检查材料后重新提交。'
     : score.passed
-      ? `当前得分已过 ${line} 分参考线。若能补齐下方列出的缺口，得分可提升约 ${num(score.potential)} 分，申报竞争力更稳。`
+      ? `当前得分已过 ${line} 分参考线。若补齐下方缺口并按每项 ${targetPct}% 得分率计分，目标分可提升约 ${num(score.potential)} 分，申报竞争力更稳。`
       : needsEvidence
         ? `当前得分已过 ${line} 分参考线，但材料覆盖率不足，请补齐下方缺口后再确认申报。`
-        : `距离 ${line} 分参考线还差 ${num(score.gap)} 分。下方列出的缺口全部补齐后，得分预计可达 ${num(score.optimistic)} 分。`
+        : score.goal < line
+          ? `距离 ${line} 分参考线还差 ${num(score.gap)} 分。即使补齐材料并按每项 ${targetPct}% 得分率计分，目标分也只有 ${num(score.goal)} 分，需先补强低分维度。`
+          : `距离 ${line} 分参考线还差 ${num(score.gap)} 分。缺口补齐并按每项 ${targetPct}% 得分率计分后，目标分预计可达 ${num(score.goal)} 分。`
   doc.text(sentence, M, y, { width: CW, lineGap: 4 })
   y += 34
 
@@ -158,16 +164,16 @@ const renderCover = (doc: PDFKit.PDFDocument, data: PortalResultResponse) => {
           values: axes.map((item) => (item.max > 0 ? item.score / item.max : 0))
         },
         {
-          label: '补齐后',
+          label: '补齐达标后',
           color: COLOR.accent,
           dashed: true,
-          values: axes.map((item) => (item.max > 0 ? item.optimistic / item.max : 0))
+          values: axes.map((item) => (item.max > 0 ? item.goal / item.max : 0))
         }
       ]
     })
     drawLegend(doc, M + CW / 2 - 70, y + 268, [
       { label: '当前得分', color: COLOR.brand },
-      { label: '补齐后可达', color: COLOR.accent, dashed: true }
+      { label: '补齐达标后', color: COLOR.accent, dashed: true }
     ])
     doc
       .fontSize(8)
@@ -212,7 +218,7 @@ const renderDimensions = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =
     { text: '维度', x: M, width: 150 },
     { text: '权重', x: M + 160, width: 50, align: 'right' as const },
     { text: '当前', x: M + 220, width: 70, align: 'right' as const },
-    { text: '补齐后', x: M + 300, width: 70, align: 'right' as const },
+    { text: '补齐达标后', x: M + 300, width: 70, align: 'right' as const },
     { text: '满分', x: M + 380, width: 60, align: 'right' as const }
   ]
   y = tableHeader(doc, y, cols)
@@ -222,7 +228,7 @@ const renderDimensions = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =
     doc.fillColor(COLOR.body).text(item.name, M, y, { width: 150 })
     doc.fillColor(COLOR.muted).text(`${item.weight}%`, M + 160, y, { width: 50, align: 'right' })
     doc.fillColor(COLOR.ink).text(num(item.score), M + 220, y, { width: 70, align: 'right' })
-    doc.fillColor(COLOR.accent).text(num(item.optimistic), M + 300, y, { width: 70, align: 'right' })
+    doc.fillColor(COLOR.accent).text(num(item.goal), M + 300, y, { width: 70, align: 'right' })
     doc.fillColor(COLOR.muted).text(num(item.max), M + 380, y, { width: 60, align: 'right' })
     y += 17
     doc.moveTo(M, y - 4).lineTo(PAGE.width - M, y - 4).lineWidth(0.4).strokeColor(COLOR.line).stroke()
@@ -356,6 +362,8 @@ const renderMaterials = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =>
 
   const notes = [
     '本报告为申报前自评参考，不构成主管部门的认定结论，也不代表最终评审结果。',
+    '当前参考得分按未补证材料从严计分，实际申报时政策口径通常放宽，参考分偏低属正常。',
+    '「补齐并达标后」为材料补齐且每项至少达到 80% 得分率推算的目标分，不是承诺分。',
     '五个一级维度权重取自政策文件；三级指标权重官方未公布，本报告按维度内等权处理。',
     '软件著作权按 3 件折算 1 件发明专利计入知识产权项，折算上限 3 件，属参考折算。',
     '行业基准数值来自公开统计与行业报告估算，未匹配到行业时按中性基准计算。',

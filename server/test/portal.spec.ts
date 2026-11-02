@@ -186,6 +186,15 @@ describe('客户轻流程', () => {
           expect(result.dimensions).toHaveLength(5)
           expect(result.checks.length).toBeGreaterThan(10)
           expect(result.company.creditCode).toBe(COMPANY.creditCode)
+          expect(result.score?.goal).toBeGreaterThan(result.score?.official ?? 0)
+          expect(result.score?.potential).toBeCloseTo(
+            (result.score?.goal ?? 0) - (result.score?.official ?? 0),
+            1
+          )
+          for (const dimension of result.dimensions) {
+            expect(dimension.goal).toBeGreaterThanOrEqual(dimension.score)
+            expect(dimension.goal).toBeLessThanOrEqual(dimension.max + 0.01)
+          }
 
           const growth = result.checks.find((item) => item.code === 21)
           expect(growth?.raw).toBeCloseTo((14733263.93 - 339100.94) / 339100.94, 4)
@@ -215,6 +224,8 @@ describe('客户轻流程', () => {
             .map((item) => ('str' in item ? item.str : ''))
             .join('')
           expect(text).toContain(COMPANY.name)
+          expect(text).toContain('补齐并达标后')
+          expect(text).toContain('口径从严')
 
           const secondPage = await parsed.getPage(2)
           const checklist = (await secondPage.getTextContent()).items
@@ -222,6 +233,7 @@ describe('客户轻流程', () => {
             .join('')
           expect(checklist).toContain('√')
           expect(checklist).toContain('○')
+          expect(checklist).toContain('补齐达标后')
         } finally {
           await server.close()
         }

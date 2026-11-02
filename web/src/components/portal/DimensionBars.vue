@@ -15,14 +15,12 @@ const pct = (value: number, max: number) => (max > 0 ? Math.min(100, (value / ma
       </div>
       <div class="track">
         <div class="fill" :style="{ width: `${pct(item.score, item.max)}%` }" />
-        <div
-          class="ghost"
-          :style="{ width: `${Math.max(pct(item.score, item.max), pct(item.optimistic, item.max))}%` }"
-        />
+        <div class="ghost" :style="{ width: `${pct(item.goal, item.max)}%` }" />
       </div>
       <div class="value">
         <b>{{ item.score.toFixed(1) }}</b>
         <span>/ {{ item.max.toFixed(1) }}</span>
+        <em v-if="item.goal > item.score" class="goal">→ {{ item.goal.toFixed(1) }}</em>
       </div>
     </div>
   </div>
@@ -37,7 +35,7 @@ const pct = (value: number, max: number) => (max > 0 ? Math.min(100, (value / ma
 
 .row {
   display: grid;
-  grid-template-columns: 136px 1fr 104px;
+  grid-template-columns: 136px 1fr 132px;
   align-items: center;
   gap: 14px;
 }
@@ -99,5 +97,12 @@ const pct = (value: number, max: number) => (max > 0 ? Math.min(100, (value / ma
   color: #111827;
   font-weight: 600;
   margin-right: 3px;
+}
+
+.value .goal {
+  font-style: normal;
+  margin-left: 4px;
+  font-size: 11px;
+  color: #0ea5e9;
 }
 </style>

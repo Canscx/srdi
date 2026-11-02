@@ -103,7 +103,7 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
         message:
           outcome.official === null
             ? '评估未完成'
-            : `评估完成,当前得分 ${outcome.official},补齐后可达 ${outcome.optimistic}`,
+            : `评估完成,当前得分 ${outcome.official},补齐并达标后 ${outcome.goal}`,
         error: failed.length > 0 ? `未完成环节:${failed.join('、')}` : undefined
       }
     }

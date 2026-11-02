@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { TARGET_RATE } from '@srdi/shared'
 import type { PortalResultResponse } from '@srdi/shared'
 import DimensionBars from '@/components/portal/DimensionBars.vue'
 import DimensionRadar from '@/components/portal/DimensionRadar.vue'
@@ -10,6 +11,7 @@ const props = withDefaults(defineProps<{ data: PortalResultResponse; saved?: boo
 })
 
 const score = computed(() => props.data.score)
+const targetRate = Math.round(TARGET_RATE * 100)
 
 const needsEvidence = computed(() => {
   const value = score.value
@@ -26,12 +28,15 @@ const verdict = computed(() => {
 const headline = computed(() => {
   if (!score.value) return ''
   if (score.value.passed) {
-    return `已过 ${score.value.passLine} 分参考线。补齐下面列出的缺口，还能再提 ${score.value.potential.toFixed(1)} 分。`
+    return `已过 ${score.value.passLine} 分参考线。缺口补齐并按每项 ${targetRate}% 得分率计分后，还能再提 ${score.value.potential.toFixed(1)} 分。`
   }
   if (needsEvidence.value) {
     return `分数已过 ${score.value.passLine} 分线，但材料覆盖不足，先补齐下方缺口再确认申报。`
   }
-  return `距离 ${score.value.passLine} 分参考线还差 ${score.value.gap.toFixed(1)} 分。缺口全部补齐后，预计可达 ${score.value.optimistic.toFixed(1)} 分。`
+  if (score.value.goal < score.value.passLine) {
+    return `距离 ${score.value.passLine} 分参考线还差 ${score.value.gap.toFixed(1)} 分；即使补齐材料并按每项 ${targetRate}% 得分率计分，预计也只有 ${score.value.goal.toFixed(1)} 分，需先补强低分维度。`
+  }
+  return `距离 ${score.value.passLine} 分参考线还差 ${score.value.gap.toFixed(1)} 分。缺口补齐并按每项 ${targetRate}% 得分率计分后，预计可达 ${score.value.goal.toFixed(1)} 分。`
 })
 
 const missingText = computed(() =>
@@ -80,8 +85,8 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
         </div>
         <div class="side">
           <div>
-            <span class="cap">补齐后可达</span>
-            <b>{{ score ? score.optimistic.toFixed(1) : '—' }}</b>
+            <span class="cap">补齐并达标后</span>
+            <b>{{ score ? score.goal.toFixed(1) : '—' }}</b>
           </div>
           <div>
             <span class="cap">达标参考线</span>
@@ -92,6 +97,8 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
           </em>
         </div>
       </div>
+
+      <p class="score-note">（打分口径从严，参考分偏低；实际申报会按政策放宽）</p>
 
       <p class="headline">{{ headline }}</p>
       <p v-if="saved" class="saved">
@@ -116,7 +123,7 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
 
     <section class="card">
       <h2>五个维度</h2>
-      <p class="sub">深色为当前得分，浅色虚线为补齐缺口后能达到的位置。</p>
+      <p class="sub">深色为当前得分，浅色虚线为材料补齐并按每项 {{ targetRate }}% 得分率计分后的估算位置。</p>
       <div class="dims">
         <DimensionRadar :dimensions="data.dimensions" />
         <DimensionBars :dimensions="data.dimensions" />
@@ -163,6 +170,7 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
     <footer class="actions">
       <div class="tips">
         <span>参考得分非官方口径，仅供申报前自查。</span>
+        <span>「补齐并达标后」按每项 {{ targetRate }}% 得分率推算，不是承诺分。</span>
         <span v-if="score">
           行业基准 {{ score.industry.code }} {{ score.industry.name ?? '未匹配' }} · 有效证据
           {{ (score.materialRate * 100).toFixed(0) }}%
@@ -276,6 +284,13 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
 .side em.warn {
   background: #fff7ed;
   color: #b45309;
+}
+
+.score-note {
+  margin-top: 10px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #a3adbb;
 }
 
 .headline {

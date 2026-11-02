@@ -1,4 +1,5 @@
 import type { PeriodWindow, ProjectCompany } from './contracts'
+import type { IndicatorResult } from './scoring/types'
 
 export interface PortalSlot {
   id: string
@@ -25,6 +26,20 @@ export const isPortalPassed = (
   confidence: number
 ): boolean => official >= passLine && confidence >= MIN_PASS_CONFIDENCE
 
+export const TARGET_RATE = 0.8
+
+export const goalContributionOf = (item: IndicatorResult): number => {
+  if (item.status === 'excluded') return 0
+  if (item.basis === 'absent' || item.basis === 'substituted') return item.effectiveWeight
+  if (item.status === 'notApplicable') return 0
+  return Math.max(item.contribution.official, TARGET_RATE * item.effectiveWeight)
+}
+
+export const rollupGoal = (items: IndicatorResult[]): number => {
+  const total = items.reduce((sum, item) => sum + goalContributionOf(item), 0)
+  return Math.min(100, Math.max(0, total))
+}
+
 export interface PortalCreateRequest {
   company: ProjectCompany
   period?: Partial<PeriodWindow>
@@ -38,7 +53,7 @@ export interface PortalDimension {
   weight: number
   max: number
   score: number
-  optimistic: number
+  goal: number
 }
 
 export interface PortalCheck {
@@ -69,7 +84,7 @@ export interface PortalAdvice {
 
 export interface PortalScoreSummary {
   official: number
-  optimistic: number
+  goal: number
   passLine: number
   passed: boolean
   evidenceSufficient: boolean

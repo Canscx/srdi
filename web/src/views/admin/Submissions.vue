@@ -80,9 +80,9 @@ onMounted(load)
         </template>
       </el-table-column>
       <el-table-column prop="fileCount" label="材料" width="70" />
-      <el-table-column label="当前 / 补齐后" width="140">
+      <el-table-column label="当前 / 达标后" width="140">
         <template #default="{ row }">
-          <span v-if="row.hasScore">{{ row.official }} / {{ row.optimistic }}</span>
+          <span v-if="row.hasScore">{{ row.official }} / {{ row.goal }}</span>
           <span v-else class="muted">未评分</span>
         </template>
       </el-table-column>

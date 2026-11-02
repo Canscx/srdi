@@ -1,4 +1,4 @@
-import { MIN_PASS_CONFIDENCE, isPortalPassed } from '@srdi/shared'
+import { MIN_PASS_CONFIDENCE, goalContributionOf, isPortalPassed, rollupGoal } from '@srdi/shared'
 import type {
   EvidenceDoc,
   IndicatorDef,
@@ -98,9 +98,12 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
   const fieldLabels = new Map(catalogFields().map((field) => [field.key, field.label]))
   const slotTitles = new Map(config.slots.map((slot) => [slot.id, slot.title]))
   const maxByDimension: Record<string, number> = {}
+  const goalByDimension: Record<string, number> = {}
   for (const item of result.indicators) {
     maxByDimension[item.dimensionId] =
       (maxByDimension[item.dimensionId] ?? 0) + item.effectiveWeight
+    goalByDimension[item.dimensionId] =
+      (goalByDimension[item.dimensionId] ?? 0) + goalContributionOf(item)
   }
 
   const dimensions: PortalDimension[] = result.dimensions.map((item) => ({
@@ -109,7 +112,9 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
     weight: item.weight,
     max: Number((maxByDimension[item.id] ?? item.weight).toFixed(2)),
     score: Number(item.score.official.toFixed(2)),
-    optimistic: Number(item.score.optimistic.toFixed(2))
+    goal: Number(
+      Math.min(maxByDimension[item.id] ?? item.weight, goalByDimension[item.id] ?? 0).toFixed(2)
+    )
   }))
 
   const checks: PortalCheck[] = []
@@ -139,7 +144,7 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
   }
 
   const official = Number(result.totals.official.toFixed(2))
-  const optimistic = Number(result.totals.optimistic.toFixed(2))
+  const goal = Number(rollupGoal(result.indicators).toFixed(2))
   const confidence = Number(result.totals.confidence.toFixed(4))
 
   return {
@@ -164,12 +169,12 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
     })),
     score: {
       official,
-      optimistic,
+      goal,
       passLine: config.passLine,
       passed: isPortalPassed(official, config.passLine, confidence),
       evidenceSufficient: confidence >= MIN_PASS_CONFIDENCE,
       gap: Number(Math.max(0, config.passLine - official).toFixed(2)),
-      potential: Number(Math.max(0, optimistic - official).toFixed(2)),
+      potential: Number(Math.max(0, goal - official).toFixed(2)),
       confidence,
       materialRate: Number(materialRateOf(evidence).toFixed(4)),
       industry: {

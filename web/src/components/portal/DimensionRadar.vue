@@ -24,7 +24,7 @@ const option = () => ({
     valueFormatter: (value: unknown) => `${round(Number(value))} 分`
   },
   legend: {
-    data: ['补齐后', '当前'],
+    data: ['补齐达标后', '当前'],
     bottom: 0,
     itemWidth: 10,
     itemHeight: 10,
@@ -48,8 +48,8 @@ const option = () => ({
       emphasis: { lineStyle: { width: 2 } },
       data: [
         {
-          name: '补齐后',
-          value: props.dimensions.map((item) => round(item.optimistic)),
+          name: '补齐达标后',
+          value: props.dimensions.map((item) => round(item.goal)),
           lineStyle: { color: '#7dd3fc', width: 1.2, type: 'dashed' },
           itemStyle: { color: '#7dd3fc' },
           areaStyle: { color: 'rgba(125, 211, 252, 0.18)' }

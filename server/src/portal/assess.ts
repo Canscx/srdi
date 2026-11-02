@@ -1,4 +1,5 @@
 import type { PortalAdvice, ProjectMeta, ScoreRecord } from '@srdi/shared'
+import { rollupGoal } from '@srdi/shared'
 import { extractProject } from '../ai/extract'
 import type { ModelClient } from '../ai/client'
 import type { JobReport } from '../jobs/queue'
@@ -27,7 +28,7 @@ export interface AssessOutcome {
   declared: DeclaredOutcome | null
   advices: PortalAdvice[]
   official: number | null
-  optimistic: number | null
+  goal: number | null
   savedAt: string
 }
 
@@ -194,7 +195,7 @@ export const assessProject = async (
     declared,
     advices,
     official: holder.record ? Number(holder.record.result.totals.official.toFixed(2)) : null,
-    optimistic: holder.record ? Number(holder.record.result.totals.optimistic.toFixed(2)) : null,
+    goal: holder.record ? Number(rollupGoal(holder.record.result.indicators).toFixed(2)) : null,
     savedAt: new Date().toISOString()
   }
 
