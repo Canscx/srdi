@@ -4,6 +4,7 @@ import * as echarts from 'echarts/core'
 import { RadarChart } from 'echarts/charts'
 import { LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
+import { TARGET_RATE } from '@srdi/shared'
 import type { PortalDimension } from '@srdi/shared'
 
 echarts.use([RadarChart, LegendComponent, TooltipComponent, CanvasRenderer])
@@ -14,6 +15,9 @@ const host = ref<HTMLDivElement | null>(null)
 let chart: ReturnType<typeof echarts.init> | null = null
 
 const round = (value: number) => Math.round(value * 100) / 100
+
+const goalOf = (item: PortalDimension) =>
+  Number.isFinite(item.goal) ? item.goal : Math.max(item.score, item.max * TARGET_RATE)
 
 const option = () => ({
   animationDuration: 460,
@@ -44,24 +48,23 @@ const option = () => ({
   series: [
     {
       type: 'radar',
+      name: '补齐达标后',
       symbolSize: 3,
       emphasis: { lineStyle: { width: 2 } },
-      data: [
-        {
-          name: '补齐达标后',
-          value: props.dimensions.map((item) => round(item.goal)),
-          lineStyle: { color: '#7dd3fc', width: 1.2, type: 'dashed' },
-          itemStyle: { color: '#7dd3fc' },
-          areaStyle: { color: 'rgba(125, 211, 252, 0.18)' }
-        },
-        {
-          name: '当前',
-          value: props.dimensions.map((item) => round(item.score)),
-          lineStyle: { color: '#1d4ed8', width: 2 },
-          itemStyle: { color: '#1d4ed8' },
-          areaStyle: { color: 'rgba(29, 78, 216, 0.22)' }
-        }
-      ]
+      data: [{ value: props.dimensions.map((item) => round(goalOf(item))) }],
+      lineStyle: { color: '#7dd3fc', width: 1.2, type: 'dashed' },
+      itemStyle: { color: '#7dd3fc' },
+      areaStyle: { color: 'rgba(125, 211, 252, 0.18)' }
+    },
+    {
+      type: 'radar',
+      name: '当前',
+      symbolSize: 3,
+      emphasis: { lineStyle: { width: 2 } },
+      data: [{ value: props.dimensions.map((item) => round(item.score)) }],
+      lineStyle: { color: '#1d4ed8', width: 2 },
+      itemStyle: { color: '#1d4ed8' },
+      areaStyle: { color: 'rgba(29, 78, 216, 0.22)' }
     }
   ]
 })

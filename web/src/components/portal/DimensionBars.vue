@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { TARGET_RATE } from '@srdi/shared'
 import type { PortalDimension } from '@srdi/shared'
 
 defineProps<{ dimensions: PortalDimension[] }>()
 
 const pct = (value: number, max: number) => (max > 0 ? Math.min(100, (value / max) * 100) : 0)
+
+const goalOf = (item: PortalDimension) =>
+  Number.isFinite(item.goal) ? item.goal : Math.max(item.score, item.max * TARGET_RATE)
 </script>
 
 <template>
@@ -15,12 +19,12 @@ const pct = (value: number, max: number) => (max > 0 ? Math.min(100, (value / ma
       </div>
       <div class="track">
         <div class="fill" :style="{ width: `${pct(item.score, item.max)}%` }" />
-        <div class="ghost" :style="{ width: `${pct(item.goal, item.max)}%` }" />
+        <div class="ghost" :style="{ width: `${pct(goalOf(item), item.max)}%` }" />
       </div>
       <div class="value">
         <b>{{ item.score.toFixed(1) }}</b>
         <span>/ {{ item.max.toFixed(1) }}</span>
-        <em v-if="item.goal > item.score" class="goal">→ {{ item.goal.toFixed(1) }}</em>
+        <em v-if="goalOf(item) > item.score" class="goal">→ {{ goalOf(item).toFixed(1) }}</em>
       </div>
     </div>
   </div>
