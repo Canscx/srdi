@@ -9,6 +9,7 @@ import type {
   ProjectFile
 } from '@srdi/shared'
 import { badRequest } from '../errors'
+import { resolveDocType } from '../pipeline/parse'
 import type { AppStore } from '../store'
 import { readJson } from '../store/atomic'
 import { createBudget } from './budget'
@@ -94,7 +95,7 @@ export const extractProject = async (
 ): Promise<ExtractOutcome> => {
   const project = await store.projects.get(projectId)
   const projectDir = store.projects.dir(projectId)
-  const files = project.files.filter((file) => file.status === 'parsed')
+  const files = project.files.filter((file) => file.status === 'parsed' && !file.referenceOnly)
   if (files.length === 0) {
     throw badRequest('not_parsed', '没有已解析的文件,请先解析材料', '解析完成后再抽取字段')
   }
@@ -131,7 +132,7 @@ export const extractProject = async (
       continue
     }
 
-    const heuristic = file.docType ?? 'other'
+    const heuristic = resolveDocType(file) ?? 'other'
     const subsetHash = fieldSubsetHash(fieldSubset(heuristic))
     const key = extractionCacheKey({
       sha256: file.sha256,
@@ -228,7 +229,10 @@ export const extractProject = async (
     if (docType !== file.docType) {
       await store.projects.update(projectId, (meta) => {
         const target = meta.files.find((item) => item.fileId === file.fileId)
-        if (target) target.docType = docType
+        if (target) {
+          target.docType = docType
+          target.docTypeSource = 'model'
+        }
       })
     }
 

@@ -36,7 +36,15 @@
       "title": "其他补充材料",
       "hint": "专利清单、资质证书、荣誉证书、标准文本、申报书，有什么传什么，缺了不影响出分。",
       "required": false,
-      "accept": ["pdf", "xlsx", "xls", "docx", "jpg", "jpeg", "png"]
+      "accept": ["pdf", "xlsx", "xls", "docx", "jpg", "jpeg", "png"],
+      "docTypes": [
+        { "value": "patent", "label": "专利清单 / 专利证书" },
+        { "value": "cert", "label": "资质 / 荣誉证书" },
+        { "value": "standard", "label": "标准文本" },
+        { "value": "application", "label": "申报书 / 情况说明" },
+        { "value": "finance", "label": "财务报表" },
+        { "value": "other", "label": "其他（由 AI 判断）" }
+      ]
     }
   ]
 }

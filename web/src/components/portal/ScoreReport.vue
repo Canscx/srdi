@@ -40,6 +40,23 @@ const missingText = computed(() =>
     .map((slot) => slot.title)
     .join('、')
 )
+
+const extraText = computed(() =>
+  props.data.missingSlots
+    .filter((slot) => !slot.required)
+    .map((slot) => slot.title)
+    .join('、')
+)
+
+const materials = computed(() => props.data.materials ?? [])
+
+const referenceCount = computed(() => materials.value.filter((item) => item.referenceOnly).length)
+
+const stale = computed(
+  () => new Date(props.data.updatedAt).getTime() > new Date(props.data.scoredAt).getTime() + 1000
+)
+
+const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString('zh-CN'))
 </script>
 
 <template>
@@ -87,6 +104,12 @@ const missingText = computed(() =>
       缺少 {{ missingText }}，这几项按中性值估算，补齐后分数会明显变化。
     </p>
 
+    <p v-if="extraText" class="alert soft">未提交 {{ extraText }}，相关条目在下方按材料缺失显示。</p>
+
+    <p v-if="stale" class="alert">
+      材料已更新，但这份报告是 {{ scoredAtText }} 的快照。重新评估后才会按新材料计分。
+    </p>
+
     <p v-for="warning in data.warnings.slice(0, 3)" :key="warning" class="alert soft">
       {{ warning }}
     </p>
@@ -104,6 +127,21 @@ const missingText = computed(() =>
       <h2>逐项自查</h2>
       <p class="sub">✅ 符合要求　⭕ 材料缺失　❌ 需要补足</p>
       <ChecklistTable :checks="data.checks" />
+    </section>
+
+    <section v-if="materials.length > 0" class="card">
+      <h2>本次收到的材料</h2>
+      <p class="sub">
+        共 {{ materials.length }} 份<template v-if="referenceCount > 0">，其中 {{ referenceCount }} 份为参考材料（不计入打分）</template>。
+      </p>
+      <ul class="materials">
+        <li v-for="item in materials" :key="item.fileId">
+          <span class="m-name">{{ item.name }}</span>
+          <span class="m-slot">{{ item.slotTitle ?? '未分槽' }}</span>
+          <span class="m-type">{{ item.docType ?? '待判型' }}</span>
+          <em v-if="item.referenceOnly" class="m-ref">参考</em>
+        </li>
+      </ul>
     </section>
 
     <section class="card">
@@ -294,6 +332,49 @@ const missingText = computed(() =>
   grid-template-columns: 400px minmax(0, 1fr);
   align-items: center;
   gap: 18px;
+}
+
+.materials {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.materials li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #fafbfd;
+  font-size: 12px;
+}
+
+.m-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #334155;
+}
+
+.m-slot,
+.m-type {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.m-ref {
+  font-style: normal;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 10.5px;
 }
 
 .advices {

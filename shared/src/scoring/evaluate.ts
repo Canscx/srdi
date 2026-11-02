@@ -18,6 +18,17 @@ import type { Flag, IndexKey, Row, Slot, Tri, Val } from './types'
 export interface EvalEnv {
   ctx: EvalContext
   row?: Row
+  align?: ReadonlySet<number>
+}
+
+export const restrictSeries = (val: Val, align?: ReadonlySet<number>): Val => {
+  if (!align || val.kind !== 'series') return val
+  const slots = val.s.slots.map((item, index) =>
+    item.state === 'ok' && !align.has(index)
+      ? { state: 'missing' as const, num: 0, flags: [] }
+      : item
+  )
+  return { kind: 'series', s: { slots }, flags: val.flags }
 }
 
 const num = (v: number, flags: Flag[] = []): Val => ({ kind: 'num', v, flags })
@@ -221,9 +232,12 @@ const rowNumericColumn = (rows: Row[]): number[] | null => {
 const meanOf = (values: number[]): number | null =>
   values.length === 0 ? null : values.reduce((sum, item) => sum + item, 0) / values.length
 
-const applyBuiltin = (name: string, args: Val[]): Val => {
+const applyBuiltin = (name: string, args: Val[], env: EvalEnv): Val => {
   const first = args[0]
   if (!first) return none('error', [])
+
+  const aligned = (item: Slot, index: number) =>
+    item.state === 'ok' && (!env.align || env.align.has(index))
 
   if (name === 'abs') {
     if (first.kind === 'num') return num(Math.abs(first.v), first.flags)
@@ -246,7 +260,7 @@ const applyBuiltin = (name: string, args: Val[]): Val => {
   if (name === 'mean') {
     if (first.kind === 'num') return first
     if (first.kind === 'series') {
-      const values = first.s.slots.filter((slot) => slot.state === 'ok').map((slot) => slot.num)
+      const values = first.s.slots.filter(aligned).map((slot) => slot.num)
       const mean = meanOf(values)
       return mean === null ? none('missing', [], first.flags) : num(mean, first.flags)
     }
@@ -256,7 +270,7 @@ const applyBuiltin = (name: string, args: Val[]): Val => {
   if (name === 'sum') {
     if (first.kind === 'num') return first
     if (first.kind === 'series') {
-      const values = first.s.slots.filter((slot) => slot.state === 'ok').map((slot) => slot.num)
+      const values = first.s.slots.filter(aligned).map((slot) => slot.num)
       return values.length === 0 ? none('missing', [], first.flags) : num(values.reduce((a, b) => a + b, 0), first.flags)
     }
     if (first.kind === 'rows') {
@@ -309,7 +323,7 @@ export const evalNode = (node: Expression, env: EvalEnv): Val => {
         return num(kept.length, base.flags)
       }
 
-      return applyBuiltin(name, call.arguments.map((item) => evalNode(item, env)))
+      return applyBuiltin(name, call.arguments.map((item) => evalNode(item, env)), env)
     }
 
     case 'BinaryExpression': {

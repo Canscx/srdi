@@ -160,11 +160,20 @@ export const api = {
   portalProjects: () => request<PortalListResponse>('/api/portal/projects'),
   portalLookup: (body: PortalLookupRequest) =>
     request<PortalLookupResponse>('/api/portal/lookup', jsonInit('POST', body)),
-  portalUpload: async (projectId: string, slot: string, file: File) => {
+  portalUpload: async (
+    projectId: string,
+    slot: string,
+    file: File,
+    docType?: string,
+    referenceOnly?: boolean
+  ) => {
     const form = new FormData()
     form.append('file', file)
+    const query = new URLSearchParams({ slot })
+    if (docType) query.set('docType', docType)
+    if (referenceOnly) query.set('reference', '1')
     const response = await fetch(
-      `/api/portal/projects/${projectId}/files?slot=${encodeURIComponent(slot)}`,
+      `/api/portal/projects/${projectId}/files?${query.toString()}`,
       { method: 'POST', body: form }
     )
     if (!response.ok) throw await toError(response)

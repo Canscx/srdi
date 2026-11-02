@@ -62,7 +62,16 @@ const SUBSET_RULES: Record<DocType, SubsetRule> = {
       'qual.marketRanking'
     ]
   },
-  other: { prefixes: [], keys: ['company.name', 'company.creditCode', 'company.industryCode'] }
+  other: {
+    prefixes: ['company.', 'hr.', 'qual.', 'std.', 'ip.'],
+    keys: [
+      'fin.mainBusinessRevenue',
+      'fin.netAssets',
+      'fin.assetLiabilityRatio',
+      'fin.rdExpense',
+      'fin.equityInvested'
+    ]
+  }
 }
 
 export const fieldSubset = (docType: DocType): CatalogField[] => {

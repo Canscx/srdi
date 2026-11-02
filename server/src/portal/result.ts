@@ -13,6 +13,7 @@ import type {
   ScoreRecord,
   ScoringSpec
 } from '@srdi/shared'
+import { catalogFields } from '../config/catalog'
 import { loadPortalConfig } from '../config/portal'
 import { loadRules } from '../config/rules'
 
@@ -94,6 +95,8 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
   }
 
   const dimensionNames = new Map(result.dimensions.map((item) => [item.id, item.name]))
+  const fieldLabels = new Map(catalogFields().map((field) => [field.key, field.label]))
+  const slotTitles = new Map(config.slots.map((slot) => [slot.id, slot.title]))
   const maxByDimension: Record<string, number> = {}
   for (const item of result.indicators) {
     maxByDimension[item.dimensionId] =
@@ -130,7 +133,8 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
       unit,
       benchmark: item.benchmark?.value ?? null,
       text: item.explain.text,
-      missingFields: result.missing.find((entry) => entry.indicatorId === item.id)?.fieldKeys ?? []
+      missingFields: (result.missing.find((entry) => entry.indicatorId === item.id)?.fieldKeys ?? [])
+        .map((key) => fieldLabels.get(key) ?? key)
     })
   }
 
@@ -147,6 +151,17 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
     },
     period: project.period,
     status: input.status,
+    materials: project.files.map((file) => ({
+      fileId: file.fileId,
+      name: file.name,
+      slot: file.slot,
+      slotTitle: file.slot ? slotTitles.get(file.slot) : undefined,
+      status: file.status,
+      docType: file.docType,
+      docTypeSource: file.docTypeSource,
+      referenceOnly: file.referenceOnly === true,
+      pages: file.pages
+    })),
     score: {
       official,
       optimistic,
@@ -168,6 +183,8 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
     advices: input.advices,
     missingSlots: missingSlotsOf(project),
     warnings: input.warnings,
-    generatedAt: new Date().toISOString()
+    generatedAt: new Date().toISOString(),
+    scoredAt: record.savedAt,
+    updatedAt: project.updatedAt
   }
 }

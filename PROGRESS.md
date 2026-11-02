@@ -430,3 +430,13 @@
 - 达标线 60→50（2026 办法：专精特新 50、小巨人 60）；GATE_3 研发窗口改为 y0/y1，与 GATE_2 的上年度口径对齐。
 - 客户版 passLine 改由规则包派生，删除 `config/portal.json` 的 `passLine`；新增 `isPortalPassed`，confidence<0.5 不出“已达标”。
 - firm-b 从“临界”变“低分通过”（57.76），临界语义由 `shared/test/gates.spec.ts` 的边界用例承接；历史 score-result 不迁移。
+
+## 评分口径修复（2026-11-02）
+
+- **`mean` 跨序列年份错配**：`fin.revenue` 三年、`fin.operatingCost` 一年，分子分母样本集不同 → 毛利率 −180.06%。改为按 `formula.inputs` 求槽位交集，只取交集年份；实测 **4.50%**。影响 IND_05/06/07/08/11。
+- **docType 回判由替换改并集**：同一份 2024 年报两次分别判 `finance` / `tax`，`tax` 子集不含 `operatingCost`、`netAssets`。现在 `merge(旧, 新)`，只扩不缩。
+- **`other` 子集 3 → 31 个字段**：《信息文档》这类文件名无关键词的材料，之前只问 `company.name/creditCode/industryCode`，6,106 tokens 换 2 个已知值。
+- **文案**：`negative_equity` 输出「净资产为负，该指标不适用」；比值尺度 `|raw| > 5` 打 `outlier_ratio`，4244.80% 会带「基期偏小」提示。
+- **上传选型 / 参考材料**：`?docType=` + `?reference=1`，`referenceOnly` 不进抽取；报告页新增「本次收到的材料」、缺失字段中文名、快照过期提示。
+- **验证**：`pnpm validate` 全绿（20 文件 / 134 用例）；搜信项目重算 official **51.27**。
+- **已知**：同一份 2024 年报重抽时模型只回 3 个财务字段（10-30 那次 9 个），属模型召回波动，未改代码。

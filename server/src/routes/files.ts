@@ -5,7 +5,7 @@ import path from 'node:path'
 import { Router } from 'express'
 import type { Request } from 'express'
 import busboy from 'busboy'
-import type { ProjectFile, UploadFileResponse } from '@srdi/shared'
+import type { DocType, ProjectFile, UploadFileResponse } from '@srdi/shared'
 import { MAX_FILE_BYTES } from '@srdi/shared'
 import { AppError, badRequest, tooLarge } from '../errors'
 import { detectFile } from '../pipeline/detect'
@@ -125,7 +125,9 @@ export const storeUploadedFile = async (
   projectId: string,
   req: Request,
   maxBytes: number,
-  slot?: string
+  slot?: string,
+  docType?: DocType,
+  referenceOnly?: boolean
 ): Promise<UploadOutcome> => {
   const contentType = (req.headers['content-type'] ?? '').toLowerCase()
   if (!contentType.includes('multipart/form-data')) {
@@ -161,6 +163,8 @@ export const storeUploadedFile = async (
       status: 'pending',
       uploadedAt: new Date().toISOString(),
       slot,
+      ...(docType ? { docType, docTypeSource: 'user' as const } : {}),
+      ...(referenceOnly ? { referenceOnly: true } : {}),
       ...(detected.kind === 'image' ? { pages: 1 } : {})
     }
 
@@ -196,6 +200,23 @@ export const storeUploadedFile = async (
   }
 }
 
+const DOC_TYPES: DocType[] = [
+  'audit',
+  'application',
+  'tax',
+  'patent',
+  'cert',
+  'standard',
+  'finance',
+  'other'
+]
+
+export const parseDocTypeQuery = (raw: unknown): DocType | undefined =>
+  typeof raw === 'string' && (DOC_TYPES as string[]).includes(raw) ? (raw as DocType) : undefined
+
+export const parseFlagQuery = (raw: unknown): boolean =>
+  raw === '1' || raw === 'true' || raw === 'yes'
+
 export const filesRouter = (store: AppStore, options: FilesRouterOptions = {}) => {
   const router = Router()
   const maxBytes = options.maxFileBytes ?? MAX_FILE_BYTES
@@ -206,7 +227,9 @@ export const filesRouter = (store: AppStore, options: FilesRouterOptions = {}) =
       req.params.projectId,
       req,
       maxBytes,
-      typeof req.query.slot === 'string' ? req.query.slot : undefined
+      typeof req.query.slot === 'string' ? req.query.slot : undefined,
+      parseDocTypeQuery(req.query.docType),
+      parseFlagQuery(req.query.reference)
     )
     res.status(outcome.created ? 201 : 200).json(outcome.payload)
   })

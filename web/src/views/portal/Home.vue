@@ -26,6 +26,7 @@ const form = reactive({
 })
 
 const files = reactive<Record<string, File[]>>({})
+const slotMeta = reactive<Record<string, { docType: string; referenceOnly: boolean }>>({})
 const { phase, uploaded, total, message, error, start } = useAssessment()
 
 const busy = computed(() => ['creating', 'uploading', 'starting'].includes(phase.value))
@@ -99,7 +100,12 @@ const submit = async () => {
       softCopyrightCount: Number(form.softCopyrightCount) || 0
     },
     period: period.value,
-    slots: slots.value.map((slot) => ({ slot: slot.id, files: files[slot.id] ?? [] }))
+    slots: slots.value.map((slot) => ({
+      slot: slot.id,
+      files: files[slot.id] ?? [],
+      docType: slotMeta[slot.id]?.docType || undefined,
+      referenceOnly: slotMeta[slot.id]?.referenceOnly === true
+    }))
   })
 
   if (outcome) {
@@ -194,7 +200,11 @@ onMounted(load)
           :key="slot.id"
           :slot="slot"
           :files="files[slot.id] ?? []"
+          :doc-type="slotMeta[slot.id]?.docType"
+          :reference-only="slotMeta[slot.id]?.referenceOnly"
           @update:files="(next) => (files[slot.id] = next)"
+          @update:doc-type="(value) => (slotMeta[slot.id] = { docType: value, referenceOnly: slotMeta[slot.id]?.referenceOnly === true })"
+          @update:reference-only="(value) => (slotMeta[slot.id] = { docType: slotMeta[slot.id]?.docType ?? '', referenceOnly: value })"
         />
       </div>
     </section>

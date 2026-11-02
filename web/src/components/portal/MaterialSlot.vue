@@ -5,9 +5,15 @@ import type { PortalSlot } from '@srdi/shared'
 const props = defineProps<{
   slot: PortalSlot
   files: File[]
+  docType?: string
+  referenceOnly?: boolean
 }>()
 
-const emit = defineEmits<{ 'update:files': [File[]] }>()
+const emit = defineEmits<{
+  'update:files': [File[]]
+  'update:docType': [string]
+  'update:referenceOnly': [boolean]
+}>()
 
 const input = ref<HTMLInputElement | null>(null)
 const dragging = ref(false)
@@ -67,6 +73,29 @@ const sizeText = (size: number) =>
     </div>
 
     <p class="hint">{{ slot.hint }}</p>
+
+    <div v-if="slot.docTypes?.length" class="meta">
+      <label class="field">
+        <span>材料类型</span>
+        <select
+          :value="docType ?? ''"
+          @change="emit('update:docType', ($event.target as HTMLSelectElement).value)"
+        >
+          <option value="">由 AI 判断</option>
+          <option v-for="item in slot.docTypes" :key="item.value" :value="item.value">
+            {{ item.label }}
+          </option>
+        </select>
+      </label>
+      <label class="check">
+        <input
+          type="checkbox"
+          :checked="referenceOnly"
+          @change="emit('update:referenceOnly', ($event.target as HTMLInputElement).checked)"
+        />
+        仅作参考，不计入打分
+      </label>
+    </div>
 
     <ul v-if="files.length > 0" class="list">
       <li v-for="(file, index) in files" :key="`${file.name}-${index}`">
@@ -165,6 +194,39 @@ const sizeText = (size: number) =>
   font-size: 11.5px;
   color: #a3adbb;
   text-align: center;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.field select {
+  padding: 4px 8px;
+  border: 1px solid #d8e0ec;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 12px;
+  color: #1f2937;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  cursor: pointer;
 }
 
 .list {

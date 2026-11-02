@@ -19,7 +19,9 @@ export const FLAG = {
   QUOTE_UNVERIFIED: 'quote_unverified',
   SERIES_PERIOD_CONFLICT: 'series_period_conflict',
   OUT_OF_WINDOW_DROPPED: 'out_of_window_dropped',
-  DECLARED_VALUE: 'declared_value'
+  DECLARED_VALUE: 'declared_value',
+  OUTLIER_RATIO: 'outlier_ratio',
+  WINDOW_ALIGNED: 'window_aligned'
 } as const
 
 export const GUARD_FLAG_BY_FIELD: Record<string, string> = {

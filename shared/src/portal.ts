@@ -6,6 +6,7 @@ export interface PortalSlot {
   hint: string
   required: boolean
   accept: string[]
+  docTypes?: { value: string; label: string }[]
 }
 
 export interface PortalConfig {
@@ -79,6 +80,18 @@ export interface PortalScoreSummary {
   industry: { code: string; name: string | null; source: 'industry' | 'default' }
 }
 
+export interface PortalMaterial {
+  fileId: string
+  name: string
+  slot?: string
+  slotTitle?: string
+  status: string
+  docType?: string
+  docTypeSource?: string
+  referenceOnly: boolean
+  pages?: number
+}
+
 export interface PortalResultResponse {
   projectId: string
   company: ProjectCompany
@@ -88,9 +101,12 @@ export interface PortalResultResponse {
   dimensions: PortalDimension[]
   checks: PortalCheck[]
   advices: PortalAdvice[]
+  materials: PortalMaterial[]
   missingSlots: { id: string; title: string; required: boolean }[]
   warnings: string[]
   generatedAt: string
+  scoredAt: string
+  updatedAt: string
 }
 
 export interface PortalListResponse {

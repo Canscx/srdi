@@ -20,7 +20,7 @@ import { loadPortalDetail } from '../portal/detail'
 import { sendPortalPdf } from '../report/portal'
 import type { AppStore } from '../store'
 import { removeFile } from '../store/atomic'
-import { storeUploadedFile } from './files'
+import { parseDocTypeQuery, parseFlagQuery, storeUploadedFile } from './files'
 
 export interface PortalRouterOptions {
   maxFileBytes?: number
@@ -187,7 +187,9 @@ export const portalRouter = (store: AppStore, options: PortalRouterOptions) => {
       project.projectId,
       req,
       options.maxFileBytes ?? MAX_FILE_BYTES,
-      slot
+      slot,
+      parseDocTypeQuery(req.query.docType),
+      parseFlagQuery(req.query.reference)
     )
     res.status(outcome.created ? 201 : 200).json(outcome.payload)
   })

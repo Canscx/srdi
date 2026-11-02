@@ -7,6 +7,8 @@ export type AssessPhase = 'idle' | 'creating' | 'uploading' | 'starting' | 'done
 export interface SlotInput {
   slot: string
   files: File[]
+  docType?: string
+  referenceOnly?: boolean
 }
 
 export interface StartInput {
@@ -51,7 +53,7 @@ export const useAssessment = () => {
       for (const slot of input.slots) {
         for (const file of slot.files) {
           message.value = `正在上传 ${file.name}`
-          await api.portalUpload(created.projectId, slot.slot, file)
+          await api.portalUpload(created.projectId, slot.slot, file, slot.docType, slot.referenceOnly)
           uploaded.value += 1
         }
       }

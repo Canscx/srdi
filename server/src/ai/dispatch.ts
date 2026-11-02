@@ -32,6 +32,17 @@ const TEXT_TIMEOUT_MS = 120_000
 const VISION_TIMEOUT_MS = 180_000
 const IMAGE_MIME = 'image/jpeg'
 
+const mergeSubsets = (base: CatalogField[], extra: CatalogField[]): CatalogField[] => {
+  const seen = new Set(base.map((field) => field.key))
+  const merged = [...base]
+  for (const field of extra) {
+    if (seen.has(field.key)) continue
+    seen.add(field.key)
+    merged.push(field)
+  }
+  return merged
+}
+
 export interface Chunk {
   index: number
   route: 'text' | 'vision'
@@ -309,7 +320,7 @@ export const dispatchFile = async (options: DispatchOptions): Promise<DispatchRe
     if (first.ok && first.docType && first.docType !== result.docType) {
       result.docType = first.docType
       result.docTypeCorrected = true
-      const nextFields = fieldSubset(first.docType)
+      const nextFields = mergeSubsets(fields, fieldSubset(first.docType))
       const nextHash = fieldSubsetHash(nextFields)
       if (nextHash !== subsetHash) {
         fields = nextFields

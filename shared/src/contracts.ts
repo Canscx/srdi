@@ -91,6 +91,8 @@ export interface ProjectFile {
   ext: string
   mime: string
   docType?: DocType
+  docTypeSource?: 'user' | 'name' | 'model'
+  referenceOnly?: boolean
   slot?: string
   pages?: number
   route?: FileRoute

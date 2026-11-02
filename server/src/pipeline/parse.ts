@@ -71,7 +71,10 @@ const parseOne = async (
     target.truncated = parsed.truncated
     target.visionSkipped = visionSkipped
     target.unreadable = parsed.unreadable
-    if (docType) target.docType = docType
+    if (docType && target.docTypeSource !== 'user') {
+      target.docType = docType
+      target.docTypeSource = 'name'
+    }
   })
   await store.evidence.syncFile(project, {
     fileId: file.fileId,
@@ -121,7 +124,7 @@ const dispatchParse = async (
 
 export const inferDocType = (fileName: string): DocType | undefined => {
   const name = fileName.toLowerCase()
-  if (/审计|审字|财务报|报表/.test(name)) return 'audit'
+  if (/审计|审字|财务报|财务会计报告|财务报告|报表/.test(name)) return 'audit'
   if (/专精特新|申请书|申报/.test(name)) return 'application'
   if (/纳税|完税|税/.test(name)) return 'tax'
   if (/专利|知识产权/.test(name)) return 'patent'
@@ -130,6 +133,9 @@ export const inferDocType = (fileName: string): DocType | undefined => {
   if (/财务|利润|资产负债|现金流/.test(name)) return 'finance'
   return undefined
 }
+
+export const resolveDocType = (file: ProjectFile): DocType | undefined =>
+  file.docTypeSource === 'user' ? file.docType : inferDocType(file.name) ?? file.docType
 
 export const parseProject = async (
   store: AppStore,
@@ -155,7 +161,7 @@ export const parseProject = async (
     })
 
     try {
-      const result = await parseOne(store, project, file, inferDocType(file.name), (page, total) => {
+      const result = await parseOne(store, project, file, resolveDocType(file), (page, total) => {
         const inner = total > 0 ? Math.min(page, total) / total : 0
         report({
           stage: 'parsing',

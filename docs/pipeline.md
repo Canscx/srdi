@@ -190,3 +190,17 @@ schema 必须**同时以文字形式写进 system**,不能只依赖 `response_fo
 - 按事实哈希缓存到 `cache/advice/<hash>.json`,同分同证据不重复调模型
 
 管理员自建项目没有 `assess.json` 时,接口以「不传 client」的方式调用同一函数,直接落规则模板——零 token、不写缓存,保证 GET 无副作用。
+
+## 十四、判型优先级与补充材料(2026-11)
+
+`docType` 决定抽哪些字段,优先级自上而下:
+
+| 来源 | 落点 | 说明 |
+| --- | --- | --- |
+| 上传时用户选择 | `docType` + `docTypeSource: 'user'` | `?docType=` 传入,最高优先 |
+| 文件名关键词 | `inferDocType(name)` | 每次抽取重新推导,不固化 |
+| 上次模型判断 | `file.docType` | 兜底,仅用于展示与分槽 |
+
+- 模型首块回判只做**并集**:`merge(旧子集, 新子集)`,不替换;误判 `tax` 不会丢 `fin.*`
+- `other` 子集从 3 个字段扩到 31 个(`company. / hr. / qual. / std. / ip.` + 关键财务),文件名无关键词也不再空转
+- `referenceOnly` 文件照常解析,但不进抽取、不进证据;上传加 `?reference=1`

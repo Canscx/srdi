@@ -38,7 +38,12 @@ const groups = computed(() => {
       <ul>
         <li v-for="item in group.items" :key="item.id" :class="MARK[item.mark].cls">
           <span class="mark">{{ MARK[item.mark].icon }}</span>
-          <span class="text">{{ item.text }}</span>
+          <span class="text">
+            {{ item.text }}
+            <em v-if="item.missingFields.length > 0" class="fields">
+              缺 {{ item.missingFields.join('、') }}
+            </em>
+          </span>
           <span v-if="item.mark !== 'missing'" class="rate">
             {{ ((item.score ?? 0) * 100).toFixed(0) }}%
           </span>
@@ -104,6 +109,13 @@ li:last-child {
 
 .text {
   line-height: 1.6;
+}
+
+.fields {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: #a3adbb;
 }
 
 .rate {

@@ -1,6 +1,6 @@
 import { contributionOf } from '../aggregate'
 import type { EvalContext } from '../context'
-import { evalNode, evalTri, toNumber } from '../evaluate'
+import { evalNode, evalTri, restrictSeries, toNumber } from '../evaluate'
 import { formatValue, renderExplain } from '../explain'
 import { FLAG, guardFlag } from '../flags'
 import { applyGrowthSignRule, detectGrowthShape } from '../guards'
@@ -109,15 +109,53 @@ const isPartialWindow = (def: IndicatorDef, ctx: EvalContext): boolean => {
   return false
 }
 
+const alignOf = (def: IndicatorDef, ctx: EvalContext): ReadonlySet<number> | undefined => {
+  const inputs = def.formula?.inputs ?? []
+  let align: Set<number> | null = null
+
+  for (const key of inputs) {
+    const value = ctx.readField(key)
+    if (value.kind !== 'series') continue
+    const ok = new Set<number>()
+    value.s.slots.forEach((item, index) => {
+      if (item.state === 'ok') ok.add(index)
+    })
+    if (align === null) {
+      align = ok
+    } else {
+      const next = new Set<number>()
+      for (const index of align) {
+        if (ok.has(index)) next.add(index)
+      }
+      align = next
+    }
+  }
+
+  return align ?? undefined
+}
+
+const OUTLIER_LIMIT = 5
+
+const NOT_APPLICABLE_TEXT: Record<string, string> = {
+  [FLAG.NEGATIVE_EQUITY]: '净资产为负',
+  [FLAG.COST_NONPOSITIVE]: '成本费用非正',
+  [FLAG.REVENUE_NONPOSITIVE]: '营业收入非正',
+  [FLAG.GUARD_FAILED]: '前置条件不满足'
+}
+
+const isRatioScale = (benchmark: BenchmarkLookup | null): boolean =>
+  benchmark !== null && Math.abs(benchmark.value) <= OUTLIER_LIMIT
+
 const deriveFormula = (def: IndicatorDef, ctx: EvalContext): Derived => {
   if (!def.formula) return emptyDerived('missing', def.evidenceRefs ?? [])
 
   const parsed = parseExpr(def.formula.expr)
+  const align = alignOf(def, ctx)
   const trace: Trace = { normalizedExpr: parsed.normalized, rewrites: parsed.rewrites, valueKind: 'num' }
 
   if (def.formula.guard) {
     const guard = parseExpr(def.formula.guard)
-    const tri = evalTri(guard.ast, { ctx })
+    const tri = evalTri(guard.ast, { ctx, align })
     if (tri.v === null) {
       return {
         state: tri.pending.length > 0 ? 'pending' : 'missing',
@@ -148,8 +186,8 @@ const deriveFormula = (def: IndicatorDef, ctx: EvalContext): Derived => {
 
   const growth = detectGrowthShape(parsed.ast)
   if (growth) {
-    const baseVal = evalNode(growth.base, { ctx })
-    const currentVal = evalNode(growth.current, { ctx })
+    const baseVal = evalNode(growth.base, { ctx, align })
+    const currentVal = evalNode(growth.current, { ctx, align })
     if (baseVal.kind === 'none') return fromNone(baseVal, trace)
     if (currentVal.kind === 'none') return fromNone(currentVal, trace)
     if (baseVal.kind !== 'num' || currentVal.kind !== 'num') {
@@ -162,12 +200,13 @@ const deriveFormula = (def: IndicatorDef, ctx: EvalContext): Derived => {
     }
 
     const applied = applyNumericSpec(def.scoring, rule.value, ctx)
+    const outlier = isRatioScale(applied.benchmark) && Math.abs(rule.value) > OUTLIER_LIMIT
     return {
       state: 'ok',
       basis: 'measured',
       s: applied.s,
       raw: rule.value,
-      flags: [...rule.flags, ...applied.flags],
+      flags: [...rule.flags, ...applied.flags, ...(outlier ? [FLAG.OUTLIER_RATIO] : [])],
       benchmark: applied.benchmark,
       quality: applied.quality,
       refs: [],
@@ -175,27 +214,33 @@ const deriveFormula = (def: IndicatorDef, ctx: EvalContext): Derived => {
     }
   }
 
-  const value = evalNode(parsed.ast, { ctx })
+  const value = evalNode(parsed.ast, { ctx, align })
   if (value.kind === 'none') return fromNone(value, trace)
   if (value.kind === 'rows' || value.kind === 'bool' || value.kind === 'str') {
     return emptyDerived('missing', def.evidenceRefs ?? [], [], trace)
   }
 
   const method = def.aggregation?.method ?? 'mean'
-  const numeric = toNumber(value, method)
+  const numeric = toNumber(restrictSeries(value, align), method)
   if (numeric.value === null || !Number.isFinite(numeric.value)) {
     return emptyDerived('missing', def.evidenceRefs ?? [], numeric.flags, trace)
   }
 
   const partial = isPartialWindow(def, ctx)
   const applied = applyNumericSpec(def.scoring, numeric.value, ctx)
+  const outlier = isRatioScale(applied.benchmark) && Math.abs(numeric.value) > OUTLIER_LIMIT
 
   return {
     state: 'ok',
     basis: 'measured',
     s: applied.s,
     raw: numeric.value,
-    flags: [...numeric.flags, ...applied.flags, ...(partial ? [FLAG.PARTIAL_WINDOW] : [])],
+    flags: [
+      ...numeric.flags,
+      ...applied.flags,
+      ...(partial ? [FLAG.PARTIAL_WINDOW] : []),
+      ...(outlier ? [FLAG.OUTLIER_RATIO] : [])
+    ],
     benchmark: applied.benchmark,
     quality: partial ? 'estimated' : applied.quality,
     refs: [],
@@ -399,6 +444,9 @@ export const evaluateIndicator = (
 
   const derived = derive(def, ctx)
   const text = explainText(def, derived)
+  const okText = derived.flags.includes(FLAG.OUTLIER_RATIO)
+    ? `${text} · 基期偏小或口径异常，该数值仅供参考`
+    : text
 
   if (derived.state === 'ok' && derived.s !== null) {
     const s = clamp01(derived.s)
@@ -412,7 +460,7 @@ export const evaluateIndicator = (
       contribution: contributionOf(derived.basis, s, weight.effective),
       benchmark: derived.benchmark,
       flags: derived.flags,
-      explain: { template: def.explain?.template ?? '', text },
+      explain: { template: def.explain?.template ?? '', text: okText },
       trace: derived.trace
     }
   }
@@ -428,7 +476,10 @@ export const evaluateIndicator = (
       contribution: contributionOf('notApplicable', 0, weight.effective),
       benchmark: null,
       flags: derived.flags,
-      explain: { template: def.explain?.template ?? '', text: `${text} · 指标不适用` },
+      explain: {
+        template: def.explain?.template ?? '',
+        text: `${text} · ${NOT_APPLICABLE_TEXT[String(derived.flags[0] ?? '')] ?? '前置条件不满足'}，该指标不适用`
+      },
       reason: derived.flags[0]
     }
   }

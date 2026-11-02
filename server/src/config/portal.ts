@@ -19,7 +19,14 @@ const normalizeSlot = (raw: PortalSlot): PortalSlot => ({
   title: String(raw.title),
   hint: String(raw.hint ?? ''),
   required: raw.required === true,
-  accept: Array.isArray(raw.accept) ? raw.accept.map((item) => String(item).toLowerCase()) : []
+  accept: Array.isArray(raw.accept) ? raw.accept.map((item) => String(item).toLowerCase()) : [],
+  ...(Array.isArray(raw.docTypes) && raw.docTypes.length > 0
+    ? {
+        docTypes: raw.docTypes
+          .filter((item) => item && typeof item.value === 'string')
+          .map((item) => ({ value: String(item.value), label: String(item.label ?? item.value) }))
+      }
+    : {})
 })
 
 let cached: PortalConfig | null = null
