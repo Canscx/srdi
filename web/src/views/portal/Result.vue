@@ -34,9 +34,16 @@ onMounted(load)
   <div class="result" v-loading="loading">
     <p v-if="error" class="banner">{{ error }}</p>
 
-    <div class="topbar">
-      <el-button text @click="goto('/')">← 返回上传材料</el-button>
-    </div>
+    <button
+      class="back-fab"
+      type="button"
+      title="返回上传材料"
+      aria-label="返回上传材料"
+      @click="goto('/')"
+    >
+      <span class="txt">返回上传材料</span>
+      <span class="ico">←</span>
+    </button>
 
     <ScoreReport v-if="data" :data="data">
       <template #ops>
@@ -62,8 +69,55 @@ onMounted(load)
   font-size: 13px;
 }
 
-.topbar {
-  max-width: 980px;
-  margin: 0 auto 6px;
+.back-fab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 11px;
+  border: 1px solid #dbe6f5;
+  border-right: none;
+  border-radius: 11px 0 0 11px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #2563eb;
+  font-size: 12.5px;
+  line-height: 1;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  box-shadow: -10px 0 26px -20px rgba(37, 99, 235, 0.95);
+  transition: background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.back-fab .ico {
+  font-size: 15px;
+}
+
+.back-fab .txt {
+  max-width: 0;
+  opacity: 0;
+  margin-right: 0;
+  transition: max-width 0.22s ease, opacity 0.16s ease, margin-right 0.22s ease;
+}
+
+.back-fab:hover {
+  background: #fff;
+  box-shadow: -12px 0 30px -18px rgba(37, 99, 235, 0.9);
+}
+
+.back-fab:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: -2px;
+}
+
+.back-fab:hover .txt,
+.back-fab:focus-visible .txt {
+  max-width: 120px;
+  opacity: 1;
+  margin-right: 6px;
 }
 </style>
