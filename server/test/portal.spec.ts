@@ -153,7 +153,7 @@ describe('客户轻流程', () => {
           const configBody = (await configResponse.json()) as {
             config: { passLine: number; slots: { id: string }[] }
           }
-          expect(configBody.config.passLine).toBe(60)
+          expect(configBody.config.passLine).toBe(50)
           expect(configBody.config.slots.map((slot) => slot.id)).toEqual([
             'finance',
             'tax',
@@ -182,7 +182,7 @@ describe('客户轻流程', () => {
 
           expect(result.status).toBe('ready')
           expect(result.score).not.toBeNull()
-          expect(result.score?.passLine).toBe(60)
+          expect(result.score?.passLine).toBe(50)
           expect(result.dimensions).toHaveLength(5)
           expect(result.checks.length).toBeGreaterThan(10)
           expect(result.company.creditCode).toBe(COMPANY.creditCode)

@@ -124,12 +124,12 @@ describe('三家企业的形态差异', () => {
     expect(firmA.indicators.filter((item) => item.basis === 'absent')).toHaveLength(0)
   })
 
-  it('B 家门槛全过但材料缺口让区间拉开,门槛 6 判有条件达标', () => {
+  it('B 家低分通过,材料缺口让区间拉开', () => {
     expect(firmB.gates.slice(0, 5).every((gate) => gate.effective === 'pass')).toBe(true)
-    expect(firmB.gates[5].verdict).toBe('pending')
+    expect(firmB.gates[5].verdict).toBe('pass')
     expect(firmB.totals.conservative).toBeLessThan(50)
     expect(firmB.totals.official).toBeGreaterThanOrEqual(50)
-    expect(firmB.conclusion).toBe('pending')
+    expect(firmB.conclusion).toBe('pass')
     expect(firmB.indicators.filter((item) => item.basis === 'absent')).toHaveLength(5)
   })
 

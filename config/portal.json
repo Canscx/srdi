@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "note": "客户轻流程的可调参数。软著折算比与上限改动后需重启进程。",
-  "passLine": 60,
+  "passLine": 50,
   "softCopyright": {
     "ratio": 3,
     "cap": 3

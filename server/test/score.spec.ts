@@ -131,7 +131,7 @@ describe('评分接口', () => {
       {
         id: criticalProject,
         totals: { official: 57.76, conservative: 46.92, optimistic: 68.6, confidence: 0.7832 },
-        conclusion: 'pending'
+        conclusion: 'pass'
       },
       {
         id: failProject,
@@ -194,7 +194,7 @@ describe('行业基准', () => {
 
     const indicators = body.dimensions.flatMap((dimension) => dimension.indicators)
     expect(indicators).toHaveLength(23)
-    expect(body.passLine).toBe(60)
+    expect(body.passLine).toBe(50)
 
     const excluded = indicators.find((item) => item.id === 'IND_18')
     expect(excluded?.fallback?.type).toBe('exclude')

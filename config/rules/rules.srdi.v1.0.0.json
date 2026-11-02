@@ -3,7 +3,7 @@
   "rulesId": "rules.srdi.v1.0.0",
   "level": "SRDI",
   "levelName": "专精特新中小企业",
-  "region": "JS",
+  "region": "CN",
   "policyBasis": [
     {
       "doc": "优质中小企业梯度培育管理办法",
@@ -21,7 +21,7 @@
   "effectiveTo": null,
   "status": "active",
   "supersedes": null,
-  "passLine": 60,
+  "passLine": 50,
   "benchmarksRef": {
     "file": "industry-benchmarks.v1.2.0.json",
     "version": "1.2.0"
@@ -91,23 +91,23 @@
       "checks": [
         {
           "id": "G3a",
-          "label": "上年研发费用 ≥100 万元",
-          "expr": "fin.rdExpense[y1] >= 1000000"
+          "label": "上年度研发费用 ≥100 万元",
+          "expr": "fin.rdExpense[y0] >= 1000000"
         },
         {
           "id": "G3b",
-          "label": "前年研发费用 ≥100 万元",
-          "expr": "fin.rdExpense[y2] >= 1000000"
+          "label": "前年度研发费用 ≥100 万元",
+          "expr": "fin.rdExpense[y1] >= 1000000"
         },
         {
           "id": "G3c",
-          "label": "上年研发费用占营业收入 ≥3%",
-          "expr": "fin.rdExpense[y1] / fin.revenue[y1] >= 0.03"
+          "label": "上年度研发费用占营业收入 ≥3%",
+          "expr": "fin.rdExpense[y0] / fin.revenue[y0] >= 0.03"
         },
         {
           "id": "G3d",
-          "label": "前年研发费用占营业收入 ≥3%",
-          "expr": "fin.rdExpense[y2] / fin.revenue[y2] >= 0.03"
+          "label": "前年度研发费用占营业收入 ≥3%",
+          "expr": "fin.rdExpense[y1] / fin.revenue[y1] >= 0.03"
         }
       ]
     },
@@ -160,7 +160,7 @@
       "id": "GATE_6",
       "name": "专精特新发展评价得分",
       "type": "scoreGate",
-      "passLine": 60,
+      "passLine": 50,
       "totalKey": "official",
       "unknownPolicy": "notPass"
     }
@@ -727,7 +727,7 @@
     },
     {
       "id": "A8",
-      "text": "达标线设为 60 分,判定口径为正常得分(official)。官方未公布统一自评达标线,60 分为本工具的客户自查参考线。",
+      "text": "达标线按官方口径设为 50 分,判定口径为正常得分(official)。复核企业「近两年任意一年达 50 分」的宽松口径尚未建模,复核客户需人工核对上一年度得分;证据覆盖率不足 50% 时不出达标结论。",
       "impact": "达标结论仅用于客户自评与差距分析,不等同于主管部门的认定结果。"
     }
   ]

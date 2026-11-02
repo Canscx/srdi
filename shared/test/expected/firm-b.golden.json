@@ -7,7 +7,7 @@
     "optimistic": 68.6,
     "confidence": 0.7832
   },
-  "conclusion": "pending",
+  "conclusion": "pass",
   "gates": [
     {
       "id": "GATE_1",
@@ -41,8 +41,8 @@
     },
     {
       "id": "GATE_6",
-      "verdict": "pending",
-      "effective": "pending",
+      "verdict": "pass",
+      "effective": "pass",
       "passedVia": null
     }
   ],
