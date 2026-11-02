@@ -424,3 +424,9 @@
 - 真机 1280×800 CDP 实测：`scrollHeight === innerHeight === 800` 无纵向滚动，卡片 1080×680 居中；输入框 44px、主按钮 46px、聚焦环 `0 0 0 1px #2563eb + 0 0 0 4px rgba(37,99,235,.1)`；`.gate` 上 `--el-color-primary` 为 `#2563eb`，`documentElement` 上仍是 `#409eff`——换肤未泄漏。
 - 交互回归：切「管理员」→ `admin` + 空密码 + 标题与 `ADMIN CONSOLE` 同步；空密码提交出「请输入账号与密码」且不发请求；切回客户预填 `customer/vip666666`；提交后落到 `#/` 门户首页，控制台零报错。
 - 截图目视：浮标签不遮挡条形、`facts` 由 `margin-top:auto` 压到底、记住密码单行、错误条出现后按钮与页脚不被裁。
+
+## 政策口径回调（2026-11-02）
+
+- 达标线 60→50（2026 办法：专精特新 50、小巨人 60）；GATE_3 研发窗口改为 y0/y1，与 GATE_2 的上年度口径对齐。
+- 客户版 passLine 改由规则包派生，删除 `config/portal.json` 的 `passLine`；新增 `isPortalPassed`，confidence<0.5 不出“已达标”。
+- firm-b 从“临界”变“低分通过”（57.76），临界语义由 `shared/test/gates.spec.ts` 的边界用例承接；历史 score-result 不迁移。
