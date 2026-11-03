@@ -1,10 +1,7 @@
-import { existsSync } from 'node:fs'
-import path from 'node:path'
 import PDFDocument from 'pdfkit'
 import type { Response } from 'express'
 import { TARGET_RATE, yearsSinceDate } from '@srdi/shared'
 import type { PortalCheck, PortalResultResponse } from '@srdi/shared'
-import { PROJECT_ROOT } from '../paths'
 import { resolveReportFont } from './fonts'
 import { drawLegend, drawRadar } from './radar'
 
@@ -27,8 +24,6 @@ const COLOR = {
 
 const MARK_OF = { pass: '√', gap: '×', missing: '○' } as const
 const MARK_COLOR = { pass: COLOR.pass, gap: COLOR.gap, missing: COLOR.missing } as const
-
-const QR_FILE = path.join(PROJECT_ROOT, 'assets', 'consult-qr.png')
 
 const num = (value: number) => (Number.isInteger(value) ? `${value}` : value.toFixed(2))
 
@@ -461,24 +456,6 @@ const renderMaterials = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =>
     y += 16
   }
 
-  if (existsSync(QR_FILE)) {
-    y += 16
-    const cardHeight = 118
-    doc.rect(M, y, CW, cardHeight).fill('#f8fafc')
-    doc.rect(M, y, CW, cardHeight).lineWidth(0.8).strokeColor(COLOR.line).stroke()
-    doc.image(QR_FILE, M + 16, y + 13, { fit: [92, 92] })
-    doc
-      .fontSize(10.5)
-      .fillColor(COLOR.ink)
-      .text('扫码添加顾问，一起看这份报告', M + 124, y + 26, { width: CW - 150 })
-    doc
-      .fontSize(8.5)
-      .fillColor(COLOR.muted)
-      .text('把缺的材料补齐之后可以重新评估一次，分数会同步更新。', M + 124, y + 48, {
-        width: CW - 150,
-        lineGap: 3
-      })
-  }
 }
 
 export const renderPortalPdf = async (data: PortalResultResponse): Promise<Buffer> => {
