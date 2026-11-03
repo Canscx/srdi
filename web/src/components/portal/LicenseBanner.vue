@@ -109,8 +109,8 @@ const facts = computed(() => {
 
     <div class="body">
       <template v-if="status === 'idle'">
-        <p class="title">上传营业执照，报告信息更完整</p>
-        <p class="hint">支持 JPG / PNG / PDF，约 10 秒读出经营范围、注册资本和成立日期；不传也能出分。</p>
+        <p class="title">推荐上传营业执照，让报告信息更完整</p>
+        <p class="hint">约 10 秒读出经营范围、注册资本和成立日期，会印在报告里；不传也能出分，但这三项会空着。</p>
       </template>
 
       <template v-else-if="status === 'busy'">
