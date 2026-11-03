@@ -11,6 +11,13 @@ const FALLBACK: PortalConfig = {
   passLine: 50,
   softCopyright: { ratio: 3, cap: 3 },
   lookup: { windowMinutes: 10, maxAttempts: 10 },
+  recognize: {
+    enabled: true,
+    maxBytes: 10 * 1024 * 1024,
+    maxPages: 3,
+    hourlyLimit: 20,
+    ttlHours: 720
+  },
   slots: []
 }
 
@@ -20,6 +27,7 @@ const normalizeSlot = (raw: PortalSlot): PortalSlot => ({
   hint: String(raw.hint ?? ''),
   required: raw.required === true,
   accept: Array.isArray(raw.accept) ? raw.accept.map((item) => String(item).toLowerCase()) : [],
+  ...(typeof raw.docType === 'string' && raw.docType ? { docType: raw.docType } : {}),
   ...(Array.isArray(raw.docTypes) && raw.docTypes.length > 0
     ? {
         docTypes: raw.docTypes
@@ -62,6 +70,25 @@ export const loadPortalConfig = (): PortalConfig => {
           typeof raw.lookup?.maxAttempts === 'number' && raw.lookup.maxAttempts > 0
             ? Math.floor(raw.lookup.maxAttempts)
             : FALLBACK.lookup.maxAttempts
+      },
+      recognize: {
+        enabled: raw.recognize?.enabled !== false,
+        maxBytes:
+          typeof raw.recognize?.maxBytes === 'number' && raw.recognize.maxBytes > 0
+            ? Math.floor(raw.recognize.maxBytes)
+            : FALLBACK.recognize.maxBytes,
+        maxPages:
+          typeof raw.recognize?.maxPages === 'number' && raw.recognize.maxPages > 0
+            ? Math.floor(raw.recognize.maxPages)
+            : FALLBACK.recognize.maxPages,
+        hourlyLimit:
+          typeof raw.recognize?.hourlyLimit === 'number' && raw.recognize.hourlyLimit > 0
+            ? Math.floor(raw.recognize.hourlyLimit)
+            : FALLBACK.recognize.hourlyLimit,
+        ttlHours:
+          typeof raw.recognize?.ttlHours === 'number' && raw.recognize.ttlHours > 0
+            ? Math.floor(raw.recognize.ttlHours)
+            : FALLBACK.recognize.ttlHours
       },
       slots: Array.isArray(raw.slots) ? raw.slots.map(normalizeSlot) : FALLBACK.slots
     }

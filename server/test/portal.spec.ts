@@ -155,6 +155,7 @@ describe('客户轻流程', () => {
           }
           expect(configBody.config.passLine).toBe(50)
           expect(configBody.config.slots.map((slot) => slot.id)).toEqual([
+            'license',
             'finance',
             'tax',
             'ledger',

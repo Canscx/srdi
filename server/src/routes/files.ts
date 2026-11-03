@@ -20,7 +20,7 @@ interface ReceivedFile {
   sha256: string
 }
 
-const receiveFile = (req: Request, tmpDir: string, maxBytes: number): Promise<ReceivedFile> =>
+export const receiveFile = (req: Request, tmpDir: string, maxBytes: number): Promise<ReceivedFile> =>
   new Promise((resolve, reject) => {
     const temps: string[] = []
     let settled = false

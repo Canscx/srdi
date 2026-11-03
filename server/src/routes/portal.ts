@@ -17,10 +17,11 @@ import type { JobQueue } from '../jobs/queue'
 import { canAccess, withClaim } from '../portal/access'
 import { createRateLimiter } from '../portal/ratelimit'
 import { loadPortalDetail } from '../portal/detail'
+import { recognizeLicense } from '../portal/recognize'
 import { sendPortalPdf } from '../report/portal'
 import type { AppStore } from '../store'
-import { removeFile } from '../store/atomic'
-import { parseDocTypeQuery, parseFlagQuery, storeUploadedFile } from './files'
+import { ensureDir, removeFile } from '../store/atomic'
+import { parseDocTypeQuery, parseFlagQuery, receiveFile, storeUploadedFile } from './files'
 
 export interface PortalRouterOptions {
   maxFileBytes?: number
@@ -91,6 +92,10 @@ export const portalRouter = (store: AppStore, options: PortalRouterOptions) => {
     windowMs: portalConfig.lookup.windowMinutes * 60 * 1000,
     max: portalConfig.lookup.maxAttempts
   })
+  const recognizeLimiter = createRateLimiter({
+    windowMs: 60 * 60 * 1000,
+    max: portalConfig.recognize.hourlyLimit
+  })
 
   router.get('/config', (_req, res) => {
     const config = loadPortalConfig()
@@ -100,6 +105,41 @@ export const portalRouter = (store: AppStore, options: PortalRouterOptions) => {
       defaultPeriod: { y0: now - 1, y1: now - 2, y2: now - 3 }
     }
     res.json(payload)
+  })
+
+  router.post('/recognize', async (req, res) => {
+    const config = loadPortalConfig().recognize
+    if (!config.enabled) {
+      res.status(503).json({ error: 'recognize_disabled', message: '营业执照识别未开启' })
+      return
+    }
+    const decision = recognizeLimiter.take(authed(req).clientId ?? 'anonymous')
+    if (!decision.ok) {
+      res.status(429).json({
+        error: 'too_many_requests',
+        message: `识别太频繁，请 ${decision.retryAfter} 秒后再试`
+      })
+      return
+    }
+
+    await ensureDir(store.tmpDir)
+    const received = await receiveFile(
+      req,
+      store.tmpDir,
+      Math.min(config.maxBytes, MAX_FILE_BYTES)
+    )
+    try {
+      const profile = await recognizeLicense({
+        store,
+        client: options.aiClient,
+        model: options.aiModel(),
+        filePath: received.tempPath,
+        sha256: received.sha256
+      })
+      res.json(profile)
+    } finally {
+      await removeFile(received.tempPath).catch(() => undefined)
+    }
   })
 
   router.post('/projects', async (req, res) => {

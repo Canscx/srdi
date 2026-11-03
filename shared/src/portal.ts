@@ -7,7 +7,26 @@ export interface PortalSlot {
   hint: string
   required: boolean
   accept: string[]
+  docType?: string
   docTypes?: { value: string; label: string }[]
+}
+
+export interface PortalRecognizeConfig {
+  enabled: boolean
+  maxBytes: number
+  maxPages: number
+  hourlyLimit: number
+  ttlHours: number
+}
+
+export interface LicenseProfile {
+  creditCode: string
+  businessScope: string
+  registeredCapital: number | null
+  establishedDate: string
+  confidence: number
+  warnings: string[]
+  cached: boolean
 }
 
 export interface PortalConfig {
@@ -15,6 +34,7 @@ export interface PortalConfig {
   passLine: number
   softCopyright: { ratio: number; cap: number }
   lookup: { windowMinutes: number; maxAttempts: number }
+  recognize: PortalRecognizeConfig
   slots: PortalSlot[]
 }
 
