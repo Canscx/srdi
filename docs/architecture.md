@@ -209,3 +209,15 @@ confirmed ──重新解析──> candidate(旧值保留,不丢历史)
 | 成本失控 | 页数 + token 双预算、内容哈希缓存 |
 | 表格解析不足 | **止损点:3 份实测准确率 < 70% 即换 Python**,引擎是纯函数,迁移只换外壳 |
 | 隐私 | 明示图像外发;提供「仅文本模式」 |
+
+## 十一、主体信息解析(2026-11)
+
+`server/src/portal/identity.ts` 是报告企业信息的唯一出口。`buildPortalResult` 每次现算，不依赖 `project.json` 是否已回写。
+
+| 字段 | 优先级 |
+| --- | --- |
+| 统一社会信用代码 | evidence(confirmed) → project.company，逐项要求过 GB 32100 校验位 |
+| 经营范围 / 注册资本 / 成立日期 | evidence(confirmed) → project.company |
+| 企业名称 | 只用 project.company，绝不从材料覆盖 |
+
+回写只发生在三处：评估作业的 `identity` 阶段、`POST /api/admin/projects/:id/identity/refresh`、`pnpm fix:identity`。回写走 `store.projects.update`(锁内重读-改-写)，只增改非空字段。

@@ -14,7 +14,6 @@ const emit = defineEmits<{
 }>()
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png'
-const MAX_BYTES = 10 * 1024 * 1024
 
 const input = ref<HTMLInputElement | null>(null)
 const dragging = ref(false)
