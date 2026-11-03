@@ -10,6 +10,7 @@ import type {
   ProjectListResponse,
   UploadFileResponse
 } from '@srdi/shared'
+import { catalogFields } from '../src/config/catalog'
 import { buildZip, pdfBytes, startServer, type TestServer } from './helpers'
 
 let dir = ''
@@ -138,11 +139,11 @@ describe('文件上传', () => {
 })
 
 describe('证据接口', () => {
-  it('新建项目即有 40 个 missing 字段', async () => {
+  it('新建项目即有全量 missing 字段', async () => {
     const response = await fetch(`${server.base}/api/projects/${projectId}/evidence`)
     const doc = (await response.json()) as EvidenceDoc
     expect(response.status).toBe(200)
-    expect(Object.keys(doc.fields)).toHaveLength(40)
+    expect(Object.keys(doc.fields)).toHaveLength(catalogFields().length)
     expect(doc.fields['company.name']?.status).toBe('missing')
   })
 

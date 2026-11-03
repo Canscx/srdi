@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import Ajv from 'ajv'
 import { describe, expect, it } from 'vitest'
 import type { ProjectFile } from '@srdi/shared'
+import { catalogFields } from '../src/config/catalog'
 import { createStore } from '../src/store'
 import { withTempDir } from './helpers'
 
@@ -27,13 +28,13 @@ const fileOf = (fileId: string, sha256: string, pages?: number): ProjectFile => 
 })
 
 describe('项目仓库', () => {
-  it('创建项目时按字段目录铺满 40 个 missing', async () => {
+  it('创建项目时按字段目录铺满 missing', async () => {
     await withTempDir(async (dir) => {
       const store = createStore(dir)
       const project = await store.projects.create({ name: '南京样例' })
       const doc = await store.evidence.get(project)
 
-      expect(Object.keys(doc.fields)).toHaveLength(40)
+      expect(Object.keys(doc.fields)).toHaveLength(catalogFields().length)
       expect(doc.fields['fin.revenue']?.status).toBe('missing')
       expect(doc.fields['fin.revenue']?.label).toBe('营业收入')
       expect(doc.period.y0).toBe(new Date().getFullYear() - 1)

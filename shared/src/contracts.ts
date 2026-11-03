@@ -105,7 +105,11 @@ export interface ProjectFile {
 
 export interface ProjectCompany {
   name: string
-  creditCode: string
+  creditCode?: string
+  creditCodeSource?: 'material' | 'input'
+  businessScope?: string
+  registeredCapital?: number
+  establishedDate?: string
   phone: string
   industryCode?: string
   industryName?: string
@@ -210,6 +214,7 @@ export interface CatalogFieldMeta {
   dataClass?: string
   enumValues?: string[]
   aliases?: string[]
+  maxLength?: number
   description?: string
   docTypes?: string[]
 }

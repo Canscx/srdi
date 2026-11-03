@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { EvidenceDoc, RulesMetaResponse, ScoreResponse } from '@srdi/shared'
+import { catalogFields } from '../src/config/catalog'
 import { createStore } from '../src/store'
 import { writeJson } from '../src/store/atomic'
 import { startServer, type TestServer } from './helpers'
@@ -90,7 +91,7 @@ describe('评分接口', () => {
       benchmarkSource: 'industry'
     })
     expect(record?.result.meta.scale).toBe('renormalized')
-    expect(record?.evidence.total).toBe(40)
+    expect(record?.evidence.total).toBe(catalogFields().length)
     expect(record?.evidence.confirmed).toBe(35)
 
     const weightSum = record?.result.indicators.reduce(

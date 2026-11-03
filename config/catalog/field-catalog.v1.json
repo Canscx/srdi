@@ -47,6 +47,24 @@
       "aliases": ["年平均从业人数", "平均职工人数", "从业人数"],
       "description": "近三年年平均从业人数。取不到时用期末人数近似并降低置信度"
     },
+    {
+      "key": "identity.businessScope", "label": "经营范围", "type": "text", "dataClass": "A", "maxLength": 4000,
+      "docTypes": ["cert"],
+      "aliases": ["经营范围", "营业范围", "许可经营项目", "一般经营项目"],
+      "description": "营业执照原文全段。只用于报告展示,不参与任何指标打分,不得概括或省略"
+    },
+    {
+      "key": "identity.registeredCapital", "label": "注册资本", "type": "money", "unit": "CNY", "dataClass": "A",
+      "docTypes": ["cert"],
+      "aliases": ["注册资本", "注册资金", "认缴出资额"],
+      "description": "营业执照注册资本,一律折算为元。只用于报告展示,不参与打分"
+    },
+    {
+      "key": "identity.establishedDate", "label": "成立日期", "type": "date", "dataClass": "A",
+      "docTypes": ["cert"],
+      "aliases": ["成立日期", "注册日期", "登记日期"],
+      "description": "营业执照成立日期。只用于报告展示,不等于从事细分市场年限,不参与打分"
+    },
 
     {
       "key": "fin.revenue", "label": "营业收入", "type": "money", "unit": "CNY", "periodic": true, "dataClass": "A",

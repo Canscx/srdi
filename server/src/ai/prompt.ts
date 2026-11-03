@@ -46,7 +46,14 @@ const SUBSET_RULES: Record<DocType, SubsetRule> = {
   patent: { prefixes: ['ip.'], keys: [] },
   cert: {
     prefixes: ['qual.'],
-    keys: ['company.name', 'company.creditCode', 'company.scitechSmeTitle']
+    keys: [
+      'company.name',
+      'company.creditCode',
+      'company.scitechSmeTitle',
+      'identity.businessScope',
+      'identity.registeredCapital',
+      'identity.establishedDate'
+    ]
   },
   standard: { prefixes: ['std.'], keys: [] },
   application: {
@@ -69,7 +76,10 @@ const SUBSET_RULES: Record<DocType, SubsetRule> = {
       'fin.netAssets',
       'fin.assetLiabilityRatio',
       'fin.rdExpense',
-      'fin.equityInvested'
+      'fin.equityInvested',
+      'identity.businessScope',
+      'identity.registeredCapital',
+      'identity.establishedDate'
     ]
   }
 }
@@ -110,7 +120,8 @@ const IRON_RULES = `你是企业申报材料的抄录员。唯一任务是把页
 3. 每条命中结果必须带 page 与 quote。quote 必须是该页原文的连续片段(含数字与单位,逐字照抄),不得改写、概括、翻译或拼接。
 4. value 一律按下方字段表的单位填写:金额填元,比率填小数(页面写 52.3% 就填 0.523),人数填人,年限填年。raw 保留页面原文写法(含万元、亿元、% 等)。
 5. 同一数字存在多个口径时(合并/母公司、本期/上期、含税/不含税),只抄录与 period 对应的本期数;无法区分口径就放弃该字段。
-6. 只输出一个 JSON 对象。不要 Markdown 代码块,不要解释文字,不要注释,不要多余前后缀。`
+6. 长文本字段(如经营范围)必须整段原文抄录,不得概括、不得省略「一般项目」「许可项目」等分段;注册资本一律折算为元。
+7. 只输出一个 JSON 对象。不要 Markdown 代码块,不要解释文字,不要注释,不要多余前后缀。`
 
 const buildFieldTable = (fields: CatalogField[]) => {
   const header = 'key\t名称\t类型\t单位\t按年\t可取值'

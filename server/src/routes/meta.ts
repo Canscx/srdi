@@ -19,6 +19,7 @@ export const metaRouter = () => {
         dataClass: field.dataClass,
         enumValues: field.enumValues,
         aliases: field.aliases,
+        maxLength: field.maxLength,
         description: field.description,
         docTypes: field.docTypes
       })),

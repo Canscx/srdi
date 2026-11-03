@@ -8,7 +8,7 @@ import type {
   ProjectMeta,
   ProjectSummary
 } from '@srdi/shared'
-import { MAX_PROJECT_PAGES, PROJECT_SCHEMA_VERSION, RULES_ID } from '@srdi/shared'
+import { isValidCreditCode, MAX_PROJECT_PAGES, normalizeCreditCode, PROJECT_SCHEMA_VERSION, RULES_ID } from '@srdi/shared'
 import { badRequest, conflict, notFound } from '../errors'
 import { ensureDir, listDir, readJson, writeJson } from './atomic'
 import type { LockTable } from './lock'
@@ -66,8 +66,6 @@ const normalizeName = (input?: string) => {
   return assertName(name)
 }
 
-const CREDIT_CODE_PATTERN = /^[0-9A-Z]{18}$/
-
 export const normalizeCompanyName = (value: string): string =>
   value
     .replace(/[\uFF01-\uFF5E]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0))
@@ -90,9 +88,9 @@ const normalizeCompany = (input: ProjectCompany): ProjectCompany => {
   if (name.length > NAME_LIMIT) {
     throw badRequest('invalid_company', `企业名称不超过 ${NAME_LIMIT} 个字符`)
   }
-  const creditCode = (input.creditCode ?? '').trim().toUpperCase()
-  if (creditCode && !CREDIT_CODE_PATTERN.test(creditCode)) {
-    throw badRequest('invalid_company', '统一社会信用代码应为 18 位数字或大写字母')
+  const creditCode = normalizeCreditCode(input.creditCode ?? '')
+  if (creditCode && !isValidCreditCode(creditCode)) {
+    throw badRequest('invalid_company', '统一社会信用代码校验不通过，请核对营业执照上的号码')
   }
   const phoneRaw = input.phone?.replace(/[\s-]/g, '') ?? ''
   if (!phoneRaw) {
@@ -103,7 +101,13 @@ const normalizeCompany = (input: ProjectCompany): ProjectCompany => {
   }
   return {
     name,
-    creditCode,
+    ...(creditCode ? { creditCode } : {}),
+    ...(input.creditCodeSource ? { creditCodeSource: input.creditCodeSource } : {}),
+    ...(input.businessScope ? { businessScope: input.businessScope.trim() } : {}),
+    ...(typeof input.registeredCapital === 'number'
+      ? { registeredCapital: input.registeredCapital }
+      : {}),
+    ...(input.establishedDate ? { establishedDate: input.establishedDate.trim() } : {}),
     phone: phoneRaw,
     industryCode: input.industryCode?.trim().toUpperCase() || undefined,
     industryName: input.industryName?.trim() || undefined,

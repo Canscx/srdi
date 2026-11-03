@@ -5,6 +5,7 @@ import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import type { EvidenceDoc } from '@srdi/shared'
+import { catalogFields } from '../src/config/catalog'
 import { createStore } from '../src/store'
 import { writeJson } from '../src/store/atomic'
 import { startServer, type TestServer } from './helpers'
@@ -97,7 +98,7 @@ describe('Markdown 报告', () => {
     expect(indicatorRows).toHaveLength(23)
   })
 
-  it('json 格式返回报告模型与 40 字段', async () => {
+  it('json 格式返回报告模型与全量字段', async () => {
     const response = await fetch(reportUrl(projectId, 'json'))
     expect(response.status).toBe(200)
     const model = (await response.json()) as {
@@ -106,7 +107,7 @@ describe('Markdown 报告', () => {
       indicators: unknown[]
       record: { result: { totals: { official: number } } }
     }
-    expect(model.fields).toHaveLength(40)
+    expect(model.fields).toHaveLength(catalogFields().length)
     expect(model.indicators).toHaveLength(23)
     expect(model.record.result.totals.official).toBe(84.81)
     expect(model.stale).toBe(false)

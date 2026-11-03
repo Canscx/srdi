@@ -413,8 +413,9 @@ export const validateFields = (raw: RawField[], ctx: ValidateContext): ValidateR
         dropped.push({ key, page: resolvedPage, reason: 'value_empty' })
         continue
       }
-      value = text.length > 2000 ? text.slice(0, 2000) : text
-      if (text.length > 2000) flags.push('text_truncated')
+      const limit = field.maxLength ?? 2000
+      value = text.length > limit ? text.slice(0, limit) : text
+      if (text.length > limit) flags.push('text_truncated')
     }
 
     let period: number | null = null

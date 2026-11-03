@@ -8,6 +8,7 @@ import type {
   FilePages,
   PageDoc
 } from '@srdi/shared'
+import { catalogFields } from '../src/config/catalog'
 import { createStore } from '../src/store'
 import { writeJson } from '../src/store/atomic'
 import { startServer, type TestServer } from './helpers'
@@ -160,7 +161,7 @@ describe('确认页元数据', () => {
     const response = await fetch(`${server.base}/api/meta/catalog`)
     expect(response.status).toBe(200)
     const body = (await response.json()) as CatalogResponse
-    expect(body.fields).toHaveLength(40)
+    expect(body.fields).toHaveLength(catalogFields().length)
     expect(body.version).toMatch(/^\d+\.\d+\.\d+$/)
 
     const quality = body.fields.find((field) => field.key === 'qual.qualityAward')

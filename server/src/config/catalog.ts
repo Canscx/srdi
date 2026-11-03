@@ -24,6 +24,7 @@ export interface CatalogField {
   docTypes?: string[]
   aliases?: string[]
   enumValues?: string[]
+  maxLength?: number
   description?: string
 }
 

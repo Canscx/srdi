@@ -39,6 +39,7 @@
             }
           },
           "aliases": { "type": "array", "items": { "type": "string" } },
+          "maxLength": { "type": "integer", "minimum": 1, "maximum": 20000 },
           "enumValues": { "type": "array", "items": { "type": "string" } },
           "description": { "type": "string" }
         }
