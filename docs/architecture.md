@@ -216,7 +216,7 @@ confirmed ──重新解析──> candidate(旧值保留,不丢历史)
 
 | 字段 | 优先级 |
 | --- | --- |
-| 统一社会信用代码 | evidence(confirmed) → project.company，逐项要求过 GB 32100 校验位 |
+| 统一社会信用代码 | evidence(confirmed) → project.company，逐项要求过 GB 32100 校验位（仅后台列表与搜索使用，报告不展示） |
 | 经营范围 / 注册资本 / 成立日期 | evidence(confirmed) → project.company |
 | 企业名称 | 只用 project.company，绝不从材料覆盖 |
 

@@ -20,7 +20,6 @@ export interface PortalRecognizeConfig {
 }
 
 export interface LicenseProfile {
-  creditCode: string
   businessScope: string
   registeredCapital: number | null
   establishedDate: string
@@ -166,4 +165,18 @@ export interface PortalLookupRequest {
 
 export interface PortalLookupResponse {
   projects: PortalHistoryItem[]
+}
+
+export const yearsSinceDate = (value: string, now: Date = new Date()): number | null => {
+  const match = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec((value ?? '').trim())
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3] ?? 1)
+  if (!Number.isFinite(year) || month < 1 || month > 12 || day < 1 || day > 31) return null
+  let span = now.getFullYear() - year
+  const passed =
+    now.getMonth() + 1 > month || (now.getMonth() + 1 === month && now.getDate() >= day)
+  if (!passed) span -= 1
+  return span >= 0 && span < 200 ? span : null
 }

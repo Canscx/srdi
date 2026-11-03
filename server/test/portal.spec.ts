@@ -232,6 +232,8 @@ describe('客户轻流程', () => {
           expect(text).toContain('口径从严')
           expect(text).toContain('注册资本')
           expect(text).toContain('经营范围')
+          expect(text).toContain('成立')
+          expect(text).toContain('年）')
 
           const secondPage = await parsed.getPage(2)
           const checklist = (await secondPage.getTextContent()).items

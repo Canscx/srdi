@@ -20,7 +20,7 @@
     {
       "id": "license",
       "title": "营业执照",
-      "hint": "拍照或上传 PDF 都行。系统会自动读统一社会信用代码、经营范围、注册资本和成立日期，印在报告抬头；不传也能出分。",
+      "hint": "拍照或上传 PDF 都行。系统会自动读经营范围、注册资本和成立日期，写进报告；不传也能出分。",
       "required": false,
       "accept": ["pdf", "jpg", "jpeg", "png"],
       "docType": "cert"

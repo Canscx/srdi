@@ -49,26 +49,20 @@ const capital = computed(() => {
 })
 
 const scope = computed(() => props.profile?.businessScope ?? '')
-const creditCode = computed(() => props.profile?.creditCode ?? '')
 const established = computed(() => props.profile?.establishedDate ?? '')
-const codeMissing = computed(() => props.status === 'done' && !creditCode.value)
 const empty = computed(
-  () => props.status === 'done' && !creditCode.value && !scope.value && !capital.value
+  () => props.status === 'done' && !scope.value && !capital.value && !established.value
 )
 
-const facts = computed(() =>
-  [
-    creditCode.value ? { label: '信用代码', value: creditCode.value } : null,
-    capital.value || established.value
-      ? {
-          label: '工商登记',
-          value: [capital.value ? `注册资本 ${capital.value}` : '', established.value ? `成立 ${established.value}` : '']
-            .filter(Boolean)
-            .join(' · ')
-        }
-      : null
-  ].filter(Boolean) as { label: string; value: string }[]
-)
+const facts = computed(() => {
+  const registry = [
+    capital.value ? `注册资本 ${capital.value}` : '',
+    established.value ? `成立 ${established.value}` : ''
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  return registry ? [{ label: '工商登记', value: registry }] : []
+})
 </script>
 
 <template>
@@ -125,13 +119,12 @@ const facts = computed(() =>
       </template>
 
       <template v-else-if="status === 'done' && !empty">
-        <p class="title">已识别，报告抬头会带上这些信息</p>
+        <p class="title">已识别，报告里会带上这些信息</p>
         <div class="facts">
           <span v-for="item in facts" :key="item.label">
             <em>{{ item.label }}</em>
             {{ item.value }}
           </span>
-          <span v-if="codeMissing" class="warn">信用代码没认准，已留空</span>
         </div>
         <p v-if="scope" class="scope" :class="{ open: expanded }" @click.stop="expanded = !expanded">
           <em>经营范围</em>{{ scope }}
@@ -254,10 +247,6 @@ const facts = computed(() =>
   font-style: normal;
   color: #94a3b8;
   margin-right: 6px;
-}
-
-.facts .warn {
-  color: #b45309;
 }
 
 .scope {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { TARGET_RATE } from '@srdi/shared'
+import { TARGET_RATE, yearsSinceDate } from '@srdi/shared'
 import type { PortalResultResponse } from '@srdi/shared'
 import DimensionBars from '@/components/portal/DimensionBars.vue'
 import DimensionRadar from '@/components/portal/DimensionRadar.vue'
@@ -81,10 +81,8 @@ const capitalText = computed(() => formatMoney(props.data.company.registeredCapi
 const establishedText = computed(() => {
   const raw = (props.data.company.establishedDate ?? '').trim()
   if (!raw) return ''
-  const year = Number(raw.slice(0, 4))
-  if (!Number.isFinite(year)) return raw
-  const span = props.data.period.y0 - year
-  return span >= 0 && span < 200 ? `${raw}（${span} 年）` : raw
+  const span = yearsSinceDate(raw)
+  return span === null ? raw : `${raw}（${span} 年）`
 })
 
 const facts = computed(
@@ -103,12 +101,7 @@ const facts = computed(
     <section class="hero">
       <div class="id">
         <h1>{{ data.company.name }}</h1>
-        <p>
-          <template v-if="data.company.creditCode">
-            统一社会信用代码 {{ data.company.creditCode }} ·
-          </template>
-          统计期间 {{ data.period.y2 }}–{{ data.period.y0 }}
-        </p>
+        <p>统计期间 {{ data.period.y2 }}–{{ data.period.y0 }}</p>
         <dl v-if="facts.length > 0" class="facts">
           <div v-for="item in facts" :key="item.label">
             <dt>{{ item.label }}</dt>
@@ -227,10 +220,6 @@ const facts = computed(
         <div>
           <dt>企业名称</dt>
           <dd>{{ data.company.name }}</dd>
-        </div>
-        <div v-if="data.company.creditCode">
-          <dt>统一社会信用代码</dt>
-          <dd>{{ data.company.creditCode }}</dd>
         </div>
         <div v-if="industryText">
           <dt>行业</dt>

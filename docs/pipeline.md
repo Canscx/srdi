@@ -210,8 +210,8 @@ schema 必须**同时以文字形式写进 system**,不能只依赖 `response_fo
 `POST /api/portal/recognize`(customer 角色)单文件直传，不进项目目录。
 
 - 复用 `pipeline/detect` 判型 + `parsePdf`/`parseImage`，只识别第 1 页；页数 > 3 直接拒绝。
-- 专用提示词一次取四字段：`company.creditCode`、`identity.businessScope`、`identity.registeredCapital`(元)、`identity.establishedDate`。
-- 信用代码必须过 GB 32100 校验位；不合法时对「代码区域局部放大 + 双旋转」重读一次，仍不合法则留空，绝不印错码。
+- 专用提示词一次取三字段：`identity.businessScope`、`identity.registeredCapital`(元)、`identity.establishedDate`。
+- 信用代码不参与预识别；只在评估阶段从税务/证书类材料抽取，供后台列表与搜索。
 - `identity.businessScope` 上限 4000 字(目录 `maxLength`)，其余文本字段仍为 2000。
 - 缓存 `data/cache/recognize/<sha256>.json`，默认 720 小时；限流每 clientId 20 次/小时。
 - 预识别结果只用于表单填写与展示；报告数据来自评估时对同一文件的重新抽取，两者不共用，因此不提供编辑入口。

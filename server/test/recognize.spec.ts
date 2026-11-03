@@ -10,14 +10,15 @@ const ACCOUNTS = {
   ]
 }
 
-const mockAi = (creditCode = '91310105MA1FW5R45P'): ModelClient => ({
+const mockAi = (payload?: Record<string, unknown>): ModelClient => ({
   complete: async (request: ModelRequest) => ({
-    text: JSON.stringify({
-      creditCode,
-      businessScope: '一般项目：技术服务、技术开发、技术咨询；许可项目：第二类增值电信业务。',
-      registeredCapital: 1000000,
-      establishedDate: '2017-01-20'
-    }),
+    text: JSON.stringify(
+      payload ?? {
+        businessScope: '一般项目：技术服务、技术开发、技术咨询；许可项目：第二类增值电信业务。',
+        registeredCapital: 1000000,
+        establishedDate: '2017-01-20'
+      }
+    ),
     usage: { promptTokens: 120, completionTokens: 60 },
     model: request.model
   })
@@ -66,7 +67,7 @@ const upload = (client: Session, data: Buffer, name: string, type: string) => {
 }
 
 describe('营业执照预识别', () => {
-  it('识别图片返回四项信息，同文件再传命中缓存', async () => {
+  it('返回三项信息，不含信用代码；同文件再传命中缓存', async () => {
     await withTempDir(async (dir) => {
       const server = await startServer(dir, undefined, mockAi(), ACCOUNTS)
       try {
@@ -76,34 +77,36 @@ describe('营业执照预识别', () => {
         const first = await upload(client, makePng(), '营业执照.png', 'image/png')
         expect(first.status).toBe(200)
         const profile = (await first.json()) as LicenseProfile
-        expect(profile.creditCode).toBe('91310105MA1FW5R45P')
         expect(profile.businessScope).toContain('一般项目')
         expect(profile.businessScope).not.toContain('经营范围')
         expect(profile.registeredCapital).toBe(1000000)
         expect(profile.establishedDate).toBe('2017-01-20')
         expect(profile.cached).toBe(false)
+        expect('creditCode' in profile).toBe(false)
 
         const second = await upload(client, makePng(), '营业执照.png', 'image/png')
         const cached = (await second.json()) as LicenseProfile
         expect(cached.cached).toBe(true)
-        expect(cached.creditCode).toBe('91310105MA1FW5R45P')
+        expect(cached.establishedDate).toBe('2017-01-20')
       } finally {
         await server.close()
       }
     })
   })
 
-  it('未通过校验的信用代码被丢弃并给出提示', async () => {
+  it('模型什么都没读出时返回空三项并提示重传', async () => {
     await withTempDir(async (dir) => {
-      const server = await startServer(dir, undefined, mockAi('91310105MAIFWSR4SP'), ACCOUNTS)
+      const server = await startServer(dir, undefined, mockAi({}), ACCOUNTS)
       try {
         const client = session(server.base)
         await signIn(client)
 
         const response = await upload(client, makePng(), '执照.png', 'image/png')
         const profile = (await response.json()) as LicenseProfile
-        expect(profile.creditCode).toBe('')
-        expect(profile.warnings.join()).toContain('没认准')
+        expect(profile.businessScope).toBe('')
+        expect(profile.registeredCapital).toBeNull()
+        expect(profile.establishedDate).toBe('')
+        expect(profile.warnings.join()).toContain('没读到经营范围')
       } finally {
         await server.close()
       }

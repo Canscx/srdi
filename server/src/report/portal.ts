@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import PDFDocument from 'pdfkit'
 import type { Response } from 'express'
-import { TARGET_RATE } from '@srdi/shared'
+import { TARGET_RATE, yearsSinceDate } from '@srdi/shared'
 import type { PortalCheck, PortalResultResponse } from '@srdi/shared'
 import { PROJECT_ROOT } from '../paths'
 import { resolveReportFont } from './fonts'
@@ -101,7 +101,11 @@ const moneyText = (value: number | undefined) => {
 const identityPanel = (doc: PDFKit.PDFDocument, y: number, data: PortalResultResponse) => {
   const industry = data.company.industryName || data.company.industryCode || ''
   const capital = moneyText(data.company.registeredCapital)
-  const established = (data.company.establishedDate ?? '').trim()
+  const establishedRaw = (data.company.establishedDate ?? '').trim()
+  const establishedSpan = establishedRaw ? yearsSinceDate(establishedRaw) : null
+  const established = establishedRaw
+    ? `${establishedRaw}${establishedSpan === null ? '' : `（${establishedSpan} 年）`}`
+    : ''
   const scope = (data.company.businessScope ?? '').trim()
   const registry = [capital ? `注册资本 ${capital}` : '', established ? `成立 ${established}` : '']
     .filter(Boolean)
@@ -147,7 +151,6 @@ const renderCover = (doc: PDFKit.PDFDocument, data: PortalResultResponse) => {
   doc.fontSize(19).fillColor(COLOR.ink).text(data.company.name, M, y, { width: CW })
   y += doc.heightOfString(data.company.name, { width: CW }) + 8
   const metaLine = [
-    data.company.creditCode ? `统一社会信用代码 ${data.company.creditCode}` : '',
     `统计期间 ${data.period.y2}–${data.period.y0}`,
     `生成于 ${data.generatedAt.slice(0, 10)}`
   ]
@@ -431,9 +434,6 @@ const renderMaterials = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =>
     const labelW = 78
     const rows = [
       { label: '企业名称', value: data.company.name },
-      ...(data.company.creditCode
-        ? [{ label: '统一社会信用代码', value: data.company.creditCode }]
-        : []),
       ...(data.company.industryName || data.company.industryCode
         ? [{ label: '行业', value: data.company.industryName || data.company.industryCode || '' }]
         : []),

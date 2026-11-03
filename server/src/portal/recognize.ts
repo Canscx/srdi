@@ -1,18 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import { copyFile, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { createCanvas, loadImage } from '@napi-rs/canvas'
 import type { LicenseProfile } from '@srdi/shared'
-import { isValidCreditCode, normalizeCreditCode } from '@srdi/shared'
 import type { ModelClient } from '../ai/client'
 import { loadPortalConfig } from '../config/portal'
 import { badRequest } from '../errors'
 import { detectFile } from '../pipeline/detect'
 import { parseImage } from '../pipeline/image'
 import { parsePdf } from '../pipeline/pdf'
-import { cleanBusinessScope } from './scope'
 import type { AppStore } from '../store'
 import { ensureDir, readJson, writeJson } from '../store/atomic'
+import { cleanBusinessScope } from './scope'
 
 export interface RecognizeInput {
   store: AppStore
@@ -23,7 +21,6 @@ export interface RecognizeInput {
 }
 
 interface RawLicense {
-  creditCode?: string
   businessScope?: string
   registeredCapital?: number | string
   establishedDate?: string
@@ -34,16 +31,11 @@ const CACHE_TTL_FALLBACK = 720
 const LICENSE_PROMPT = `你是营业执照抄录员。只输出一个 JSON 对象,不要 Markdown 代码块,不要解释。
 
 字段:
-- creditCode: 统一社会信用代码,18 位。逐位核对,数字 1 与字母 I、数字 0 与字母 O、数字 5 与字母 S、数字 8 与字母 B 必须分清
 - businessScope: 经营范围,整段原文抄录,不得概括,不得省略「一般项目」「许可项目」分段
 - registeredCapital: 注册资本,一律折成元,只填数字,不填单位
 - establishedDate: 成立日期,格式 YYYY-MM-DD
 
 抄不到的字段填空字符串,不要编造,不要用其它企业的信息补全。`
-
-const DETAIL_PROMPT = `下面是同一张营业执照「统一社会信用代码」区域的局部放大图,分别按 90° 与 270° 旋转,只有一张是正立的。
-只输出一个 JSON 对象:{"creditCode":"18 位统一社会信用代码"}
-逐位核对,数字 1 与字母 I、数字 0 与字母 O、数字 5 与字母 S、数字 8 与字母 B 必须分清。看不清就填空字符串。`
 
 const cacheFile = (store: AppStore, sha256: string) =>
   path.join(store.dataDir, 'cache', 'recognize', `${sha256}.json`)
@@ -96,97 +88,33 @@ const toDate = (value: string | undefined): string => {
   return `${year}-${month}-${day}`
 }
 
-const rotatedCanvas = async (source: string, degrees: number) => {
-  const image = await loadImage(source)
-  const swap = Math.abs(degrees % 180) === 90
-  const width = swap ? image.height : image.width
-  const height = swap ? image.width : image.height
-  const canvas = createCanvas(width, height)
-  const ctx = canvas.getContext('2d')
-  ctx.translate(width / 2, height / 2)
-  ctx.rotate((degrees * Math.PI) / 180)
-  ctx.drawImage(image, -image.width / 2, -image.height / 2)
-  return canvas
-}
-
-const DETAIL_ROTATIONS = [90, 270]
-const DETAIL_REGION = { x: 0.17, y: 0.25, w: 0.2, h: 0.12 }
-const DETAIL_LONG_EDGE = 1000
-
-const writeRegionCrop = async (
-  source: string,
-  target: string,
-  degrees: number,
-  rect: { x: number; y: number; w: number; h: number }
-): Promise<boolean> => {
-  try {
-    const base = await rotatedCanvas(source, degrees)
-    const rx = Math.round(rect.x * base.width)
-    const ry = Math.round(rect.y * base.height)
-    const rw = Math.round(rect.w * base.width)
-    const rh = Math.round(rect.h * base.height)
-    const scale = Math.max(1, DETAIL_LONG_EDGE / Math.max(rw, rh))
-    const canvas = createCanvas(Math.round(rw * scale), Math.round(rh * scale))
-    const ctx = canvas.getContext('2d')
-    ctx.imageSmoothingEnabled = true
-    ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(base, rx, ry, rw, rh, 0, 0, canvas.width, canvas.height)
-    await writeFile(target, canvas.toBuffer('image/jpeg', 95))
-    return true
-  } catch {
-    return false
-  }
-}
-
-const askJson = async (
+const askLicense = async (
   client: ModelClient,
   model: string,
-  system: string,
-  images: string[],
-  text: string,
-  maxTokens: number
+  imagePath: string
 ): Promise<RawLicense | null> => {
   try {
-    const content = []
-    for (const imagePath of images) {
-      const bytes = await readFile(imagePath)
-      content.push({ type: 'image' as const, mime: 'image/jpeg', data: bytes.toString('base64') })
-    }
-    content.push({ type: 'text' as const, text })
+    const bytes = await readFile(imagePath)
     const response = await client.complete({
       model,
       temperature: 0,
-      maxTokens,
+      maxTokens: 2400,
       timeoutMs: 90_000,
       messages: [
-        { role: 'system', content: system },
-        { role: 'user', content }
+        { role: 'system', content: LICENSE_PROMPT },
+        {
+          role: 'user',
+          content: [
+            { type: 'image', mime: 'image/jpeg', data: bytes.toString('base64') },
+            { type: 'text', text: '请抄录这张营业执照。' }
+          ]
+        }
       ]
     })
     return parseJson(response.text)
   } catch {
     return null
   }
-}
-
-const askLicense = (client: ModelClient, model: string, imagePath: string) =>
-  askJson(client, model, LICENSE_PROMPT, [imagePath], '请抄录这张营业执照。', 2400)
-
-const askDetail = async (
-  client: ModelClient,
-  model: string,
-  imagePath: string,
-  workDir: string
-): Promise<RawLicense | null> => {
-  const crops: string[] = []
-  for (const degrees of DETAIL_ROTATIONS) {
-    const target = path.join(workDir, `detail-${degrees}.jpg`)
-    if (await writeRegionCrop(imagePath, target, degrees, DETAIL_REGION)) {
-      crops.push(target)
-    }
-  }
-  if (crops.length === 0) return null
-  return askJson(client, model, DETAIL_PROMPT, crops, '请读出统一社会信用代码。', 200)
 }
 
 const firstPageImage = async (options: {
@@ -258,31 +186,21 @@ export const recognizeLicense = async (input: RecognizeInput): Promise<LicensePr
     const raw = await askLicense(input.client, input.model, imagePath)
     const warnings: string[] = []
 
-    const rawCode = normalizeCreditCode(raw?.creditCode ?? '')
-    let creditCode = rawCode.length === 18 && isValidCreditCode(rawCode) ? rawCode : ''
-
-    if (!creditCode) {
-      const detail = await askDetail(input.client, input.model, imagePath, workDir)
-      const detailCode = normalizeCreditCode(detail?.creditCode ?? '')
-      if (detailCode.length === 18 && isValidCreditCode(detailCode)) creditCode = detailCode
-    }
-
-    if (!creditCode) warnings.push('统一社会信用代码没认准，已留空；可以重传一张更清晰的照片')
     const businessScope = cleanBusinessScope(raw?.businessScope ?? '')
     const registeredCapital = toYuan(raw?.registeredCapital)
     const establishedDate = toDate(raw?.establishedDate)
+    if (!businessScope) warnings.push('没读到经营范围，可以重传一张更清晰的照片')
 
     const profile: LicenseProfile = {
-      creditCode,
       businessScope,
       registeredCapital,
       establishedDate,
-      confidence: creditCode ? 0.92 : businessScope ? 0.7 : 0.4,
+      confidence: businessScope ? 0.9 : registeredCapital || establishedDate ? 0.7 : 0.4,
       warnings,
       cached: false
     }
 
-    if (profile.creditCode || profile.businessScope) {
+    if (profile.businessScope || profile.registeredCapital || profile.establishedDate) {
       await ensureDir(path.dirname(cacheFile(input.store, input.sha256)))
       await writeJson(cacheFile(input.store, input.sha256), {
         profile,
