@@ -18,7 +18,9 @@
     "check:font": "pnpm --filter @srdi/server exec tsx scripts/check-font.ts",
     "pack:portable": "node scripts/build-portable.mjs",
     "pack:zip": "node scripts/zip-portable.mjs",
-    "test": "pnpm --filter @srdi/shared test && pnpm --filter @srdi/server test"
+    "test": "pnpm --filter @srdi/shared test && pnpm --filter @srdi/server test",
+    "fix:identity": "pnpm --filter @srdi/server exec tsx scripts/backfill-identity.ts",
+    "recognize:license": "pnpm --filter @srdi/server exec tsx scripts/recognize-license.ts"
   },
   "devDependencies": {
     "ajv": "^8.17.1",

@@ -125,6 +125,7 @@ const dispatchParse = async (
 export const inferDocType = (fileName: string): DocType | undefined => {
   const name = fileName.toLowerCase()
   if (/审计|审字|财务报|财务会计报告|财务报告|报表/.test(name)) return 'audit'
+  if (/营业执照|执照/.test(name)) return 'cert'
   if (/专精特新|申请书|申报/.test(name)) return 'application'
   if (/纳税|完税|税/.test(name)) return 'tax'
   if (/专利|知识产权/.test(name)) return 'patent'

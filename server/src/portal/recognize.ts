@@ -10,6 +10,7 @@ import { badRequest } from '../errors'
 import { detectFile } from '../pipeline/detect'
 import { parseImage } from '../pipeline/image'
 import { parsePdf } from '../pipeline/pdf'
+import { cleanBusinessScope } from './scope'
 import type { AppStore } from '../store'
 import { ensureDir, readJson, writeJson } from '../store/atomic'
 
@@ -70,14 +71,6 @@ const parseJson = (text: string): RawLicense | null => {
   } catch {
     return null
   }
-}
-
-const cleanScope = (raw: string): string => {
-  let text = raw.replace(/\s+/g, ' ').trim()
-  text = text.replace(/^经营范围\s*[:：]\s*/, '')
-  const cut = text.search(/注册资本|法定代表人|成立日期|营业期限|登记机关/)
-  if (cut > 20) text = text.slice(0, cut)
-  return text.trim()
 }
 
 const toYuan = (value: number | string | undefined): number | null => {
@@ -275,7 +268,7 @@ export const recognizeLicense = async (input: RecognizeInput): Promise<LicensePr
     }
 
     if (!creditCode) warnings.push('统一社会信用代码没认准，已留空；可以重传一张更清晰的照片')
-    const businessScope = cleanScope(raw?.businessScope ?? '')
+    const businessScope = cleanBusinessScope(raw?.businessScope ?? '')
     const registeredCapital = toYuan(raw?.registeredCapital)
     const establishedDate = toDate(raw?.establishedDate)
 

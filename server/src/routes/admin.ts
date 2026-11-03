@@ -5,6 +5,7 @@ import { lookupIndustryName } from '../config/industryMap'
 import { rulesMeta } from '../config/rules'
 import { badRequest, notFound } from '../errors'
 import { loadPortalDetail } from '../portal/detail'
+import { syncIdentity } from '../portal/identity'
 import { sendPortalPdf } from '../report/portal'
 import type { AppStore } from '../store'
 import { buildScoreRecord } from './score'
@@ -110,6 +111,13 @@ export const adminRouter = (store: AppStore, passLine: number) => {
       return
     }
     await sendPortalPdf(res, detail.data)
+  })
+
+  router.post('/projects/:projectId/identity/refresh', async (req, res) => {
+    const project = await store.projects.get(req.params.projectId)
+    const changed = await syncIdentity(store, project.projectId)
+    const updated = await store.projects.get(project.projectId)
+    res.json({ projectId: updated.projectId, changed, company: updated.company ?? null })
   })
 
   router.patch('/projects/:projectId/industry', async (req, res) => {

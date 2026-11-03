@@ -9,9 +9,18 @@ import { buildScoreRecord } from '../routes/score'
 import type { AppStore } from '../store'
 import { readJson, writeJson } from '../store/atomic'
 import { confirmBestCandidates } from './confirm'
+import { syncIdentity } from './identity'
 import { applyDeclaredIntellectual, type DeclaredOutcome } from './declared'
 
-export type AssessStageName = 'parse' | 'industry' | 'extract' | 'confirm' | 'declared' | 'score' | 'advice'
+export type AssessStageName =
+  | 'parse'
+  | 'industry'
+  | 'extract'
+  | 'confirm'
+  | 'identity'
+  | 'declared'
+  | 'score'
+  | 'advice'
 
 export interface AssessStage {
   name: AssessStageName
@@ -50,6 +59,7 @@ const STAGE_LABEL: Record<AssessStageName, string> = {
   industry: '行业识别',
   extract: '字段抽取',
   confirm: '自动确认',
+  identity: '主体信息',
   declared: '自述数据',
   score: '规则打分',
   advice: '建议生成'
@@ -60,9 +70,10 @@ const RANGE: Record<AssessStageName, [number, number]> = {
   industry: [25, 28],
   extract: [28, 76],
   confirm: [76, 86],
-  declared: [86, 88],
-  score: [88, 95],
-  advice: [95, 99]
+  identity: [86, 88],
+  declared: [88, 90],
+  score: [90, 96],
+  advice: [96, 99]
 }
 
 const scaled = (stage: AssessStageName, inner: number) => {
@@ -75,6 +86,7 @@ const STAGE_SIGNAL: Record<AssessStageName, 'parsing' | 'extracting' | 'confirmi
   industry: 'assessing',
   extract: 'extracting',
   confirm: 'confirming',
+  identity: 'confirming',
   declared: 'assessing',
   score: 'scoring',
   advice: 'assessing'
@@ -154,6 +166,11 @@ export const assessProject = async (
     const evidence = await store.evidence.get(project)
     const outcome = await confirmBestCandidates(store, project, evidence)
     return `确认 ${outcome.confirmed.length} 项，按年合并 ${outcome.series.length} 项`
+  })
+
+  await step('identity', async () => {
+    const changed = await syncIdentity(store, projectId)
+    return changed.length > 0 ? `已补齐 ${changed.join('、')}` : '主体信息完整'
   })
 
   let declared: DeclaredOutcome | null = null

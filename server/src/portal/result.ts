@@ -1,6 +1,7 @@
 import { MIN_PASS_CONFIDENCE, goalContributionOf, isPortalPassed, rollupGoal } from '@srdi/shared'
 import type {
   EvidenceDoc,
+  ProjectCompany,
   IndicatorDef,
   IndicatorResult,
   PortalAdvice,
@@ -14,6 +15,7 @@ import type {
   ScoringSpec
 } from '@srdi/shared'
 import { catalogFields } from '../config/catalog'
+import { resolveIdentity } from './identity'
 import { loadPortalConfig } from '../config/portal'
 import { loadRules } from '../config/rules'
 
@@ -147,13 +149,27 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
   const goal = Number(rollupGoal(result.indicators).toFixed(2))
   const confidence = Number(result.totals.confidence.toFixed(4))
 
+  const identity = resolveIdentity({ project, evidence })
+  const base = project.company
+  const company: ProjectCompany = {
+    name: identity.name || project.name,
+    phone: base?.phone ?? '',
+    ...(identity.creditCode ? { creditCode: identity.creditCode } : {}),
+    ...(identity.creditCodeSource ? { creditCodeSource: identity.creditCodeSource } : {}),
+    ...(identity.businessScope ? { businessScope: identity.businessScope } : {}),
+    ...(identity.registeredCapital !== null ? { registeredCapital: identity.registeredCapital } : {}),
+    ...(identity.establishedDate ? { establishedDate: identity.establishedDate } : {}),
+    ...(identity.industryCode ? { industryCode: identity.industryCode } : {}),
+    ...(identity.industryName ? { industryName: identity.industryName } : {}),
+    ...(typeof base?.inventionCount === 'number' ? { inventionCount: base.inventionCount } : {}),
+    ...(typeof base?.softCopyrightCount === 'number'
+      ? { softCopyrightCount: base.softCopyrightCount }
+      : {})
+  }
+
   return {
     projectId: project.projectId,
-    company: project.company ?? {
-      name: project.name,
-      creditCode: '',
-      phone: ''
-    },
+    company,
     period: project.period,
     status: input.status,
     materials: project.files.map((file) => ({
@@ -187,7 +203,7 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
     checks,
     advices: input.advices,
     missingSlots: missingSlotsOf(project),
-    warnings: input.warnings,
+    warnings: [...new Set([...input.warnings, ...identity.warnings])],
     generatedAt: new Date().toISOString(),
     scoredAt: record.savedAt,
     updatedAt: project.updatedAt
