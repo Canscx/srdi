@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import type { LicenseProfile, PortalSlot } from '@srdi/shared'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { api, errorText } from '@/api'
+import { ApiError, api, errorText } from '@/api'
 import { goto } from '@/router'
 import { useAssessment } from '@/composables/useAssessment'
 import MaterialSlot from '@/components/portal/MaterialSlot.vue'
@@ -74,7 +74,9 @@ const pickLicense = async (file: File) => {
     licenseStatus.value = 'done'
   } catch (err) {
     licenseStatus.value = 'failed'
-    licenseError.value = errorText(err)
+    licenseError.value =
+      err instanceof ApiError ? errorText(err) : '识别服务暂时不可用，可以重传，也可以直接手动填写。'
+    if (!(err instanceof ApiError)) console.error(err)
   }
 }
 

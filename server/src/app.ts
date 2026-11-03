@@ -159,7 +159,8 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
   app.get(/.*/, (_req, res) => {
     const indexFile = path.join(webDist, 'index.html')
     if (existsSync(indexFile)) {
-      res.sendFile(indexFile)
+      res.setHeader('Cache-Control', 'no-store, must-revalidate')
+      res.sendFile(indexFile, { cacheControl: false })
       return
     }
     res.status(503).type('html').send(missingDistHtml)
