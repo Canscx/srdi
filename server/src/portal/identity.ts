@@ -74,7 +74,9 @@ export const resolveIdentity = (input: {
     warnings.push('材料中的统一社会信用代码未通过校验，报告不展示该号码')
   }
 
-  const scope = cleanBusinessScope(confirmedText(input.evidence, 'identity.businessScope'))
+  const scope = cleanBusinessScope(
+    confirmedText(input.evidence, 'identity.businessScope') || (company?.businessScope ?? '')
+  )
   const capital = confirmedNumber(input.evidence, 'identity.registeredCapital')
   const establishedDate = confirmedText(input.evidence, 'identity.establishedDate')
 

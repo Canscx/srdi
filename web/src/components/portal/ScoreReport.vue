@@ -62,6 +62,40 @@ const stale = computed(
 )
 
 const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString('zh-CN'))
+
+const formatMoney = (value: number | undefined) => {
+  if (typeof value !== 'number' || value <= 0) return ''
+  if (value >= 100000000) return `${(value / 100000000).toFixed(2).replace(/\.?0+$/, '')} 亿元`
+  if (value >= 10000) return `${(value / 10000).toFixed(2).replace(/\.?0+$/, '')} 万元`
+  return `${value} 元`
+}
+
+const industryText = computed(
+  () => props.data.company.industryName || props.data.company.industryCode || ''
+)
+
+const businessScope = computed(() => (props.data.company.businessScope ?? '').trim())
+
+const capitalText = computed(() => formatMoney(props.data.company.registeredCapital))
+
+const establishedText = computed(() => {
+  const raw = (props.data.company.establishedDate ?? '').trim()
+  if (!raw) return ''
+  const year = Number(raw.slice(0, 4))
+  if (!Number.isFinite(year)) return raw
+  const span = props.data.period.y0 - year
+  return span >= 0 && span < 200 ? `${raw}（${span} 年）` : raw
+})
+
+const facts = computed(
+  () =>
+    [
+      industryText.value ? { label: '行业', value: industryText.value } : null,
+      capitalText.value ? { label: '注册资本', value: capitalText.value } : null,
+      establishedText.value ? { label: '成立日期', value: establishedText.value } : null,
+      businessScope.value ? { label: '经营范围', value: businessScope.value, scope: true } : null
+    ].filter(Boolean) as { label: string; value: string; scope?: boolean }[]
+)
 </script>
 
 <template>
@@ -75,6 +109,12 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
           </template>
           统计期间 {{ data.period.y2 }}–{{ data.period.y0 }}
         </p>
+        <dl v-if="facts.length > 0" class="facts">
+          <div v-for="item in facts" :key="item.label">
+            <dt>{{ item.label }}</dt>
+            <dd :class="{ scope: item.scope }">{{ item.value }}</dd>
+          </div>
+        </dl>
       </div>
 
       <div class="scores">
@@ -181,6 +221,29 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
       </details>
     </section>
 
+    <section v-if="businessScope" class="card appendix">
+      <h2>附录 · 企业基本信息</h2>
+      <dl>
+        <div>
+          <dt>企业名称</dt>
+          <dd>{{ data.company.name }}</dd>
+        </div>
+        <div v-if="data.company.creditCode">
+          <dt>统一社会信用代码</dt>
+          <dd>{{ data.company.creditCode }}</dd>
+        </div>
+        <div v-if="industryText">
+          <dt>行业</dt>
+          <dd>{{ industryText }}</dd>
+        </div>
+        <div>
+          <dt>经营范围</dt>
+          <dd class="full">{{ businessScope }}</dd>
+        </div>
+      </dl>
+      <p class="source">经营范围识别自营业执照，以营业执照原件为准。</p>
+    </section>
+
     <footer class="actions">
       <div class="tips">
         <span>参考得分非官方口径，仅供申报前自查。</span>
@@ -225,6 +288,71 @@ const scoredAtText = computed(() => new Date(props.data.scoredAt).toLocaleString
   margin-top: 6px;
   font-size: 12px;
   color: #8a94a6;
+}
+
+.facts {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2ecfa;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 640px;
+}
+
+.facts > div,
+.appendix dl > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.facts dt,
+.appendix dt {
+  flex: 0 0 76px;
+  font-size: 11.5px;
+  color: #a3adbb;
+}
+
+.facts dd,
+.appendix dd {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #475569;
+}
+
+.facts dd.scope {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.appendix h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.appendix dl {
+  margin: 14px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.appendix dd.full {
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+.appendix .source {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #a3adbb;
 }
 
 .scores {

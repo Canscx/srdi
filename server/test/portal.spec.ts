@@ -17,7 +17,10 @@ const COMPANY = {
   creditCode: '91310105MA1FW5R45P',
   phone: '13800001111',
   inventionCount: 1,
-  softCopyrightCount: 9
+  softCopyrightCount: 9,
+  businessScope: '一般项目：技术服务、技术开发、技术咨询；许可项目：第二类增值电信业务。',
+  registeredCapital: 1000000,
+  establishedDate: '2017-01-20'
 }
 
 const FIN_FIELDS: { key: string; period: number; value: number }[] = []
@@ -227,6 +230,8 @@ describe('客户轻流程', () => {
           expect(text).toContain(COMPANY.name)
           expect(text).toContain('补齐并达标后')
           expect(text).toContain('口径从严')
+          expect(text).toContain('注册资本')
+          expect(text).toContain('经营范围')
 
           const secondPage = await parsed.getPage(2)
           const checklist = (await secondPage.getTextContent()).items

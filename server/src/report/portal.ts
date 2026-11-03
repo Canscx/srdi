@@ -91,12 +91,61 @@ const dimGroups = (checks: PortalCheck[]) => {
   return order.map((id) => ({ id, name: map.get(id)?.[0]?.dimensionName ?? id, items: map.get(id) ?? [] }))
 }
 
+const moneyText = (value: number | undefined) => {
+  if (typeof value !== 'number' || value <= 0) return ''
+  if (value >= 100000000) return `${(value / 100000000).toFixed(2).replace(/\.?0+$/, '')} 亿元`
+  if (value >= 10000) return `${(value / 10000).toFixed(2).replace(/\.?0+$/, '')} 万元`
+  return `${value} 元`
+}
+
+const identityPanel = (doc: PDFKit.PDFDocument, y: number, data: PortalResultResponse) => {
+  const industry = data.company.industryName || data.company.industryCode || ''
+  const capital = moneyText(data.company.registeredCapital)
+  const established = (data.company.establishedDate ?? '').trim()
+  const scope = (data.company.businessScope ?? '').trim()
+  const registry = [capital ? `注册资本 ${capital}` : '', established ? `成立 ${established}` : '']
+    .filter(Boolean)
+    .join(' · ')
+
+  const rows: { label: string; value: string; clamp?: boolean }[] = []
+  if (industry) rows.push({ label: '行业', value: industry })
+  if (registry) rows.push({ label: '工商登记', value: registry })
+  if (scope) rows.push({ label: '经营范围', value: scope, clamp: true })
+  if (rows.length === 0) return y
+
+  const labelW = 56
+  const valueW = CW - labelW - 30
+  const heights = rows.map((row) =>
+    row.clamp ? 24 : doc.fontSize(8.6).heightOfString(row.value, { width: valueW, lineGap: 2 })
+  )
+  const height = 14 + heights.reduce((sum, item) => sum + item + 4, 0) + 4
+
+  doc.rect(M, y, CW, height).fill('#f8fafc')
+  doc.rect(M, y, CW, height).lineWidth(0.6).strokeColor(COLOR.line).stroke()
+
+  let cursor = y + 9
+  rows.forEach((row, index) => {
+    doc.fontSize(8).fillColor(COLOR.muted).text(row.label, M + 14, cursor + 1, { width: labelW })
+    doc.fontSize(8.6).fillColor(COLOR.body).text(
+      row.value,
+      M + 14 + labelW,
+      cursor,
+      row.clamp
+        ? { width: valueW, height: 24, ellipsis: true, lineGap: 2 }
+        : { width: valueW, lineGap: 2 }
+    )
+    cursor += heights[index] + 4
+  })
+
+  return y + height + 14
+}
+
 const renderCover = (doc: PDFKit.PDFDocument, data: PortalResultResponse) => {
   let y = header(doc, '专精特新中小企业 · 申报自评报告')
   const score = data.score
 
   doc.fontSize(19).fillColor(COLOR.ink).text(data.company.name, M, y, { width: CW })
-  y += 26
+  y += doc.heightOfString(data.company.name, { width: CW }) + 8
   const metaLine = [
     data.company.creditCode ? `统一社会信用代码 ${data.company.creditCode}` : '',
     `统计期间 ${data.period.y2}–${data.period.y0}`,
@@ -105,7 +154,9 @@ const renderCover = (doc: PDFKit.PDFDocument, data: PortalResultResponse) => {
     .filter(Boolean)
     .join(' · ')
   doc.fontSize(8.5).fillColor(COLOR.muted).text(metaLine, M, y, { width: CW })
-  y += 26
+  y += doc.heightOfString(metaLine, { width: CW }) + 12
+
+  y = identityPanel(doc, y, data)
 
   doc.rect(M, y, CW, 96).fill('#f8fafc')
   doc.rect(M, y, CW, 96).lineWidth(0.8).strokeColor(COLOR.line).stroke()
@@ -316,7 +367,11 @@ const renderMaterials = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =>
   y = sectionTitle(doc, y, '材料完整度')
 
   const missing = new Map(data.missingSlots.map((slot) => [slot.id, slot]))
+  const licenseCount = data.materials.filter((item) => item.slot === 'license').length
   const slots = [
+    ...(licenseCount > 0
+      ? [{ id: 'license', title: '营业执照（企业身份信息）', optional: true }]
+      : []),
     { id: 'finance', title: '财务报表（近三年年报）', optional: false },
     { id: 'tax', title: '企业所得税年度申报表', optional: false },
     { id: 'ledger', title: '账簿与科目余额表', optional: true },
@@ -363,6 +418,47 @@ const renderMaterials = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =>
   for (const note of notes) {
     doc.text(`· ${note}`, M, y, { width: CW, lineGap: 3 })
     y += doc.heightOfString(note, { width: CW, lineGap: 3 }) + 4
+  }
+
+  const scope = (data.company.businessScope ?? '').trim()
+  if (scope) {
+    y += 16
+    const moved = gap(doc, y, 70)
+    doc = moved.doc
+    y = moved.y
+    y = sectionTitle(doc, y, '附录 · 企业基本信息')
+
+    const labelW = 78
+    const rows = [
+      { label: '企业名称', value: data.company.name },
+      ...(data.company.creditCode
+        ? [{ label: '统一社会信用代码', value: data.company.creditCode }]
+        : []),
+      ...(data.company.industryName || data.company.industryCode
+        ? [{ label: '行业', value: data.company.industryName || data.company.industryCode || '' }]
+        : []),
+      { label: '经营范围', value: scope }
+    ]
+
+    for (const row of rows) {
+      const text = row.value.replace(/\s+/g, ' ')
+      const height = doc.fontSize(8.6).heightOfString(text, { width: CW - labelW, lineGap: 3 })
+      const next = gap(doc, y, height + 8)
+      doc = next.doc
+      y = next.y
+      doc.fontSize(8.5).fillColor(COLOR.muted).text(row.label, M, y, { width: labelW })
+      doc
+        .fontSize(8.6)
+        .fillColor(COLOR.body)
+        .text(text, M + labelW, y, { width: CW - labelW, lineGap: 3 })
+      y += height + 8
+    }
+
+    doc
+      .fontSize(8)
+      .fillColor(COLOR.muted)
+      .text('经营范围与注册资本识别自营业执照，以营业执照原件为准。', M, y, { width: CW })
+    y += 16
   }
 
   if (existsSync(QR_FILE)) {
