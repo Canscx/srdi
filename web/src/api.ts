@@ -19,6 +19,7 @@ import type {
   PortalLookupRequest,
   PortalLookupResponse,
   PortalResultResponse,
+  LicenseProfile,
   ProjectListResponse,
   ProjectMeta,
   RenameProjectRequest,
@@ -160,6 +161,13 @@ export const api = {
   portalProjects: () => request<PortalListResponse>('/api/portal/projects'),
   portalLookup: (body: PortalLookupRequest) =>
     request<PortalLookupResponse>('/api/portal/lookup', jsonInit('POST', body)),
+  portalRecognize: async (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    const response = await fetch('/api/portal/recognize', { method: 'POST', body: form })
+    if (!response.ok) throw await toError(response)
+    return (await response.json()) as LicenseProfile
+  },
   portalUpload: async (
     projectId: string,
     slot: string,

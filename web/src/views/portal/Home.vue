@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import type { PortalSlot } from '@srdi/shared'
+import type { LicenseProfile, PortalSlot } from '@srdi/shared'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, errorText } from '@/api'
 import { goto } from '@/router'
 import { useAssessment } from '@/composables/useAssessment'
 import MaterialSlot from '@/components/portal/MaterialSlot.vue'
+import LicenseBanner from '@/components/portal/LicenseBanner.vue'
 import HistoryList from '@/components/portal/HistoryList.vue'
 
 const slots = ref<PortalSlot[]>([])
@@ -18,7 +19,6 @@ const years = Array.from({ length: 6 }, (_, index) => currentYear - index)
 
 const form = reactive({
   name: '',
-  creditCode: '',
   phone: '',
   endYear: currentYear - 1,
   inventionCount: 0,
@@ -26,6 +26,12 @@ const form = reactive({
 })
 
 const files = reactive<Record<string, File[]>>({})
+const licenseStatus = ref<'idle' | 'busy' | 'done' | 'failed'>('idle')
+const licenseProfile = ref<LicenseProfile | null>(null)
+const licenseError = ref('')
+
+const licenseSlot = computed(() => slots.value.find((slot) => slot.id === 'license') ?? null)
+const materialSlots = computed(() => slots.value.filter((slot) => slot.id !== 'license'))
 const slotMeta = reactive<Record<string, { docType: string; referenceOnly: boolean }>>({})
 const { phase, uploaded, total, message, error, start } = useAssessment()
 
@@ -54,12 +60,33 @@ const load = async () => {
   }
 }
 
+const pickLicense = async (file: File) => {
+  if (file.size > 10 * 1024 * 1024) {
+    licenseStatus.value = 'failed'
+    licenseError.value = '营业执照照片不能超过 10MB，压缩后再传。'
+    return
+  }
+  files.license = [file]
+  licenseStatus.value = 'busy'
+  licenseError.value = ''
+  try {
+    licenseProfile.value = await api.portalRecognize(file)
+    licenseStatus.value = 'done'
+  } catch (err) {
+    licenseStatus.value = 'failed'
+    licenseError.value = errorText(err)
+  }
+}
+
+const retryLicense = () => {
+  licenseStatus.value = 'idle'
+  licenseProfile.value = null
+  licenseError.value = ''
+  files.license = []
+}
+
 const validate = () => {
   if (!form.name.trim()) return '请填写企业名称'
-  const creditCode = form.creditCode.trim()
-  if (creditCode && !/^[0-9A-Za-z]{18}$/.test(creditCode)) {
-    return '统一社会信用代码应为 18 位数字或字母，不填也可以'
-  }
   const phone = form.phone.replace(/[\s-]/g, '')
   if (!phone) return '请填写联系手机，换设备时靠它找回报告'
   if (!/^\d{6,20}$/.test(phone)) return '联系电话应为 6 至 20 位数字'
@@ -94,7 +121,6 @@ const submit = async () => {
   const outcome = await start({
     company: {
       name: form.name.trim(),
-      creditCode: form.creditCode.trim().toUpperCase(),
       phone: form.phone.replace(/[\s-]/g, ''),
       inventionCount: Number(form.inventionCount) || 0,
       softCopyrightCount: Number(form.softCopyrightCount) || 0
@@ -103,7 +129,7 @@ const submit = async () => {
     slots: slots.value.map((slot) => ({
       slot: slot.id,
       files: files[slot.id] ?? [],
-      docType: slotMeta[slot.id]?.docType || undefined,
+      docType: slotMeta[slot.id]?.docType || slot.docType || undefined,
       referenceOnly: slotMeta[slot.id]?.referenceOnly === true
     }))
   })
@@ -132,6 +158,15 @@ onMounted(load)
 
     <HistoryList />
 
+    <LicenseBanner
+      v-if="licenseSlot"
+      :status="licenseStatus"
+      :profile="licenseProfile"
+      :error="licenseError"
+      @select="pickLicense"
+      @retry="retryLicense"
+    />
+
     <section class="card">
       <div class="card-head">
         <h2>企业信息</h2>
@@ -142,15 +177,6 @@ onMounted(load)
         <label class="field wide">
           <span>企业名称 *</span>
           <el-input v-model="form.name" placeholder="营业执照上的完整名称" maxlength="80" />
-        </label>
-        <label class="field wide">
-          <span>统一社会信用代码</span>
-          <el-input
-            v-model="form.creditCode"
-            placeholder="选填，18 位数字或字母；填了会印在报告抬头"
-            maxlength="18"
-            style="text-transform: uppercase"
-          />
         </label>
         <label class="field">
           <span>联系手机 *</span>
@@ -196,7 +222,7 @@ onMounted(load)
       </div>
       <div class="slots">
         <MaterialSlot
-          v-for="slot in slots"
+          v-for="slot in materialSlots"
           :key="slot.id"
           :slot="slot"
           :files="files[slot.id] ?? []"
