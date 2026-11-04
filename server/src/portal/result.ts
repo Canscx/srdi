@@ -21,6 +21,8 @@ import { loadRules } from '../config/rules'
 
 const PASS_RATE = 0.8
 
+const NEUTRAL_HINT = new Set(['IND_05', 'IND_07'])
+
 const SLOT_DOCS: Record<string, string[]> = {
   finance: ['audit', 'finance'],
   tax: ['tax'],
@@ -141,7 +143,8 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
       benchmark: item.benchmark?.value ?? null,
       text: item.explain.text,
       missingFields: (result.missing.find((entry) => entry.indicatorId === item.id)?.fieldKeys ?? [])
-        .map((key) => fieldLabels.get(key) ?? key)
+        .map((key) => fieldLabels.get(key) ?? key),
+      ...(item.basis === 'absent' && NEUTRAL_HINT.has(item.id) ? { neutral: true } : {})
     })
   }
 

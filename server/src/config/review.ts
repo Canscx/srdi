@@ -9,10 +9,15 @@ export interface PortalConfirmPolicy {
   mergePeriods: boolean
 }
 
+export interface ZeroValuePolicy {
+  minConfidence: number
+}
+
 export interface ReviewPolicy {
   version: string
   autoConfirm: AutoConfirmPolicy
   portal: PortalConfirmPolicy
+  zeroValue: ZeroValuePolicy
   review: {
     defaultFilter: 'pending' | 'confirmed' | 'missing' | 'all'
     autoJumpToNext: boolean
@@ -25,6 +30,7 @@ const FALLBACK: ReviewPolicy = {
   version: '0.0.0',
   autoConfirm: { enabled: false, minConfidence: 1, rejectUnverifiedQuote: true },
   portal: { enabled: true, minConfidence: 0.5, mergePeriods: true },
+  zeroValue: { minConfidence: 0.9 },
   review: { defaultFilter: 'pending', autoJumpToNext: true }
 }
 
@@ -55,6 +61,12 @@ export const loadReviewPolicy = (): ReviewPolicy => {
             : FALLBACK.portal.minConfidence,
         mergePeriods: raw.portal?.mergePeriods !== false
       },
+      zeroValue: {
+        minConfidence:
+          typeof raw.zeroValue?.minConfidence === 'number'
+            ? Math.min(1, Math.max(0, raw.zeroValue.minConfidence))
+            : FALLBACK.zeroValue.minConfidence
+      },
       review: {
         defaultFilter: raw.review?.defaultFilter ?? FALLBACK.review.defaultFilter,
         autoJumpToNext: raw.review?.autoJumpToNext !== false
@@ -69,3 +81,5 @@ export const loadReviewPolicy = (): ReviewPolicy => {
 export const autoConfirmPolicy = () => loadReviewPolicy().autoConfirm
 
 export const portalConfirmPolicy = () => loadReviewPolicy().portal
+
+export const zeroValuePolicy = () => loadReviewPolicy().zeroValue

@@ -101,6 +101,30 @@ describe('评分接口', () => {
     expect(weightSum).toBeCloseTo(100, 6)
   })
 
+  it('材料缺年限时按成立日期推算,且不改动证据统计', async () => {
+    const project = await seed('年限推算', 'firm-a', (doc) => {
+      doc.fields['company.subMarketYears'] = {
+        key: 'company.subMarketYears',
+        type: 'int',
+        unit: 'year',
+        status: 'missing'
+      }
+    })
+    await store().projects.update(project, (meta) => {
+      meta.company = {
+        ...(meta.company ?? { name: '年限推算', phone: '' }),
+        establishedDate: '2019-06-15'
+      }
+    })
+
+    const { record } = await score(project)
+    const item = record?.result.indicators.find((entry) => entry.id === 'IND_01')
+    expect(item?.raw).toBe(6)
+    expect(item?.score).toBeCloseTo(0.6, 6)
+    expect(record?.result.missing.some((entry) => entry.indicatorId === 'IND_01')).toBe(false)
+    expect(record?.evidence.confirmed).toBe(38)
+  })
+
   it('结果落 score-result.json,再次读取与响应一致', async () => {
     const { record } = await score(passProject)
     const file = path.join(dir, 'projects', passProject, 'score-result.json')

@@ -298,7 +298,8 @@ const renderDimensions = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =
 
     doc.fontSize(8.6)
     for (const item of group.items) {
-      const text = item.text.replace(/\s*·\s*/g, ' · ').trim()
+      const base = item.text.replace(/\s*·\s*/g, ' · ').trim()
+      const text = item.neutral ? `${base}（缺材料，按中性 0.5 计入）` : base
       const height = doc.heightOfString(text, { width: CW - 96 })
       const next = gap(doc, y, Math.max(16, height + 4))
       doc = next.doc
@@ -312,7 +313,11 @@ const renderDimensions = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =
         .fontSize(8.6)
         .fillColor(COLOR.muted)
         .text(
-          item.mark === 'missing' ? '—' : `${((item.score ?? 0) * 100).toFixed(0)}%`,
+          item.mark === 'missing'
+            ? item.neutral
+              ? '50%'
+              : '—'
+            : `${((item.score ?? 0) * 100).toFixed(0)}%`,
           PAGE.width - M - 62,
           y,
           { width: 62, align: 'right' }
@@ -409,6 +414,7 @@ const renderMaterials = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =>
     '「补齐并达标后」为材料补齐且每项至少达到 80% 得分率推算的目标分，不是承诺分。',
     '五个一级维度权重取自政策文件；三级指标权重官方未公布，本报告按维度内等权处理。',
     '知识产权按官方就高选一档计分：高价值Ⅰ类 10 分、自主研发Ⅰ类 8 分、Ⅰ类 6 分、Ⅱ类 2 分，不叠加；客户自述数据仅作参考。',
+    '从事细分市场年限在材料未给出时，按营业执照成立日期推算，时点为统计截止年年末。',
     '行业基准数值来自公开统计与行业报告估算，未匹配到行业时按中性基准计算。',
     '换设备后，在首页输入企业全称与手机号后四位即可找回本报告。'
   ]

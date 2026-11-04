@@ -6,6 +6,7 @@ import type {
 } from '@srdi/shared'
 import { catalogFields } from '../config/catalog'
 import { autoConfirmPolicy } from '../config/review'
+import { isLowConfidenceZero } from '../portal/confirm'
 import { badRequest } from '../errors'
 import type { AppStore } from '../store'
 
@@ -93,6 +94,10 @@ export const evidenceRouter = (store: AppStore) => {
       }
       if ((candidate.confidence ?? 0) < policy.minConfidence) {
         payload.skipped.push({ key: field.key, reason: 'low_confidence' })
+        continue
+      }
+      if (isLowConfidenceZero(field.periodic, candidate.value, candidate.confidence ?? 0)) {
+        payload.skipped.push({ key: field.key, reason: 'zero_value' })
         continue
       }
       if (policy.rejectUnverifiedQuote && candidate.source.quoteMatched === false) {

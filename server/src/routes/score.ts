@@ -1,7 +1,8 @@
 import { Router } from 'express'
-import { evaluate } from '@srdi/shared'
+import { evaluate, yearsSinceDate } from '@srdi/shared'
 import type {
   EvidenceDoc,
+  FieldEntry,
   ProjectMeta,
   ScoreEvidenceStats,
   ScoreRecord,
@@ -48,6 +49,35 @@ const resolveIndustryCode = (evidence: EvidenceDoc, project: ProjectMeta): strin
   return undefined
 }
 
+const establishedDateOf = (evidence: EvidenceDoc, project: ProjectMeta): string => {
+  const fromEvidence = evidence.fields['identity.establishedDate']?.value
+  if (typeof fromEvidence === 'string' && fromEvidence.trim()) return fromEvidence.trim()
+  return (project.company?.establishedDate ?? '').trim()
+}
+
+const withDerivedEvidence = (evidence: EvidenceDoc, project: ProjectMeta): EvidenceDoc => {
+  const entry = evidence.fields['company.subMarketYears']
+  if (entry?.status === 'confirmed' || entry?.status === 'rejected') return evidence
+
+  const date = establishedDateOf(evidence, project)
+  if (!date) return evidence
+
+  const years = yearsSinceDate(date, new Date(`${evidence.period.y0}-12-31`))
+  if (years === null) return evidence
+
+  const derived: FieldEntry = {
+    ...(entry ?? {}),
+    key: 'company.subMarketYears',
+    status: 'confirmed',
+    value: years
+  }
+
+  return {
+    ...evidence,
+    fields: { ...evidence.fields, 'company.subMarketYears': derived }
+  }
+}
+
 export const buildScoreRecord = async (
   store: AppStore,
   project: ProjectMeta
@@ -57,7 +87,11 @@ export const buildScoreRecord = async (
   const benchmarks = loadBenchmarks()
 
   const result = evaluate(
-    { evidence, benchmarks, industryCode: resolveIndustryCode(evidence, project) },
+    {
+      evidence: withDerivedEvidence(evidence, project),
+      benchmarks,
+      industryCode: resolveIndustryCode(evidence, project)
+    },
     rules
   )
 

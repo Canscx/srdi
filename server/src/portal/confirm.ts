@@ -1,6 +1,6 @@
 import type { EvidenceDoc, FieldCandidate, ProjectMeta } from '@srdi/shared'
 import { catalogFields } from '../config/catalog'
-import { portalConfirmPolicy } from '../config/review'
+import { portalConfirmPolicy, zeroValuePolicy } from '../config/review'
 import type { AppStore } from '../store'
 
 export interface PortalConfirmResult {
@@ -25,6 +25,12 @@ export const rankCandidate = (candidate: FieldCandidate): number => {
 
 const bestOf = (list: FieldCandidate[]) =>
   [...list].sort((left, right) => rankCandidate(right) - rankCandidate(left))[0]
+
+export const isLowConfidenceZero = (
+  periodic: boolean | undefined,
+  value: unknown,
+  confidence: number
+): boolean => periodic !== true && value === 0 && confidence < zeroValuePolicy().minConfidence
 
 const groupByPeriod = (list: FieldCandidate[]) => {
   const groups = new Map<number, FieldCandidate[]>()
@@ -60,6 +66,11 @@ export const confirmBestCandidates = async (
     const best = bestOf(list)
     const confidence = best.confidence ?? best.source.confidence ?? 0
     if (confidence < policy.minConfidence) result.lowConfidence.push(field.key)
+
+    if (isLowConfidenceZero(field.periodic, best.value, confidence)) {
+      result.skipped.push({ key: field.key, reason: 'zero_value' })
+      continue
+    }
 
     const groups = groupByPeriod(list)
     const periods = [...groups.keys()].sort((left, right) => left - right)

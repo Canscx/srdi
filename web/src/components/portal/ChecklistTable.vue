@@ -43,10 +43,14 @@ const groups = computed(() => {
             <em v-if="item.missingFields.length > 0" class="fields">
               缺 {{ item.missingFields.join('、') }}
             </em>
+            <em v-if="item.neutral" class="fields neutral">
+              缺材料，按中性 0.5 计入参考分
+            </em>
           </span>
           <span v-if="item.mark !== 'missing'" class="rate">
             {{ ((item.score ?? 0) * 100).toFixed(0) }}%
           </span>
+          <span v-else-if="item.neutral" class="rate">50%</span>
           <span v-else class="rate dash">—</span>
         </li>
       </ul>
@@ -116,6 +120,10 @@ li:last-child {
   font-style: normal;
   font-size: 11px;
   color: #a3adbb;
+}
+
+.fields.neutral {
+  color: #7d93b2;
 }
 
 .rate {

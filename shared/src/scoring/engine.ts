@@ -94,11 +94,22 @@ export const evaluate = (model: ScoringModel, rules: RulesDoc): ScoreResult => {
       reason: item.reason ?? '按策略排除'
     }))
 
+  const hasValue = (key: string): boolean => {
+    const entry = evidence.fields?.[key]
+    return (
+      entry !== undefined &&
+      entry.status === 'confirmed' &&
+      entry.value !== undefined &&
+      entry.value !== null
+    )
+  }
+
   const missing = indicators
     .filter((item) => item.basis === 'absent' || item.basis === 'substituted')
     .map((item) => {
       const def = defs.find((entry) => entry.def.id === item.id)?.def
-      return { indicatorId: item.id, fieldKeys: def?.evidenceRefs ?? [] }
+      const refs = def?.evidenceRefs ?? []
+      return { indicatorId: item.id, fieldKeys: refs.filter((key) => !hasValue(key)) }
     })
 
   const flags: Flag[] = Array.from(new Set(indicators.flatMap((item) => item.flags)))

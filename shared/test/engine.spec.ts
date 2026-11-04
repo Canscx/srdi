@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { evaluate } from '../src/scoring/engine'
+import type { FieldEntry } from '../src/scoring/types'
 import { buildModel, entry, rules } from './helpers'
 
 const baseFields = {
@@ -107,6 +108,14 @@ describe('引擎整体', () => {
     const ind = byId('IND_17')
     expect(ind?.raw).toBe(8)
     expect(ind?.score).toBeCloseTo(0.8, 9)
+  })
+
+  it('缺失清单只列真正没值的字段', () => {
+    const fields: Record<string, FieldEntry> = { ...baseFields }
+    delete fields['company.employeeYearAvg']
+    const partial = evaluate(buildModel(fields), rules)
+    const record = partial.missing.find((item) => item.indicatorId === 'IND_05')
+    expect(record?.fieldKeys).toEqual(['company.employeeYearAvg'])
   })
 
   it('标准计分不触顶时按 cap 折算', () => {

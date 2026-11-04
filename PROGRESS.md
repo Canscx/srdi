@@ -484,3 +484,13 @@
 - 新增 `scripts/update-golden.ts`（`pnpm exec tsx scripts/update-golden.ts`）重算三份 golden，仓库此前没有生成脚本。
 - 存量项目重算后知识产权项会变，Ⅱ类多的企业掉分属预期；后台流程需重新抽取或手工补 `ip.classICount` 才能命中Ⅰ类档。
 - 报告「逐项自查」顶部补一行自述摘要「Ⅰ类 X 件（自主研发/高价值）· Ⅱ类 Y 件（Ⅰ类优先，不叠加）」，避免客户把「Ⅱ类没加分」误判成没填进去。
+
+## 报告口径修正（2026-11-04）
+
+- 同批材料两次评估差 3.36 分，逐项核对后确认与知识产权无关：IND_01 −1.59、IND_05 −1.77，全部来自 AI 这次没抽到 `company.subMarketYears` 与 `company.employeeYearAvg`；旧报告的「9 年 / 167 万」实际来自 `employeeYearAvg = 3`（3 个员工），本身不可信。
+- 指标 1 增加推算：材料未给年限时按成立日期算到统计截止年年末（`y0-12-31`）。实现在 `buildScoreRecord` 的内存副本里，`statsOf` 仍用原始证据（否则 confirmed 会虚增）。新增假设 A9。副作用：GATE_1 的 G1b 由 unknown(notPass) 转 pass。
+- 修缺失清单：`engine.ts` 原来把指标 `evidenceRefs` 全列，已确认的「营业收入」「第一专利权人发明专利数」也被写成「缺」。改成排除式过滤，只列未确认或无值的字段。
+- 「人均营业收入」「成本利润率」缺材料时本来就按 0.5×权重计入参考分，只是清单显示「—」造成误解。加 `neutral` 标记，这两行显示 50% + 「缺材料，按中性 0.5 计入参考分」；其它缺材料项不动。
+- 门户自动确认对 0 值没有防线：0.7 置信度的「发明专利 0 项」被直接确认。`review.json` 增加 `zeroValue.minConfidence = 0.9`，非周期字段的低置信度 0 不再自动确认，门户与后台两条路径都走 `isLowConfidenceZero`。
+- 实测 `p_mw1oyqal3aac52ac`：36.04 → **37.23**，IND_01 由 missing 变 8 年 / 0.8，confidence 0.4956 → 0.5354。
+- 发明专利集中度维持材料缺失：需要 IPC 分类分布，件数只是分母，缺分类号算不出 HHI。

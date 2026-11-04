@@ -103,7 +103,8 @@ export const SKIP_TEXT: Record<string, string> = {
   multiple_candidates: '多候选冲突',
   low_confidence: '置信度不足',
   empty_value: '候选无数值',
-  quote_unverified: '原文未匹配'
+  quote_unverified: '原文未匹配',
+  zero_value: '零值置信度不足'
 }
 
 export const confidenceTone = (confidence?: number) => {

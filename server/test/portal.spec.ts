@@ -212,6 +212,11 @@ describe('客户轻流程', () => {
           const invention = result.checks.find((item) => item.code === 17)
           expect(invention).toBeDefined()
           expect(invention?.mark).not.toBe('missing')
+
+          const neutral = result.checks
+            .filter((item) => item.neutral === true)
+            .map((item) => item.code)
+          expect(neutral).toEqual([5, 7])
           expect(result.missingSlots.map((slot) => slot.id)).toContain('tax')
           expect(result.missingSlots.map((slot) => slot.id)).not.toContain('finance')
 

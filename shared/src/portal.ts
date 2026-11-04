@@ -89,6 +89,7 @@ export interface PortalCheck {
   benchmark: number | null
   text: string
   missingFields: string[]
+  neutral?: boolean
 }
 
 export interface PortalAdvice {
