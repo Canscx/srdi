@@ -66,8 +66,6 @@ const structural = [
         return false
       }
       return (
-        typeof data.softCopyright?.ratio === 'number' &&
-        typeof data.softCopyright?.cap === 'number' &&
         typeof data.lookup?.windowMinutes === 'number' &&
         typeof data.lookup?.maxAttempts === 'number' &&
         Array.isArray(data.slots) &&

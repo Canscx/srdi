@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "policyNote": "dataClass 表示字段可得性:A=材料中可直接抽取;B=需用户手工补充;C=需外部数据库,第三方不可得。periodic=true 表示按年取值,时间窗由 evidence.json 的 period 决定(y0=上年,y1=前年,y2=大前年)。",
   "fields": [
     {
@@ -180,10 +180,9 @@
     },
     {
       "key": "ip.inventionGrantedByYear", "label": "各年授权发明专利数", "type": "list", "dataClass": "A",
-      "indicatorIds": ["IND_17"],
       "docTypes": ["patent"],
       "aliases": ["授权年度", "专利授权日"],
-      "description": "[{year, count}]。近三年授权数量权重 ×2,其他年份 ×1"
+      "description": "[{year, count}]。仅作证据留存与后台展示,不参与打分"
     },
     {
       "key": "ip.inventionI", "label": "Ⅰ类知识产权明细", "type": "list", "dataClass": "A",
@@ -191,6 +190,34 @@
       "docTypes": ["patent", "cert"],
       "aliases": ["Ⅰ类知识产权", "知识产权清单"],
       "description": "[{name, patentNo, grantedDate, applicantRank, selfApplied, transferredIn}]。须自主申请且权利人排名前三"
+    },
+    {
+      "key": "ip.classICount", "label": "Ⅰ类知识产权件数", "type": "int", "unit": "count", "dataClass": "A",
+      "indicatorIds": ["IND_17"],
+      "docTypes": ["patent", "cert"],
+      "aliases": ["Ⅰ类知识产权", "发明专利", "集成电路布图设计"],
+      "description": "与主导产品相关的有效Ⅰ类知识产权件数:发明专利(含国防)、植物新品种、国家级农作物品种、国家新药、国家一级中药保护品种、集成电路布图设计专有权。转让未满 1 年的不计入"
+    },
+    {
+      "key": "ip.classIICount", "label": "Ⅱ类知识产权件数", "type": "int", "unit": "count", "dataClass": "A",
+      "indicatorIds": ["IND_17"],
+      "docTypes": ["patent", "cert"],
+      "aliases": ["Ⅱ类知识产权", "实用新型", "外观设计", "软件著作权"],
+      "description": "与主导产品相关的有效Ⅱ类知识产权件数:软件著作权、实用新型、外观设计(不含商标)。实用新型与外观设计须授权满 2 年,转让未满 1 年的不计入"
+    },
+    {
+      "key": "ip.selfDevelopedI", "label": "含自主研发Ⅰ类知识产权", "type": "bool", "dataClass": "A",
+      "indicatorIds": ["IND_17"],
+      "docTypes": ["patent", "cert"],
+      "aliases": ["自主研发", "自主申请"],
+      "description": "Ⅰ类中是否含自主研发(自主申请,非受让取得)的项。为真时指标 17 取 8 分档"
+    },
+    {
+      "key": "ip.highValueI", "label": "含高价值Ⅰ类知识产权", "type": "bool", "dataClass": "A",
+      "indicatorIds": ["IND_17"],
+      "docTypes": ["patent", "cert"],
+      "aliases": ["高价值知识产权", "海外同族", "中国专利奖"],
+      "description": "Ⅰ类是否满足高价值四条件之一:海外同族发明专利(G20/新加坡/欧专局)、维持年限>10 年、大额质押融资、获国家科技奖或中国专利奖。为真时指标 17 取 10 分档"
     },
     {
       "key": "ip.pctCount", "label": "PCT 专利数", "type": "int", "unit": "count", "dataClass": "A",

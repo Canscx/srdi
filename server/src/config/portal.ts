@@ -9,7 +9,6 @@ const PORTAL_FILE = 'portal.json'
 const FALLBACK: PortalConfig = {
   version: '0.0.0',
   passLine: 50,
-  softCopyright: { ratio: 3, cap: 3 },
   lookup: { windowMinutes: 10, maxAttempts: 10 },
   recognize: {
     enabled: true,
@@ -51,16 +50,6 @@ export const loadPortalConfig = (): PortalConfig => {
     cached = {
       version: raw.version ?? FALLBACK.version,
       passLine,
-      softCopyright: {
-        ratio:
-          typeof raw.softCopyright?.ratio === 'number' && raw.softCopyright.ratio > 0
-            ? raw.softCopyright.ratio
-            : FALLBACK.softCopyright.ratio,
-        cap:
-          typeof raw.softCopyright?.cap === 'number' && raw.softCopyright.cap >= 0
-            ? raw.softCopyright.cap
-            : FALLBACK.softCopyright.cap
-      },
       lookup: {
         windowMinutes:
           typeof raw.lookup?.windowMinutes === 'number' && raw.lookup.windowMinutes > 0

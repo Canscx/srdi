@@ -50,6 +50,10 @@
     "ip.inventionFirstApplicant": { "key": "ip.inventionFirstApplicant", "type": "int", "unit": "count", "status": "confirmed", "value": 0 },
     "ip.inventionI": { "key": "ip.inventionI", "type": "list", "status": "confirmed", "value": [] },
     "ip.pctCount": { "key": "ip.pctCount", "type": "int", "unit": "count", "status": "confirmed", "value": 0 },
+    "ip.classICount": { "key": "ip.classICount", "type": "int", "unit": "count", "status": "confirmed", "value": 0 },
+    "ip.classIICount": { "key": "ip.classIICount", "type": "int", "unit": "count", "status": "confirmed", "value": 0 },
+    "ip.selfDevelopedI": { "key": "ip.selfDevelopedI", "type": "bool", "status": "confirmed", "value": false },
+    "ip.highValueI": { "key": "ip.highValueI", "type": "bool", "status": "confirmed", "value": false },
 
     "std.hostedIntl": { "key": "std.hostedIntl", "type": "list", "status": "confirmed", "value": [] },
     "std.hostedNatInd": { "key": "std.hostedNatInd", "type": "list", "status": "confirmed", "value": [] },

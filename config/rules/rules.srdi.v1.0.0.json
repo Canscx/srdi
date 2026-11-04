@@ -525,22 +525,23 @@
         {
           "id": "IND_17",
           "code": 17,
-          "name": "发明专利数量(加权)",
+          "name": "有效知识产权数量",
           "share": 1,
           "dataClass": "A",
           "unit": "point",
-          "formula": {
-            "expr": "2 * sum(ip.inventionGrantedByYear[y0..y2]) + sum(ip.inventionGrantedByYear[others])",
-            "inputs": ["ip.inventionGrantedByYear"]
-          },
           "scoring": {
-            "type": "piecewise",
-            "points": [[0, 0], [1, 0.3], [3, 0.55], [6, 0.8], [10, 1]],
-            "clamp": [0, 1],
-            "tail": "hold"
+            "type": "tier",
+            "maxPoints": 10,
+            "tiers": [
+              { "when": "ip.classICount >= 1 && ip.highValueI == true", "points": 10, "label": "Ⅰ类高价值知识产权 ≥1 项" },
+              { "when": "ip.classICount >= 1 && ip.selfDevelopedI == true", "points": 8, "label": "自主研发Ⅰ类知识产权 ≥1 项" },
+              { "when": "ip.classICount >= 1", "points": 6, "label": "Ⅰ类知识产权 ≥1 项" },
+              { "when": "ip.classICount == 0 && ip.classIICount >= 1", "points": 2, "label": "Ⅱ类知识产权 ≥1 项" },
+              { "when": "true", "points": 0, "label": "无有效知识产权" }
+            ]
           },
-          "evidenceRefs": ["ip.inventionGrantedByYear"],
-          "explain": { "template": "发明专利加权得分 {raw}(近三年授权×2 + 其他年份授权)" }
+          "evidenceRefs": ["ip.classICount", "ip.classIICount", "ip.selfDevelopedI", "ip.highValueI"],
+          "explain": { "template": "知识产权档位：{raw}（就高不叠加，满分 10）" }
         },
         {
           "id": "IND_18",
@@ -707,8 +708,8 @@
     },
     {
       "id": "A4",
-      "text": "指标 17 发明专利加权分档曲线(1/3/6/10 件对应 0.30/0.55/0.80/1.00)为本工具设定,官方仅给出加权计算公式,未公布分值档位。",
-      "impact": "影响创新产出项的得分率斜率,不影响与其他企业横向比较的方向。"
+      "text": "指标 17 按官方就高五档计分:Ⅰ类高价值 ≥1 项 10 分、自主研发Ⅰ类 ≥1 项 8 分、Ⅰ类 ≥1 项 6 分、Ⅱ类 ≥1 项 2 分、无 0 分,不叠加。官方该项满分 10 分,本工具有效权重 7.0 分,按得分率折算。",
+      "impact": "Ⅱ类只在无Ⅰ类时兜底 2 分,不再按件数累加;知识产权件数多的企业不再线性加分。"
     },
     {
       "id": "A5",
@@ -722,8 +723,8 @@
     },
     {
       "id": "A7",
-      "text": "客户自行申报的软件著作权数量按 3 件折算 1 件发明专利参与指标 17 计分,折算上限 3 件,与近三年发明专利授权数合并后按加权公式计算。",
-      "impact": "仅影响指标 17 的得分率,折算结果在报告中标注为参考折算,不得作为官方认定依据。"
+      "text": "客户自述的知识产权件数只用于判定指标 17 的档位:Ⅰ类(发明专利、集成电路布图设计等)≥1 项即入Ⅰ类档,Ⅱ类(软著、实用新型、外观设计)仅在Ⅰ类为零时兜底 2 分。件数不再按比例折算。",
+      "impact": "件数多少不改变得分,只有有无 Ⅰ 类、是否自主研发、是否高价值决定档位;自述结果在报告中标注,不得作为官方认定依据。"
     },
     {
       "id": "A8",

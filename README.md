@@ -55,7 +55,7 @@ pnpm check:font   # 打印候选、选中项,并真的生成一张 PDF 验证中
 
 1. 接收 图片 / PDF / DOCX / XLSX
 2. 双通道解析:文字型文件抽文本层,扫描件转图交视觉模型识别
-3. 抽取 40 个字段,每项标注来源文件、页码、原文引用
+3. 抽取 47 个字段,每项标注来源文件、页码、原文引用
 4. 人工确认(唯一写分数的入口)
 5. 六项门槛判定 + 23 项指标打分 + 三口径区间
 6. 输出双轨报告:条件匹配度 / 材料完整度 / 参考得分,可导出 Markdown 与 PDF
@@ -103,7 +103,7 @@ data/       项目运行时数据(永不入库)
 
 **配置即文档**,不再单写 markdown:
 
-- 40 个字段的类型、单位、别名、指标映射 → `config/catalog/field-catalog.v1.json`
+- 47 个字段的类型、单位、别名、指标映射 → `config/catalog/field-catalog.v1.json`
 - 六项门槛与 23 项指标的全部参数 → `config/rules/rules.srdi.v1.0.0.json`
 - 8 项 B 类指标的行业基准 → `config/benchmarks/industry-benchmarks.v1.2.0.json`
 

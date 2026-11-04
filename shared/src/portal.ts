@@ -31,7 +31,6 @@ export interface LicenseProfile {
 export interface PortalConfig {
   version: string
   passLine: number
-  softCopyright: { ratio: number; cap: number }
   lookup: { windowMinutes: number; maxAttempts: number }
   recognize: PortalRecognizeConfig
   slots: PortalSlot[]

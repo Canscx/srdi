@@ -315,7 +315,7 @@ onMounted(bootstrap)
               <p v-if="lowEvidence" class="warn">
                 <b>证据偏少</b>
                 <span>
-                  40 个字段仅确认 {{ evidenceStats?.confirmed ?? 0 }} 项，缺失项按 0.5 权重的中性值计入参考分。
+                  {{ evidenceStats?.total ?? 0 }} 个字段仅确认 {{ evidenceStats?.confirmed ?? 0 }} 项，缺失项按 0.5 权重的中性值计入参考分。
                   回确认页补齐证据后重新计算，分数结构会明显变化。
                 </span>
               </p>

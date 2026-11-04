@@ -148,7 +148,7 @@ export const renderMarkdown = (model: ReportModel): string => {
   )
   lines.push(`**缺失或已否决的字段（${shortFields.length}）**`, '')
   if (shortFields.length === 0) {
-    lines.push('- 无，40 个字段全部有已确认值。')
+    lines.push(`- 无，${fields.length} 个字段全部有已确认值。`)
   } else {
     for (const group of GROUP_ORDER) {
       const items = shortFields.filter((field) => field.group === group)

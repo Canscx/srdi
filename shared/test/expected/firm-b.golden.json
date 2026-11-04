@@ -2,9 +2,9 @@
   "fixture": "firm-b",
   "engine": "1.0.0",
   "totals": {
-    "official": 57.76,
-    "conservative": 46.92,
-    "optimistic": 68.6,
+    "official": 57.45,
+    "conservative": 46.61,
+    "optimistic": 68.29,
     "confidence": 0.7832
   },
   "conclusion": "pass",
@@ -50,7 +50,7 @@
     "DIM_PROFESSION": 7.79,
     "DIM_REFINE": 12.64,
     "DIM_SPECIAL": 8.12,
-    "DIM_INNOVATION": 16.6,
+    "DIM_INNOVATION": 16.29,
     "DIM_GROWTH": 12.62
   },
   "excluded": [
@@ -92,7 +92,7 @@
       "basis": "measured"
     },
     "IND_17": {
-      "score": 0.85,
+      "score": 0.8,
       "basis": "measured"
     },
     "IND_20": {

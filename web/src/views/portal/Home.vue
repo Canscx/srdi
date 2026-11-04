@@ -22,7 +22,12 @@ const form = reactive({
   phone: '',
   endYear: currentYear - 1,
   inventionCount: 0,
-  softCopyrightCount: 0
+  layoutDesignCount: 0,
+  softCopyrightCount: 0,
+  utilityModelCount: 0,
+  designPatentCount: 0,
+  selfDevelopedI: true,
+  highValueI: false
 })
 
 const files = reactive<Record<string, File[]>>({})
@@ -125,7 +130,12 @@ const submit = async () => {
       name: form.name.trim(),
       phone: form.phone.replace(/[\s-]/g, ''),
       inventionCount: Number(form.inventionCount) || 0,
-      softCopyrightCount: Number(form.softCopyrightCount) || 0
+      layoutDesignCount: Number(form.layoutDesignCount) || 0,
+      softCopyrightCount: Number(form.softCopyrightCount) || 0,
+      utilityModelCount: Number(form.utilityModelCount) || 0,
+      designPatentCount: Number(form.designPatentCount) || 0,
+      selfDevelopedI: form.selfDevelopedI,
+      highValueI: form.highValueI
     },
     period: period.value,
     slots: slots.value.map((slot) => ({
@@ -202,19 +212,69 @@ onMounted(load)
         <h2>知识产权</h2>
         <span class="tip">只填数量，不用传证书</span>
       </div>
+
+      <div class="group">Ⅰ 类（核心，须与主导产品相关）</div>
       <div class="grid">
         <label class="field">
-          <span>近三年获得发明专利数</span>
+          <span>发明专利（含国防专利）</span>
           <el-input-number v-model="form.inventionCount" :min="0" :max="999" controls-position="right" />
         </label>
         <label class="field">
-          <span>软件著作权数量</span>
-          <el-input-number v-model="form.softCopyrightCount" :min="0" :max="999" controls-position="right" />
+          <span>集成电路布图设计专有权</span>
+          <el-input-number
+            v-model="form.layoutDesignCount"
+            :min="0"
+            :max="999"
+            controls-position="right"
+          />
         </label>
-        <p class="note">
-          软件著作权按 3 件折算 1 件发明专利计入评分（最多折算 3 件），报告中会标注为参考折算。
-        </p>
+        <div class="check">
+          <el-checkbox v-model="form.selfDevelopedI">
+            含自主研发（自主申请，非受让取得）
+          </el-checkbox>
+        </div>
+        <div class="check">
+          <el-checkbox v-model="form.highValueI">
+            含高价值（海外同族 / 维持超过 10 年 / 大额质押融资 / 国家科技奖或中国专利奖）
+          </el-checkbox>
+        </div>
       </div>
+
+      <div class="group">Ⅱ 类（仅在无 Ⅰ 类时兜底 2 分）</div>
+      <div class="grid three">
+        <label class="field">
+          <span>软件著作权</span>
+          <el-input-number
+            v-model="form.softCopyrightCount"
+            :min="0"
+            :max="999"
+            controls-position="right"
+          />
+        </label>
+        <label class="field">
+          <span>实用新型（授权满 2 年）</span>
+          <el-input-number
+            v-model="form.utilityModelCount"
+            :min="0"
+            :max="999"
+            controls-position="right"
+          />
+        </label>
+        <label class="field">
+          <span>外观设计（授权满 2 年）</span>
+          <el-input-number
+            v-model="form.designPatentCount"
+            :min="0"
+            :max="999"
+            controls-position="right"
+          />
+        </label>
+      </div>
+
+      <p class="note">
+        按官方口径就高选一档：高价值 Ⅰ 类 10 分 / 自主研发 Ⅰ 类 8 分 / Ⅰ 类 6 分 / 仅 Ⅱ 类 2
+        分，不叠加。商标不计入，转让未满 1 年的不计入。
+      </p>
     </section>
 
     <section class="card">
@@ -324,6 +384,27 @@ onMounted(load)
   gap: 14px 18px;
 }
 
+.grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.group {
+  margin: 2px 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #384152;
+}
+
+.group + .grid {
+  margin-bottom: 16px;
+}
+
+.check {
+  grid-column: span 2;
+  font-size: 12.5px;
+  color: #5b6474;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -340,7 +421,7 @@ onMounted(load)
 }
 
 .note {
-  grid-column: span 2;
+  margin-top: 14px;
   font-size: 11.5px;
   line-height: 1.7;
   color: #94a3b8;

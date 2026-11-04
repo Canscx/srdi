@@ -82,6 +82,10 @@
       { "name": "主轴热变形补偿结构", "patentNo": "ZL2023100003", "grantedDate": "2025-01-20", "applicantRank": 2, "selfApplied": true, "transferredIn": false }
     ] },
     "ip.pctCount": { "key": "ip.pctCount", "type": "int", "unit": "count", "status": "confirmed", "value": 5 },
+    "ip.classICount": { "key": "ip.classICount", "type": "int", "unit": "count", "status": "confirmed", "value": 17 },
+    "ip.classIICount": { "key": "ip.classIICount", "type": "int", "unit": "count", "status": "confirmed", "value": 8 },
+    "ip.selfDevelopedI": { "key": "ip.selfDevelopedI", "type": "bool", "status": "confirmed", "value": true },
+    "ip.highValueI": { "key": "ip.highValueI", "type": "bool", "status": "confirmed", "value": true },
 
     "std.hostedIntl": { "key": "std.hostedIntl", "type": "list", "status": "confirmed", "value": [] },
     "std.hostedNatInd": { "key": "std.hostedNatInd", "type": "list", "status": "confirmed", "value": ["GB/T 4681-2024 数控磨床精度检验", "JB/T 8832-2023 磨床砂轮架技术条件"] },

@@ -132,9 +132,13 @@ describe('客户自述数据', () => {
       const store = createStore(dir)
       const project = await store.projects.create({ name: '自述测试', period: PERIOD })
 
-      const entry = await store.evidence.declareValue(project, 'ip.inventionGrantedByYear', {
-        value: [{ year: 2025, count: 4 }],
-        note: '客户自述：近三年发明专利 1 件 + 软著折算 3 件'
+      const entry = await store.evidence.declareValue(project, 'ip.classICount', {
+        value: 4,
+        note: '客户自述：Ⅰ类 4 件（含自主研发）'
+      })
+      await store.evidence.declareValue(project, 'ip.selfDevelopedI', {
+        value: true,
+        note: '客户自述：Ⅰ类 4 件（含自主研发）'
       })
 
       expect(entry.status).toBe('confirmed')
@@ -148,7 +152,8 @@ describe('客户自述数据', () => {
 
       const result = evaluate({ evidence: doc, benchmarks }, rules)
       const invention = result.indicators.find((item) => item.id === 'IND_17')
-      expect(invention?.raw).toBeCloseTo(8, 6)
+      expect(invention?.raw).toBe(8)
+      expect(invention?.score).toBeCloseTo(0.8, 6)
     })
   })
 

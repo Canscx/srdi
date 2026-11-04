@@ -92,7 +92,7 @@ describe('评分接口', () => {
     })
     expect(record?.result.meta.scale).toBe('renormalized')
     expect(record?.evidence.total).toBe(catalogFields().length)
-    expect(record?.evidence.confirmed).toBe(35)
+    expect(record?.evidence.confirmed).toBe(39)
 
     const weightSum = record?.result.indicators.reduce(
       (sum, item) => sum + item.effectiveWeight,
@@ -131,7 +131,7 @@ describe('评分接口', () => {
       },
       {
         id: criticalProject,
-        totals: { official: 57.76, conservative: 46.92, optimistic: 68.6, confidence: 0.7832 },
+        totals: { official: 57.45, conservative: 46.61, optimistic: 68.29, confidence: 0.7832 },
         conclusion: 'pass'
       },
       {

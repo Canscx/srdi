@@ -112,7 +112,12 @@ const normalizeCompany = (input: ProjectCompany): ProjectCompany => {
     industryCode: input.industryCode?.trim().toUpperCase() || undefined,
     industryName: input.industryName?.trim() || undefined,
     inventionCount: countOf(input.inventionCount, '发明专利数量'),
-    softCopyrightCount: countOf(input.softCopyrightCount, '软件著作权数量')
+    layoutDesignCount: countOf(input.layoutDesignCount, '集成电路布图设计数量'),
+    softCopyrightCount: countOf(input.softCopyrightCount, '软件著作权数量'),
+    utilityModelCount: countOf(input.utilityModelCount, '实用新型专利数量'),
+    designPatentCount: countOf(input.designPatentCount, '外观设计专利数量'),
+    ...(typeof input.selfDevelopedI === 'boolean' ? { selfDevelopedI: input.selfDevelopedI } : {}),
+    ...(typeof input.highValueI === 'boolean' ? { highValueI: input.highValueI } : {})
   }
 }
 

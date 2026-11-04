@@ -38,6 +38,10 @@ const baseFields = {
     { selfApplied: true, applicantRank: 2, transferredIn: false }
   ]),
   'ip.pctCount': entry(6),
+  'ip.classICount': entry(9),
+  'ip.classIICount': entry(4),
+  'ip.selfDevelopedI': entry(true),
+  'ip.highValueI': entry(false),
 
   'std.hostedIntl': entry([]),
   'std.hostedNatInd': entry(['GB/T 1', 'JB/T 2']),
@@ -99,8 +103,10 @@ describe('引擎整体', () => {
     }
   })
 
-  it('区间加权指标按近三年×2 + 其他年份×1 计分', () => {
-    expect(byId('IND_17')?.raw).toBe(18)
+  it('知识产权按官方就高选档,Ⅱ类不叠加', () => {
+    const ind = byId('IND_17')
+    expect(ind?.raw).toBe(8)
+    expect(ind?.score).toBeCloseTo(0.8, 9)
   })
 
   it('标准计分不触顶时按 cap 折算', () => {
@@ -170,5 +176,39 @@ describe('边界保护只管事实,不管缺证据', () => {
     expect(roe?.score).toBe(0)
     expect(roe?.flags).toContain('negative_equity')
     expect(roe?.flags).toContain('guard_failed')
+  })
+})
+
+describe('知识产权就高选档', () => {
+  const ipPoints = (classI: number, classII: number, selfDeveloped: boolean, highValue: boolean) => {
+    const model = buildModel({
+      ...baseFields,
+      'ip.classICount': entry(classI),
+      'ip.classIICount': entry(classII),
+      'ip.selfDevelopedI': entry(selfDeveloped),
+      'ip.highValueI': entry(highValue)
+    })
+    return evaluate(model, rules).indicators.find((item) => item.id === 'IND_17')?.raw
+  }
+
+  it('Ⅰ类 1 项且非自主研发落 6 分档', () => {
+    expect(ipPoints(1, 9, false, false)).toBe(6)
+  })
+
+  it('自主研发Ⅰ类落 8 分档', () => {
+    expect(ipPoints(1, 9, true, false)).toBe(8)
+  })
+
+  it('高价值Ⅰ类落 10 分档', () => {
+    expect(ipPoints(1, 0, true, true)).toBe(10)
+  })
+
+  it('只有Ⅱ类落 2 分档,件数再多也不叠加', () => {
+    expect(ipPoints(0, 9, false, false)).toBe(2)
+    expect(ipPoints(0, 200, false, false)).toBe(2)
+  })
+
+  it('Ⅰ类与Ⅱ类都没有记 0 分', () => {
+    expect(ipPoints(0, 0, false, false)).toBe(0)
   })
 })

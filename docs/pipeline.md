@@ -171,7 +171,7 @@ schema 必须**同时以文字形式写进 system**,不能只依赖 `response_fo
 | industry | 从文本推断行业代码 | 推断不出用中性基准,不影响出分 |
 | extract | 分块调模型,候选只追加 | 证据为空,分数全按中性估算,作业标 partial |
 | confirm | 按 rankCandidate 自动确认 + 按年合并 | 字段停在候选态,人工可补 |
-| declared | 客户自述的发明专利与软著折算 | 已有文档证据时跳过 |
+| declared | 客户自述的知识产权件数与档位标记 | 已有文档证据时跳过 |
 | score | 纯函数引擎算分并落盘 | 作业标 failed |
 | advice | 生成补足建议 | 回落规则模板 |
 

@@ -33,8 +33,8 @@ pnpm workspaces:`shared` / `server` / `web`。
 
 `docs/architecture.md` 架构与接口 · `docs/scoring.md` 打分数学 · `docs/pipeline.md` 解析与 AI 契约
 `docs/PLAN-customer-portal.md` 客户轻流程方案 · `docs/HANDOVER-font-bug.md` PDF 字体故障复盘
-`config/rules/` 23 项指标参数 · `config/catalog/` 43 字段(含 3 个 identity.* 展示字段) · `config/benchmarks/` 行业基准
-`config/portal.json` 客户流程参数(5 个槽位含营业执照/软著折算/查询限流/预识别;及格线继承规则包) · `config/industry-map.json` 行业推断 · `config/advice.json` 兜底话术
+`config/rules/` 23 项指标参数 · `config/catalog/` 47 字段(含 3 个 identity.* 展示字段) · `config/benchmarks/` 行业基准
+`config/portal.json` 客户流程参数(5 个槽位含营业执照/查询限流/预识别;及格线继承规则包;知识产权档位规则在 IND_17) · `config/industry-map.json` 行业推断 · `config/advice.json` 兜底话术
 `web/src/components/portal/ScoreReport.vue` 评分页与结果页共用主体 · `server/src/portal/detail.ts` 两页共用数据装配
 `web/src/components/portal/LicenseBanner.vue` 营业执照上传引导条(四态) · `server/src/portal/recognize.ts` 预识别 · `server/src/portal/identity.ts` 主体信息裁决
 `web/src/views/LoginView.vue` 登录页左右分栏版式(品牌区 + 表单区,EP 主色仅在本页覆盖为 `#2563eb`)

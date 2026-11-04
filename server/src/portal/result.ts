@@ -162,9 +162,20 @@ export const buildPortalResult = (input: PortalResultInput): PortalResultRespons
     ...(identity.industryCode ? { industryCode: identity.industryCode } : {}),
     ...(identity.industryName ? { industryName: identity.industryName } : {}),
     ...(typeof base?.inventionCount === 'number' ? { inventionCount: base.inventionCount } : {}),
+    ...(typeof base?.layoutDesignCount === 'number'
+      ? { layoutDesignCount: base.layoutDesignCount }
+      : {}),
     ...(typeof base?.softCopyrightCount === 'number'
       ? { softCopyrightCount: base.softCopyrightCount }
-      : {})
+      : {}),
+    ...(typeof base?.utilityModelCount === 'number'
+      ? { utilityModelCount: base.utilityModelCount }
+      : {}),
+    ...(typeof base?.designPatentCount === 'number'
+      ? { designPatentCount: base.designPatentCount }
+      : {}),
+    ...(typeof base?.selfDevelopedI === 'boolean' ? { selfDevelopedI: base.selfDevelopedI } : {}),
+    ...(typeof base?.highValueI === 'boolean' ? { highValueI: base.highValueI } : {})
   }
 
   return {

@@ -533,7 +533,7 @@ export const renderPdf = async (model: ReportModel): Promise<Buffer> => {
   write(`缺失或已否决的字段（${shortFields.length}）`, { size: 8.8, color: COLORS.ink })
   doc.y += 2
   if (shortFields.length === 0) {
-    bullet('无,40 个字段全部有已确认值。')
+    bullet(`无,${model.fields.length} 个字段全部有已确认值。`)
   } else {
     for (const group of GROUP_ORDER) {
       const items = shortFields.filter((field) => field.group === group)

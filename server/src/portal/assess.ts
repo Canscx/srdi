@@ -177,10 +177,15 @@ export const assessProject = async (
   await step('declared', async () => {
     declared = await applyDeclaredIntellectual(store, project, {
       inventionCount: project.company?.inventionCount,
-      softCopyrightCount: project.company?.softCopyrightCount
+      layoutDesignCount: project.company?.layoutDesignCount,
+      softCopyrightCount: project.company?.softCopyrightCount,
+      utilityModelCount: project.company?.utilityModelCount,
+      designPatentCount: project.company?.designPatentCount,
+      selfDevelopedI: project.company?.selfDevelopedI,
+      highValueI: project.company?.highValueI
     })
     if (!declared.applied) return `未使用自述数据（${declared.reason ?? 'skip'}）`
-    return `发明专利 ${declared.total} 件（含软著折算 ${declared.converted} 件）`
+    return `Ⅰ类 ${declared.classI} 件 / Ⅱ类 ${declared.classII} 件`
   })
 
   const holder: { record: ScoreRecord | null } = { record: null }

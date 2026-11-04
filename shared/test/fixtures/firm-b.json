@@ -67,6 +67,10 @@
     "ip.inventionI": { "key": "ip.inventionI", "type": "list", "status": "confirmed", "value": [
       { "name": "一种谐波减速器柔轮成形工艺", "patentNo": "ZL2023100101", "grantedDate": "2023-09-15", "applicantRank": 1, "selfApplied": true, "transferredIn": false }
     ] },
+    "ip.classICount": { "key": "ip.classICount", "type": "int", "unit": "count", "status": "confirmed", "value": 4 },
+    "ip.classIICount": { "key": "ip.classIICount", "type": "int", "unit": "count", "status": "confirmed", "value": 2 },
+    "ip.selfDevelopedI": { "key": "ip.selfDevelopedI", "type": "bool", "status": "confirmed", "value": true },
+    "ip.highValueI": { "key": "ip.highValueI", "type": "bool", "status": "confirmed", "value": false },
 
     "std.hostedIntl": { "key": "std.hostedIntl", "type": "list", "status": "confirmed", "value": [] },
     "std.hostedNatInd": { "key": "std.hostedNatInd", "type": "list", "status": "confirmed", "value": [] },

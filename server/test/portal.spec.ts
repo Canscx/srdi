@@ -17,7 +17,12 @@ const COMPANY = {
   creditCode: '91310105MA1FW5R45P',
   phone: '13800001111',
   inventionCount: 1,
+  layoutDesignCount: 1,
   softCopyrightCount: 9,
+  utilityModelCount: 2,
+  designPatentCount: 0,
+  selfDevelopedI: true,
+  highValueI: false,
   businessScope: '一般项目：技术服务、技术开发、技术咨询；许可项目：第二类增值电信业务。',
   registeredCapital: 1000000,
   establishedDate: '2017-01-20'

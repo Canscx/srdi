@@ -114,7 +114,12 @@ export interface ProjectCompany {
   industryCode?: string
   industryName?: string
   inventionCount?: number
+  layoutDesignCount?: number
   softCopyrightCount?: number
+  utilityModelCount?: number
+  designPatentCount?: number
+  selfDevelopedI?: boolean
+  highValueI?: boolean
 }
 
 export interface ProjectMeta {
