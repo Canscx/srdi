@@ -94,6 +94,29 @@ const facts = computed(
       businessScope.value ? { label: '经营范围', value: businessScope.value, scope: true } : null
     ].filter(Boolean) as { label: string; value: string; scope?: boolean }[]
 )
+
+const intellectualText = computed(() => {
+  const company = props.data.company
+  const classI = (company.inventionCount ?? 0) + (company.layoutDesignCount ?? 0)
+  const classII =
+    (company.softCopyrightCount ?? 0) +
+    (company.utilityModelCount ?? 0) +
+    (company.designPatentCount ?? 0)
+  if (classI === 0 && classII === 0) return ''
+
+  const parts: string[] = []
+  if (classI > 0) {
+    const tags = [
+      company.selfDevelopedI ? '自主研发' : '',
+      company.highValueI ? '高价值' : ''
+    ].filter(Boolean)
+    parts.push(`Ⅰ类 ${classI} 件${tags.length > 0 ? `（${tags.join('、')}）` : ''}`)
+  }
+  if (classII > 0) {
+    parts.push(`Ⅱ类 ${classII} 件${classI > 0 ? '（Ⅰ类优先，不叠加）' : ''}`)
+  }
+  return parts.join(' · ')
+})
 </script>
 
 <template>
@@ -162,6 +185,7 @@ const facts = computed(
     <section class="card">
       <h2>逐项自查</h2>
       <p class="sub">✅ 符合要求　⭕ 材料缺失　❌ 需要补足</p>
+      <p v-if="intellectualText" class="ip-note">知识产权按自述判定：{{ intellectualText }}</p>
       <ChecklistTable :checks="data.checks" />
     </section>
 
@@ -471,6 +495,16 @@ const facts = computed(
   margin: 6px 0 18px;
   font-size: 11.5px;
   color: #a3adbb;
+}
+
+.ip-note {
+  margin: -10px 0 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f6f9fe;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: #5b6474;
 }
 
 .fold > summary {

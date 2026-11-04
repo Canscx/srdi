@@ -483,3 +483,4 @@
 - GATE_4 未动：硬门槛仍只认材料抽取的 `ip.inventionI` 明细，客户自述不满足硬门槛。
 - 新增 `scripts/update-golden.ts`（`pnpm exec tsx scripts/update-golden.ts`）重算三份 golden，仓库此前没有生成脚本。
 - 存量项目重算后知识产权项会变，Ⅱ类多的企业掉分属预期；后台流程需重新抽取或手工补 `ip.classICount` 才能命中Ⅰ类档。
+- 报告「逐项自查」顶部补一行自述摘要「Ⅰ类 X 件（自主研发/高价值）· Ⅱ类 Y 件（Ⅰ类优先，不叠加）」，避免客户把「Ⅱ类没加分」误判成没填进去。
