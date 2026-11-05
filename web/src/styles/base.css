@@ -148,3 +148,114 @@ code {
     transition: none;
   }
 }
+
+.el-button {
+  border-radius: 999px;
+  font-weight: 500;
+  transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease,
+    box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.el-button:not(.is-text):not(.is-link):not(.btn-cta):not(.btn-line):not(.submit) {
+  padding-left: 17px;
+  padding-right: 17px;
+  border-color: #dbe6f5;
+  background-color: #fff;
+  color: #475569;
+}
+
+.el-button--small:not(.is-text):not(.is-link):not(.btn-cta):not(.btn-line):not(.submit) {
+  padding-left: 13px;
+  padding-right: 13px;
+}
+
+.el-button--large:not(.is-text):not(.is-link):not(.btn-cta):not(.btn-line):not(.submit) {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.el-button:not(.is-text):not(.is-link):not(.btn-cta):not(.btn-line):not(.submit):not(.is-disabled):hover {
+  border-color: #93c5fd;
+  background-color: #f5f9ff;
+  color: #2563eb;
+}
+
+.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.btn-cta):not(.btn-line):not(.submit) {
+  border-color: transparent;
+  background-image: linear-gradient(135deg, #1e50d8, #2563eb 46%, #0ea5e9);
+  box-shadow: 0 8px 18px -12px rgba(37, 99, 235, 0.9);
+  color: #fff;
+}
+
+.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.btn-cta):not(.btn-line):not(.submit):not(.is-disabled):hover {
+  border-color: transparent;
+  background-image: linear-gradient(135deg, #1a45c4, #1d4ed8 46%, #0284c7);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px -12px rgba(37, 99, 235, 0.95);
+}
+
+.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.btn-cta):not(.btn-line):not(.submit):not(.is-disabled):active {
+  transform: translateY(0);
+  box-shadow: 0 8px 18px -12px rgba(37, 99, 235, 0.9);
+}
+
+.el-button--primary.is-disabled:not(.is-link):not(.is-text):not(.btn-cta):not(.submit) {
+  border-color: transparent;
+  background-image: none;
+  background-color: #c7d9f7;
+  box-shadow: none;
+  color: #fff;
+}
+
+.el-button--primary.is-plain {
+  border-color: #bcd4fb;
+  background-color: #eff5ff;
+  background-image: none;
+  color: #2563eb;
+}
+
+.el-button--primary.is-plain:not(.is-disabled):hover {
+  border-color: #93c5fd;
+  background-color: #e2edff;
+  color: #1d4ed8;
+}
+
+.el-button--danger.is-plain {
+  border-color: #fecaca;
+  background-color: #fef2f2;
+  background-image: none;
+  color: #dc2626;
+}
+
+.el-button--danger.is-plain:not(.is-disabled):hover {
+  border-color: #fca5a5;
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link) {
+  border-color: transparent;
+  background-image: linear-gradient(135deg, #dc2626, #ef4444);
+  box-shadow: 0 8px 18px -12px rgba(220, 38, 38, 0.9);
+  color: #fff;
+}
+
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link):not(.is-disabled):hover {
+  border-color: transparent;
+  background-image: linear-gradient(135deg, #b91c1c, #dc2626);
+  color: #fff;
+}
+
+.el-button:not(.is-text):not(.is-link):focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-button,
+  .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.btn-cta):not(.btn-line):not(.submit):not(.is-disabled):hover {
+    transform: none;
+    transition: none;
+  }
+}

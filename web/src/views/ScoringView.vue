@@ -1074,8 +1074,8 @@ h2 {
 }
 
 .filters button {
-  padding: 3px 9px;
-  border-radius: 7px;
+  padding: 3px 11px;
+  border-radius: 999px;
   border: 1px solid #e6ebf2;
   background: #fbfcfe;
   font-size: 11px;

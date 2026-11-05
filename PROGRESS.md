@@ -504,3 +504,13 @@
 - 交互：hover 上浮 2px + 投影加深 + 箭头右移 3px；active 回落 + `scale(.995)`；`focus-visible` 蓝色聚焦环；`prefers-reduced-motion` 下全部位移与过渡关闭。
 - 范围仅这三处。后台 44 个 el-button、AdminShell 的退出、Element Plus 主题令牌均未动。
 - 收窄「开始评估」：`Home.vue` 的 `min-width` 178 → 150、`padding` 28 → 22，宽度约 150px；仍大于加载态自然宽度，提交时不跳动。
+
+## 管理端按钮统一胶囊渐变（2026-11-05）
+
+- 做法不是逐个挂 class，而是在 `base.css` 重定义 EP 按钮皮肤：44 个 `el-button` 全部无自定义 class，改一处胜过改 14 个文件。
+- 形状统一 999px 胶囊、字重 500、过渡 .16s；高度不动（后台表格密度，32/24/40 原样），水平内边距 +2px。
+- primary 走三段渐变 + 轻投影 + hover 上浮 1px；primary plain 走浅蓝底；danger plain 走浅红底；默认按钮白底细边。
+- 三个必须排除的既有自定义按钮：`.btn-cta`、`.btn-line`（门户）、`.submit`（登录页），否则被更高权重的 `:not()` 链反噬。
+- 踩坑：`is-link` / `is-text` 必须显式排除，第一版只排除了 `is-plain`，客户提交表格的「确认页 / 评分页 / 改行业」三连被染成渐变实心块。
+- 顺带：AdminShell 顶栏导航与筛选标签改胶囊（原生 button 补 `font-family: inherit`，此前不继承 PingFang），退出按钮换成与客户侧同款红胶囊。
+- 表格操作列 3 个 link 按钮保持纯文字，不胶囊化，避免挤出 `width="230"` 的单元格。

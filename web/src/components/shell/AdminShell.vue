@@ -41,7 +41,14 @@ onMounted(() => {
           模型设置
           <em v-if="aiState.loading">…</em>
         </button>
-        <button class="exit" @click="signOut">退出</button>
+        <button class="exit" @click="signOut">
+        退出
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3" />
+          <path d="M15 16l4-4-4-4" />
+          <path d="M19 12H9" />
+        </svg>
+      </button>
       </nav>
     </header>
 
@@ -113,42 +120,68 @@ h1 {
 
 .nav {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   padding: 4px;
-  border-radius: 11px;
+  border-radius: 999px;
   background: #fff;
   border: 1px solid #e6ebf2;
 }
 
 .nav button {
+  display: inline-flex;
+  align-items: center;
   padding: 6px 16px;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   background: transparent;
+  font-family: inherit;
   font-size: 12.5px;
   color: #6b7280;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.16s ease;
 }
 
 .nav button:hover {
+  background: #f5f9ff;
   color: #2563eb;
 }
 
 .nav button.on {
   background: #eff5ff;
   color: #2563eb;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .nav button.settings {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
 }
 
-.nav button.exit:hover {
+.nav button.exit {
+  gap: 5px;
+  border-color: #f6dcdc;
+  background: #fff;
   color: #dc2626;
+  font-weight: 500;
+}
+
+.nav button.exit svg {
+  width: 13px;
+  height: 13px;
+  transition: transform 0.16s ease;
+}
+
+.nav button.exit:hover {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.nav button.exit:hover svg {
+  transform: translateX(2px);
+}
+
+.nav button.exit:active {
+  background: #fee2e2;
 }
 
 .dot {
