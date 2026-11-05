@@ -503,3 +503,4 @@
 - Element Plus 会把默认插槽包进 `<span>`，按钮级 `flex/gap` 管不到图标，必须给 `> span` 上 `inline-flex + gap`。
 - 交互：hover 上浮 2px + 投影加深 + 箭头右移 3px；active 回落 + `scale(.995)`；`focus-visible` 蓝色聚焦环；`prefers-reduced-motion` 下全部位移与过渡关闭。
 - 范围仅这三处。后台 44 个 el-button、AdminShell 的退出、Element Plus 主题令牌均未动。
+- 收窄「开始评估」：`Home.vue` 的 `min-width` 178 → 150、`padding` 28 → 22，宽度约 150px；仍大于加载态自然宽度，提交时不跳动。

@@ -501,7 +501,8 @@ onMounted(load)
 }
 
 .btn-cta {
-  min-width: 178px;
+  min-width: 150px;
+  padding: 0 22px;
   flex-shrink: 0;
 }
 
