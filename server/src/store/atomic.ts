@@ -60,6 +60,10 @@ export const removeFile = async (file: string) => {
   await rm(file, { force: true })
 }
 
+export const removeDir = async (dir: string) => {
+  await rm(dir, { recursive: true, force: true })
+}
+
 export const listDir = async (dir: string) => {
   try {
     return await readdir(dir)

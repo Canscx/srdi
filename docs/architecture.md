@@ -86,6 +86,7 @@ POST   /api/projects                      → { projectId, project }
 GET    /api/projects                      → { projects[] }
 GET    /api/projects/:id                  → { projectId, project }
 PATCH  /api/projects/:id                  { name } → { projectId, project }(仅改名,空名 400,不回退默认名)
+DELETE /api/projects/:id                  → 204(递归删目录;有运行中任务 409 project_busy)
 POST   /api/projects/:id/files            multipart → { fileId, sha256, dup }
 DELETE /api/projects/:id/files/:fileId    → 204
 POST   /api/projects/:id/parse            → { jobId, reused }

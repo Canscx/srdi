@@ -3,7 +3,7 @@ import path from 'node:path'
 import type { JobKind, JobProgressEvent, JobStage } from '@srdi/shared'
 import { badRequest, conflict } from '../errors'
 import type { AppStore } from '../store'
-import { readJson, writeJson } from '../store/atomic'
+import { exists, readJson, writeJson } from '../store/atomic'
 import { publish } from './hub'
 
 export interface JobRecord {
@@ -94,11 +94,11 @@ export const createJobQueue = (
   let activeCount = 0
   let persistChain: Promise<void> = Promise.resolve()
 
-  const jobsFile = (projectId: string) => path.join(store.projects.dir(projectId), 'jobs.json')
-
   const persist = (job: JobRecord) => {
     const write = async () => {
-      const file = jobsFile(job.projectId)
+      const projectDir = store.projects.dir(job.projectId)
+      if (!(await exists(path.join(projectDir, 'project.json')))) return
+      const file = path.join(projectDir, 'jobs.json')
       const existing = (await readJson<JobRecord[]>(file)) ?? []
       const index = existing.findIndex((item) => item.jobId === job.jobId)
       if (index >= 0) existing[index] = job

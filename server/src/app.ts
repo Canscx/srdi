@@ -134,7 +134,7 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
 
   app.use(API_PREFIX, healthRouter(port, dataDir))
   app.use(API_PREFIX, jobsRouter(queue))
-  app.use(API_PREFIX, projectsRouter(store))
+  app.use(API_PREFIX, projectsRouter(store, queue))
   app.use(API_PREFIX, filesRouter(store, { maxFileBytes }))
   app.use(API_PREFIX, evidenceRouter(store))
   app.use(API_PREFIX, pagesRouter(store))

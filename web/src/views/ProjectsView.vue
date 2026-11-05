@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { ProjectSummary } from '@srdi/shared'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, errorText } from '@/api'
 import { goto } from '@/router'
 import RenameProjectDialog from '@/components/RenameProjectDialog.vue'
@@ -13,6 +13,7 @@ const creating = ref(false)
 const name = ref('')
 const renameOpen = ref(false)
 const renameTarget = ref<ProjectSummary | null>(null)
+const removing = ref('')
 const currentYear = new Date().getFullYear()
 const endYear = ref(currentYear - 1)
 const yearOptions = Array.from({ length: 6 }, (_, index) => currentYear - 1 - index)
@@ -59,6 +60,33 @@ const openRename = (project: ProjectSummary) => {
 
 const onRenamed = () => {
   void load()
+}
+
+const removeProject = async (project: ProjectSummary) => {
+  try {
+    await ElMessageBox.confirm(
+      `该项目的 ${project.files} 份材料、抽取结果与评分报告会一并删除，且无法恢复。`,
+      `删除项目「${project.name}」？`,
+      {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+  } catch {
+    return
+  }
+  removing.value = project.projectId
+  try {
+    await api.deleteProject(project.projectId)
+    ElMessage.success('项目已删除')
+    await load()
+  } catch (err) {
+    ElMessage.error(errorText(err))
+  } finally {
+    removing.value = ''
+  }
 }
 
 onMounted(load)
@@ -118,6 +146,15 @@ onMounted(load)
               @keydown.space.stop
             >
               重命名
+            </button>
+            <button
+              class="remove"
+              :disabled="removing === project.projectId"
+              @click.stop="removeProject(project)"
+              @keydown.enter.stop
+              @keydown.space.stop
+            >
+              {{ removing === project.projectId ? '删除中' : '删除' }}
             </button>
             <b>进入确认 →</b>
           </span>
@@ -252,6 +289,7 @@ h2 {
   border: none;
   background: transparent;
   color: #6b7280;
+  font-family: inherit;
   font-size: 11.5px;
   cursor: pointer;
 }
@@ -259,5 +297,27 @@ h2 {
 .rename:hover {
   color: #2563eb;
   text-decoration: underline;
+}
+
+.remove {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.remove:hover {
+  color: #dc2626;
+  text-decoration: underline;
+}
+
+.remove:disabled {
+  opacity: 0.55;
+  cursor: default;
+  text-decoration: none;
 }
 </style>

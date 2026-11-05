@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -133,5 +133,47 @@ describe('项目重命名', () => {
     expect(body.project.files).toHaveLength(1)
     expect(body.project.files[0]?.fileId).toBe('f_keep')
     expect(body.project.createdAt).toBe(created.project.createdAt)
+  })
+})
+
+describe('删除项目', () => {
+  const deleteProject = (projectId: string) =>
+    fetch(`${server.base}/api/projects/${projectId}`, { method: 'DELETE' })
+
+  const dirExists = (target: string) =>
+    stat(target).then(
+      () => true,
+      () => false
+    )
+
+  it('删除后目录消失、列表与详情都读不到', async () => {
+    const created = await createProject('待删除项目')
+    const target = path.join(dir, 'projects', created.projectId)
+    expect(await dirExists(target)).toBe(true)
+
+    const response = await deleteProject(created.projectId)
+    expect(response.status).toBe(204)
+
+    const list = (await (await fetch(`${server.base}/api/projects`)).json()) as ProjectListResponse
+    expect(list.projects.some((project) => project.projectId === created.projectId)).toBe(false)
+
+    const detail = await fetch(`${server.base}/api/projects/${created.projectId}`)
+    expect(detail.status).toBe(404)
+    expect(await dirExists(target)).toBe(false)
+  })
+
+  it('重复删除返回 404', async () => {
+    const created = await createProject('删两次')
+    expect((await deleteProject(created.projectId)).status).toBe(204)
+
+    const again = await deleteProject(created.projectId)
+    expect(again.status).toBe(404)
+    expect(((await again.json()) as { error: string }).error).toBe('project_not_found')
+  })
+
+  it('非法 id 返回 400 且不动磁盘', async () => {
+    const response = await deleteProject('..%2Fetc')
+    expect(response.status).toBe(400)
+    expect(((await response.json()) as { error: string }).error).toBe('invalid_project_id')
   })
 })

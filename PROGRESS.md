@@ -514,3 +514,12 @@
 - 踩坑：`is-link` / `is-text` 必须显式排除，第一版只排除了 `is-plain`，客户提交表格的「确认页 / 评分页 / 改行业」三连被染成渐变实心块。
 - 顺带：AdminShell 顶栏导航与筛选标签改胶囊（原生 button 补 `font-family: inherit`，此前不继承 PingFang），退出按钮换成与客户侧同款红胶囊。
 - 表格操作列 3 个 link 按钮保持纯文字，不胶囊化，避免挤出 `width="230"` 的单元格。
+
+## 项目管理补删除入口（2026-11-05）
+
+- 此前没有删除按钮不是漏了 UI：后端只有 POST/GET/PATCH 三条项目路由，`ProjectStore` 无删除方法，全仓唯一的两处 `DELETE` 都是删单个文件。本次补齐 store → route → api → 界面四层。
+- `store.projects.remove` 与 `update()` 共用 `project:${projectId}` 锁，`dir()` 内的 `assertProjectId` 顺带挡住目录穿越；`get()` 保证重复删除返回 404。
+- `DELETE /api/projects/:id` 有运行中作业时返回 `409 project_busy`，否则队列 persist 会在删完的路径上 `ensureDir` 重建出空壳目录。persist 内再加一道 `project.json` 存在性判断，堵住「任务刚结束、写入还在队列里」的竞争窗口。
+- 前端 `request()` 补 204 分支（原来无条件 `response.json()`，删成功反而抛解析错误）；卡片操作区新增「删除」文字链，hover 转红，二次确认走 `ElMessageBox.confirm` + `el-button--danger` 红胶囊。
+- 客户侧不开放删除；「客户提交」表格保持只读。
+- 实测：解析进行中删除返回 409 且项目完好；正常删除后列表消失、详情 404、目录已清理。

@@ -56,6 +56,7 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
     if (window.location.hash !== '#/login') window.location.hash = '#/login'
   }
   if (!response.ok) throw await toError(response)
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
@@ -106,6 +107,8 @@ export const api = {
     request<CreateProjectResponse>('/api/projects', jsonInit('POST', input)),
   renameProject: (projectId: string, input: RenameProjectRequest) =>
     request<CreateProjectResponse>(`/api/projects/${projectId}`, jsonInit('PATCH', input)),
+  deleteProject: (projectId: string) =>
+    request<void>(`/api/projects/${projectId}`, { method: 'DELETE' }),
   evidence: (projectId: string) =>
     request<EvidenceDoc>(`/api/projects/${projectId}/evidence`),
   catalog: () => request<CatalogResponse>('/api/meta/catalog'),

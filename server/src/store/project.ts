@@ -10,7 +10,7 @@ import type {
 } from '@srdi/shared'
 import { isValidCreditCode, MAX_PROJECT_PAGES, normalizeCreditCode, PROJECT_SCHEMA_VERSION, RULES_ID } from '@srdi/shared'
 import { badRequest, conflict, notFound } from '../errors'
-import { ensureDir, listDir, readJson, writeJson } from './atomic'
+import { ensureDir, listDir, readJson, removeDir, writeJson } from './atomic'
 import type { LockTable } from './lock'
 
 const PROJECT_ID_PATTERN = /^p_[a-z0-9]{6,40}$/
@@ -137,6 +137,7 @@ export interface ProjectStore {
   save: (meta: ProjectMeta) => Promise<void>
   update: <T>(projectId: string, mutate: (meta: ProjectMeta) => T | Promise<T>) => Promise<T>
   rename: (projectId: string, name: string) => Promise<ProjectMeta>
+  remove: (projectId: string) => Promise<ProjectMeta>
   findByCompanyName: (name: string) => Promise<ProjectSummary[]>
   addFile: (projectId: string, file: ProjectFile) => Promise<AddFileResult>
   removeFile: (projectId: string, fileId: string) => Promise<ProjectFile>
@@ -248,6 +249,13 @@ export const createProjectStore = (dataDir: string, lock: LockTable): ProjectSto
       return meta
     })
 
+  const remove = (projectId: string): Promise<ProjectMeta> =>
+    lock(`project:${projectId}`, async () => {
+      const meta = await get(projectId)
+      await removeDir(dir(projectId))
+      return meta
+    })
+
   const addFile = async (projectId: string, file: ProjectFile): Promise<AddFileResult> =>
     update(projectId, (meta) => {
       const existing = meta.files.find((item) => item.sha256 === file.sha256)
@@ -294,6 +302,7 @@ export const createProjectStore = (dataDir: string, lock: LockTable): ProjectSto
     save,
     update,
     rename,
+    remove,
     findByCompanyName,
     addFile,
     removeFile,

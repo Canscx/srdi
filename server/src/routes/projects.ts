@@ -4,8 +4,9 @@ import type {
   CreateProjectResponse,
   ProjectListResponse
 } from '@srdi/shared'
-import { badRequest } from '../errors'
+import { badRequest, conflict } from '../errors'
 import { loadBenchmarksVersion } from '../config/benchmarks'
+import type { JobQueue } from '../jobs/queue'
 import type { AppStore } from '../store'
 
 const parseCreate = (body: unknown): CreateProjectRequest => {
@@ -61,7 +62,7 @@ const parseRename = (body: unknown): string => {
   return raw.name
 }
 
-export const projectsRouter = (store: AppStore) => {
+export const projectsRouter = (store: AppStore, queue: JobQueue) => {
   const router = Router()
   const benchmarksVersion = loadBenchmarksVersion()
 
@@ -90,6 +91,18 @@ export const projectsRouter = (store: AppStore) => {
     const project = await store.projects.rename(req.params.projectId, name)
     const payload: CreateProjectResponse = { projectId: project.projectId, project }
     res.json(payload)
+  })
+
+  router.delete('/projects/:projectId', async (req, res) => {
+    const projectId = req.params.projectId
+    const running = queue
+      .list(projectId)
+      .filter((job) => job.stage !== 'done' && job.stage !== 'failed')
+    if (running.length > 0) {
+      throw conflict('project_busy', '该项目还有正在运行的任务', '等任务结束后再删除')
+    }
+    await store.projects.remove(projectId)
+    res.status(204).end()
   })
 
   return router
