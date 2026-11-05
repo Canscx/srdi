@@ -308,8 +308,21 @@ onMounted(load)
       <div class="summary">
         已选 {{ fileCount }} 份材料 · 统计期间 {{ period.y2 }}–{{ period.y0 }}
       </div>
-      <el-button type="primary" size="large" :loading="busy" @click="submit">
+      <el-button class="btn-cta" type="primary" :loading="busy" @click="submit">
         {{ busy ? '处理中' : '开始评估' }}
+        <svg
+          v-if="!busy"
+          class="arrow"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M5 12h13" />
+          <path d="M12 6l6 6-6 6" />
+        </svg>
       </el-button>
     </footer>
   </div>
@@ -485,5 +498,15 @@ onMounted(load)
 .summary {
   font-size: 12.5px;
   color: #64748b;
+}
+
+.btn-cta {
+  min-width: 178px;
+  flex-shrink: 0;
+}
+
+.btn-cta svg {
+  width: 15px;
+  height: 15px;
 }
 </style>

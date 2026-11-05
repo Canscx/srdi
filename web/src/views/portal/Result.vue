@@ -47,8 +47,21 @@ onMounted(load)
 
     <ScoreReport v-if="data" :data="data">
       <template #ops>
-        <el-button @click="goto('/')">重新评估</el-button>
-        <el-button type="primary" @click="download">下载 PDF 报告</el-button>
+        <el-button class="btn-line" @click="goto('/')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7" />
+            <path d="M3 4v5h5" />
+          </svg>
+          重新评估
+        </el-button>
+        <el-button class="btn-cta download" type="primary" @click="download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v12" />
+            <path d="M7 11l5 5 5-5" />
+            <path d="M4 20h16" />
+          </svg>
+          下载 PDF 报告
+        </el-button>
       </template>
     </ScoreReport>
   </div>
@@ -119,5 +132,22 @@ onMounted(load)
   max-width: 120px;
   opacity: 1;
   margin-right: 6px;
+}
+
+.btn-line svg {
+  width: 13px;
+  height: 13px;
+}
+
+.btn-cta svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-cta.download {
+  height: 42px;
+  padding: 0 24px;
+  font-size: 13.5px;
+  letter-spacing: 0.5px;
 }
 </style>

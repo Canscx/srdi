@@ -494,3 +494,12 @@
 - 门户自动确认对 0 值没有防线：0.7 置信度的「发明专利 0 项」被直接确认。`review.json` 增加 `zeroValue.minConfidence = 0.9`，非周期字段的低置信度 0 不再自动确认，门户与后台两条路径都走 `isLowConfidenceZero`。
 - 实测 `p_mw1oyqal3aac52ac`：36.04 → **37.23**，IND_01 由 missing 变 8 年 / 0.8，confidence 0.4956 → 0.5354。
 - 发明专利集中度维持材料缺失：需要 IPC 分类分布，件数只是分母，缺分类号算不出 HHI。
+
+## 门户按钮视觉升级（2026-11-05）
+
+- 三处按钮统一为「渐变胶囊」：退出登录（`PortalShell.vue`，红色 pill + 登出图标）、开始评估（`Home.vue`，渐变 pill + 右箭头）、重新评估 / 下载 PDF 报告（`Result.vue`，描边 pill + 渐变 pill，各带图标）。
+- 渐变与登录页 `.submit` 同源，取三段式 `#1e50d8 → #2563eb 46% → #0ea5e9`：文字落点留在深蓝区，白字对比度够，青色只留边角。
+- 新增 `web/src/styles/base.css` 的 `.el-button.btn-cta` / `.el-button.btn-line`。三个按钮跨三个文件，样式单一来源，不再各写一份副本；这是对「CSS 用 scoped」的限定例外，只有这两个新类。
+- Element Plus 会把默认插槽包进 `<span>`，按钮级 `flex/gap` 管不到图标，必须给 `> span` 上 `inline-flex + gap`。
+- 交互：hover 上浮 2px + 投影加深 + 箭头右移 3px；active 回落 + `scale(.995)`；`focus-visible` 蓝色聚焦环；`prefers-reduced-motion` 下全部位移与过渡关闭。
+- 范围仅这三处。后台 44 个 el-button、AdminShell 的退出、Element Plus 主题令牌均未动。

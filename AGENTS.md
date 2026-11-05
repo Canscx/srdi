@@ -38,6 +38,7 @@ pnpm workspaces:`shared` / `server` / `web`。
 `web/src/components/portal/ScoreReport.vue` 评分页与结果页共用主体 · `server/src/portal/detail.ts` 两页共用数据装配
 `web/src/components/portal/LicenseBanner.vue` 营业执照上传引导条(四态) · `server/src/portal/recognize.ts` 预识别 · `server/src/portal/identity.ts` 主体信息裁决
 `web/src/views/LoginView.vue` 登录页左右分栏版式(品牌区 + 表单区,EP 主色仅在本页覆盖为 `#2563eb`)
+`web/src/styles/base.css` 全局按钮语言 `.btn-cta`(渐变胶囊)/ `.btn-line`(描边胶囊),仅门户三处使用
 `assets/consult-qr.png` 报告二维码(英文路径,勿改中文名)
 `samples/` 两套虚构企业材料 · `server/scripts/generate-samples.ts` 样本生成器(`pnpm samples`)
 `server/scripts/check-font.ts` 中文字体自检(`pnpm check:font`)· `docs/HANDOVER-font-bug.md` PDF 字体故障复盘
