@@ -9,6 +9,7 @@ const passLine = ref<number | null>(null)
 const query = ref('')
 const loading = ref(false)
 const error = ref('')
+const removing = ref('')
 
 const load = async () => {
   loading.value = true
@@ -44,6 +45,38 @@ const fixIndustry = async (row: SubmissionRow) => {
 
 const fmt = (value: string) =>
   new Date(value).toLocaleString('zh-CN', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+
+const removeRow = async (row: SubmissionRow) => {
+  try {
+    await ElMessageBox.confirm(
+      `该企业的 ${row.fileCount} 份材料、抽取结果与评分报告会一并删除，且无法恢复。`,
+      `删除「${row.companyName || '未命名项目'}」？`,
+      {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+  } catch {
+    return
+  }
+  removing.value = row.projectId
+  try {
+    await api.deleteProject(row.projectId)
+    ElMessage.success('项目已删除')
+    await load()
+  } catch (err) {
+    ElMessage.error(errorText(err))
+  } finally {
+    removing.value = ''
+  }
+}
+
+const onCommand = (command: string, row: SubmissionRow) => {
+  if (command === 'industry') void fixIndustry(row)
+  if (command === 'remove') void removeRow(row)
+}
 
 onMounted(load)
 </script>
@@ -106,7 +139,23 @@ onMounted(load)
         <template #default="{ row }">
           <el-button link type="primary" @click="goto(`/p/${row.projectId}/review`)">确认页</el-button>
           <el-button link type="primary" @click="goto(`/p/${row.projectId}/score`)">评分页</el-button>
-          <el-button link @click="fixIndustry(row)">改行业</el-button>
+          <el-dropdown
+            trigger="click"
+            placement="bottom-end"
+            :disabled="removing === row.projectId"
+            @command="(command: string) => onCommand(command, row)"
+          >
+            <el-button link type="primary" class="more">
+              {{ removing === row.projectId ? '删除中' : '更多' }}
+              <span class="caret" />
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="industry">改行业</el-dropdown-item>
+                <el-dropdown-item command="remove" divided class="is-danger">删除项目</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </template>
       </el-table-column>
       <template #empty>
@@ -162,5 +211,16 @@ h2 {
 .muted {
   color: #a3adbb;
   font-size: 12px;
+}
+
+.caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 4px;
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
+  border-top: 4px solid currentColor;
+  transform: translateY(-1px);
 }
 </style>
