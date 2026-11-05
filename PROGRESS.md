@@ -533,3 +533,12 @@
 - `api.ts` 新增 `setUnauthorizedHandler`，401 时优先通知 App 失效登录态，避免「服务端重启 / 会话过期」再次点燃同一循环；未注册钩子时保留原来的改 hash 兜底。
 - 实测（Puppeteer 统计 hashchange）：admin / customer 退出后各只有 1 次 hash 变化并稳定停在 `#/login`；手动改 hash 到 `#/projects` 只被静默送回一次；清掉 cookie 触发 401 也只跳一次。
 - 回滚点：tag `checkpoint-2026-11-05`（修复前）。
+
+## 部署脚本补更新前快照与回滚（2026-11-05）
+
+- 原 `deploy/update.sh` 只管拉代码与构建，更新前不留退路。新增 `deploy/backup.sh`：把代码打成 `srdi-code-<时间>-<提交>.tar.gz`，默认落 `/www/backup/srdi`、保留 10 份，排除 `node_modules`/`data`/`release`/`dist`/`.git`/`fonts`/`.env`，约 5MB 一份。
+- `update.sh` 在 `git pull` 前调用它，备份失败即中止（不给自己留退不回去的局面），跑完打印快照路径与两条回滚命令。
+- 新增 `deploy/rollback.sh`：`--list` 看快照；默认恢复最新一份；恢复前先把当前代码也存一份；用 rsync 覆盖并显式保留 `node_modules`/`data`/`release`/`.env`/`fonts`/`.workbuddy`，随后重装依赖、构建、重启、健康检查。缺 rsync 时明确报错而不是半途覆盖。
+- 坑：tar 的 exclude 写 `项目目录/node_modules` 只能挡住顶层，pnpm workspaces 的 `server/node_modules`、`web/node_modules` 照样进包，必须用 `*/node_modules` 这类通配。
+- 本地已验证：备份生成、排除项零命中、KEEP 裁剪生效、回滚的列表与前置检查路径；覆盖那步因本机无 rsync 未实跑，服务器缺 rsync 会明确提示。
+- 文档同步：根 `README.md` 部署段与目录说明、`deploy/README.md`、`deploy/宝塔部署教程.md` 第 10 节、`AGENTS.md` 索引。

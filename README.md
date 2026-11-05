@@ -47,6 +47,8 @@ pnpm check:font   # 打印候选、选中项,并真的生成一张 PDF 验证中
 
 三种形态共用同一套代码,区别只在进程怎么起、流量怎么进来。
 
+服务器上更新走 `deploy/update.sh`:更新前自动把当前代码打成快照,出问题用 `deploy/rollback.sh` 一键退回,不会丢 `data/`、`.env`、`fonts/`。详见 `deploy/README.md`。
+
 部署版是**单账号**:默认 `admin`,密码走环境变量 `AUTH_PASSWORD`(默认值见 `.env.example`),全员共用,数据不按人隔离。要按人隔离得改架构,不是在面板上勾选项能解决的。
 
 登录页可勾选「记住密码」:只在**登录成功**后把账号口令写进本机 `localStorage`(base64 轻编码,不是加密),下次打开自动回填。共用电脑建议不勾选;点「退出」只失效会话,不会删除已保存的口令,取消勾选才会。
@@ -76,7 +78,7 @@ pnpm check:font   # 打印候选、选中项,并真的生成一张 PDF 验证中
 
 ```
 docs/       三篇设计文档
-deploy/     宝塔部署手册 + nginx/PM2 配置
+deploy/     宝塔部署手册 + nginx/PM2 配置 + 更新/备份/回滚脚本
 config/     规则包、行业基准、字段目录
 shared/     零依赖纯函数:打分引擎 + Schema
 server/     Express 服务
@@ -99,7 +101,7 @@ data/       项目运行时数据(永不入库)
 | `docs/architecture.md` | 五层架构、接口契约、状态机、路线图与风险 |
 | `docs/scoring.md` | 打分数学、七种打分器、B 类曲线、三口径、手算样例 |
 | `docs/pipeline.md` | 解析链路、扫描件识别、AI 契约、校验阶梯 |
-| `deploy/README.md` | 宝塔部署:服务器要求、安装顺序、单账号登录、排错对照表 |
+| `deploy/README.md` | 宝塔部署:服务器要求、安装顺序、单账号登录、更新与回滚、排错对照表 |
 
 **配置即文档**,不再单写 markdown:
 
