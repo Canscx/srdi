@@ -85,7 +85,7 @@ onBeforeUnmount(stop)
     <template v-if="!failure">
       <div class="head">
         <h1>正在评估</h1>
-        <p>大约需要 1-3 分钟。财务年报和所得税表通常要逐页识别，请不要关闭页面。</p>
+        <p>大约需要 3-5 分钟。财务年报和所得税表通常要逐页识别，请不要关闭页面。</p>
       </div>
 
       <div class="panel">
