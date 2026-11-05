@@ -167,19 +167,43 @@ AUTH_PASSWORD=新密码
 
 ### 备份
 
+两类备份,互不干扰:
+
+```
+/www/backup/
+├── srdi-2026-11-05.tar.gz              # 数据,每天一份
+└── srdi/
+    ├── srdi-code-20261105-171000-025ea33.tar.gz   # 代码,每次更新一份
+    └── srdi-code-20261104-090000-6d7ccf8.tar.gz
+```
+
+数据备份(项目、材料、打分结果):
+
 ```bash
 tar -czf /www/backup/srdi-$(date +%F).tar.gz -C /www/wwwroot/srdi data
+find /www/backup -maxdepth 1 -name "srdi-*.tar.gz" -mtime +7 -delete
 ```
 
 宝塔 → 计划任务 → Shell 脚本,每天凌晨跑,保留 7 份。
+
+`-maxdepth 1` 不能省:不加会把 `/www/backup/srdi/` 里的代码快照一起删掉。
 
 备份目录不要放在站点根目录下,否则可能被静态托管暴露。
 
 ### 更新
 
-服务器上只跑这一条:
+三条命令概括全部:
+
+| 要做的事 | 命令 |
+| --- | --- |
+| 更新到最新代码(自动先备份) | `bash deploy/update.sh` |
+| 手动存一份代码快照 | `bash deploy/backup.sh` |
+| 回滚到某个快照 | `bash deploy/rollback.sh [包路径]` |
+
+服务器上日常只跑第一条:
 
 ```bash
+cd /www/wwwroot/srdi
 bash deploy/update.sh
 ```
 
