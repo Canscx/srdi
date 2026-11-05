@@ -1,21 +1,15 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { api } from '@/api'
 import { goto } from '@/router'
 import { useAiSettings } from '@/composables/useAiSettings'
 import AiSettingsDialog from '@/components/AiSettingsDialog.vue'
 
 defineProps<{ active: string }>()
+const emit = defineEmits<{ 'sign-out': [] }>()
 
 const { hasKey, state: aiState, ensure, open: openAiSettings } = useAiSettings()
 
-const signOut = async () => {
-  try {
-    await api.logout()
-  } catch {
-  }
-  goto('/login')
-}
+const signOut = () => emit('sign-out')
 
 onMounted(() => {
   void ensure()

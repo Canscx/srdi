@@ -1,14 +1,9 @@
 <script setup lang="ts">
-import { api } from '@/api'
 import { goto } from '@/router'
 
-const signOut = async () => {
-  try {
-    await api.logout()
-  } catch {
-  }
-  goto('/login')
-}
+const emit = defineEmits<{ 'sign-out': [] }>()
+
+const signOut = () => emit('sign-out')
 </script>
 
 <template>

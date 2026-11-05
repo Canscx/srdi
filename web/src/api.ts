@@ -50,10 +50,17 @@ const toError = async (response: Response) => {
   }
 }
 
+let unauthorizedHandler: (() => void) | null = null
+
+export const setUnauthorizedHandler = (fn: (() => void) | null) => {
+  unauthorizedHandler = fn
+}
+
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(path, init)
   if (response.status === 401 && !path.startsWith('/api/auth')) {
-    if (window.location.hash !== '#/login') window.location.hash = '#/login'
+    if (unauthorizedHandler) unauthorizedHandler()
+    else if (window.location.hash !== '#/login') window.location.hash = '#/login'
   }
   if (!response.ok) throw await toError(response)
   if (response.status === 204) return undefined as T

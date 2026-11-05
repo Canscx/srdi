@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { goto, useRoute } from '@/router'
+import { api, setUnauthorizedHandler } from '@/api'
 import { useSession } from '@/composables/useSession'
 import PortalShell from '@/components/shell/PortalShell.vue'
 import AdminShell from '@/components/shell/AdminShell.vue'
@@ -70,10 +71,24 @@ const onLoggedIn = async () => {
   goto(isCustomer.value ? '/' : '/projects')
 }
 
-const signOut = () => {
+const signOut = async () => {
+  try {
+    await api.logout()
+  } catch {
+  }
   reset()
-  sessionReady.value = false
+  sessionReady.value = true
+  goto('/login')
 }
+
+const onUnauthorized = () => {
+  if (!state.value.authenticated) return
+  reset()
+  sessionReady.value = true
+  goto('/login')
+}
+
+setUnauthorizedHandler(onUnauthorized)
 
 onMounted(async () => {
   await ensure(true)
@@ -87,7 +102,7 @@ onMounted(async () => {
 
   <LoginView v-else-if="!authenticated || route.name === 'login'" @done="onLoggedIn" />
 
-  <PortalShell v-else-if="isCustomer">
+  <PortalShell v-else-if="isCustomer" @sign-out="signOut">
     <component
       :is="portalView"
       :job-id="route.jobId ?? ''"

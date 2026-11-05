@@ -524,3 +524,12 @@
 - 客户侧不开放删除；「客户提交」表格保持只读。
 - 实测：解析进行中删除返回 409 且项目完好；正常删除后列表消失、详情 404、目录已清理。
 - 客户提交表格操作列改为「确认页 · 评分页 · 更多 ▾」，改行业与删除项目收进下拉；删除项标红并带分隔线，菜单右对齐弹出避免贴视口边缘。删除复用 `DELETE /api/projects/:id`，二次确认文案带企业与材料数。
+
+## 修复退出登录后页面反复闪烁（2026-11-05）
+
+- 根因是前端状态机自激，与服务端无关：两个 shell 的 `signOut` 只调 `api.logout()` + `goto('/login')`，从不重置 `useSession` 的内存态；`App.vue` 里写好的 `signOut`（含 `reset()`）是死代码——`AdminShell` 没有 `defineEmits`，`@sign-out` 从未触发，`PortalShell` 连监听都没绑。
+- 于是守卫看到 `authenticated === true` + 路由是 login，把人弹回业务页；业务页重挂发请求，cookie 已清 → 401 → `api.ts` 改回 `#/login` → 再被弹走。每圈整棵 shell 卸载换成 LoginView，叠一次 `v-loading` 遮罩，视觉上就是连续闪烁。之所以「有时几秒后自己停」，是两笔 hash 写入被浏览器合并成一次派发，循环才断。
+- 修法：登出上移到 `App.vue`（两端 shell 改为 `emit('sign-out')`），顺序必须先 `reset()` 再 `goto('/login')`，否则守卫仍在同一拍弹回；`sessionReady` 保持 true（置 false 会让守卫整段 return）。
+- `api.ts` 新增 `setUnauthorizedHandler`，401 时优先通知 App 失效登录态，避免「服务端重启 / 会话过期」再次点燃同一循环；未注册钩子时保留原来的改 hash 兜底。
+- 实测（Puppeteer 统计 hashchange）：admin / customer 退出后各只有 1 次 hash 变化并稳定停在 `#/login`；手动改 hash 到 `#/projects` 只被静默送回一次；清掉 cookie 触发 401 也只跳一次。
+- 回滚点：tag `checkpoint-2026-11-05`（修复前）。
