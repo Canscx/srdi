@@ -16,6 +16,12 @@ if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   exit 1
 fi
 
+echo "==> 备份当前代码"
+SHA_BEFORE="$(git rev-parse --short HEAD)"
+BACKUP_FILE="$(bash "${ROOT}/deploy/backup.sh")"
+echo "    快照 ${BACKUP_FILE}"
+echo "    提交 ${SHA_BEFORE}"
+
 echo "==> 拉取最新代码"
 git pull --ff-only
 
@@ -34,12 +40,20 @@ if [ -z "${PORT_VALUE}" ] && [ -f .env ]; then
 fi
 PORT_VALUE="${PORT_VALUE:-8787}"
 
+hint_rollback() {
+  echo ""
+  echo "本次更新前的快照:${BACKUP_FILE}"
+  echo "回滚方式一(推荐):bash deploy/rollback.sh"
+  echo "回滚方式二:git reset --hard ${SHA_BEFORE} && pnpm install && pnpm build,再重启进程"
+}
+
 echo "==> 重启服务"
 if command -v pm2 > /dev/null 2>&1 && pm2 describe srdi > /dev/null 2>&1; then
   pm2 restart srdi
 else
   echo "命令行没有 pm2 进程 srdi,代码与依赖已更新,但进程未重启。"
   echo "请到宝塔「网站 → Node 项目」点【重启】,再访问页面确认版本。"
+  hint_rollback
   exit 0
 fi
 
@@ -52,6 +66,7 @@ while [ "${attempt}" -le 5 ]; do
     if [ "$(id -u)" = "0" ]; then
       echo "提示:本次以 root 执行,若 Node 项目以 www 运行,建议 chown -R www:www ${ROOT}"
     fi
+    hint_rollback
     exit 0
   fi
   sleep 2
@@ -60,4 +75,5 @@ done
 
 echo ""
 echo "==> 健康检查未通过,进程可能没起来。看日志:pm2 logs srdi --lines 100"
+hint_rollback
 exit 1

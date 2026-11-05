@@ -42,4 +42,4 @@ pnpm workspaces:`shared` / `server` / `web`。
 `assets/consult-qr.png` 报告二维码(英文路径,勿改中文名)
 `samples/` 两套虚构企业材料 · `server/scripts/generate-samples.ts` 样本生成器(`pnpm samples`)
 `server/scripts/check-font.ts` 中文字体自检(`pnpm check:font`)· `docs/HANDOVER-font-bug.md` PDF 字体故障复盘
-`deploy/` 宝塔部署手册 + nginx/PM2 配置 · `scripts/build-portable.mjs` 便携包构建(`pnpm pack:portable`)
+`deploy/` 宝塔部署手册 + nginx/PM2 配置 + `update.sh`(更新前自动快照)/`backup.sh`/`rollback.sh` · `scripts/build-portable.mjs` 便携包构建(`pnpm pack:portable`)

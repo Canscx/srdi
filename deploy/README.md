@@ -183,9 +183,49 @@ tar -czf /www/backup/srdi-$(date +%F).tar.gz -C /www/wwwroot/srdi data
 bash deploy/update.sh
 ```
 
-它按顺序做完:检查工作区是否干净 → `git pull --ff-only` → `pnpm install` → `pnpm build` → `pnpm check:font` → 重启(有 pm2 就 `pm2 restart srdi`,没有就提示去面板点) → 轮询 `/api/health`。
+它按顺序做完:检查工作区是否干净 → **备份当前代码** → `git pull --ff-only` → `pnpm install` → `pnpm build` → `pnpm check:font` → 重启(有 pm2 就 `pm2 restart srdi`,没有就提示去面板点) → 轮询 `/api/health`。跑完会打印本次快照路径和回滚命令。
+
+**备份落在哪**:`/www/backup/srdi/srdi-code-<时间>-<提交>.tar.gz`,默认保留最近 10 份。可用 `BACKUP_DIR` / `KEEP` 改。备份只含代码,不含 `node_modules`、`data`、`release`、`.git`——数据备份见上一节。
 
 **不需要先手动 `git pull`** —— 脚本第一步就是它;手动拉过再跑也不出错,只是那句 `Already up to date` 白跑一遍。脚本会从自己所在位置反推项目根目录,装到别的路径也能用。
+
+### 回滚
+
+```bash
+bash deploy/rollback.sh --list        # 看有哪些快照
+bash deploy/rollback.sh               # 恢复最近一份
+bash deploy/rollback.sh /www/backup/srdi/srdi-code-20261105-170800-a56e389.tar.gz
+```
+
+它先给当前代码也存一份(方便再退回来),再用 rsync 覆盖代码,**保留 `node_modules` / `data` / `release` / `.env` / `fonts`**,然后重装依赖、重新构建、重启、健康检查。
+
+回滚后工作区是快照内容,不在任何提交上。想回到线上最新版:
+
+```bash
+git reset --hard origin/main && bash deploy/update.sh
+```
+
+也可以用 git 精确回退某个提交(适合能确定是哪次改坏的情况):
+
+```bash
+git log --oneline -10
+git reset --hard <sha> && pnpm install && pnpm build   # 再到面板重启
+```
+
+### 服务器上没有 git 仓库时怎么更新
+
+代码是打包上传的,`update.sh` 会直接拒绝(第一步就检查 `.git`)。手动走同一条安全路径:
+
+```bash
+cd /www/wwwroot/srdi
+bash deploy/backup.sh          # 先存快照,打印出的路径记一下
+# 用宝塔文件管理器或 rsync 覆盖上传新代码,不要删目录重传
+pnpm install && pnpm build
+# 面板「Node 项目」→ 重启
+bash deploy/rollback.sh        # 出锅了就恢复刚才那份
+```
+
+覆盖上传时**不要删 `data/`、`node_modules/`、`.env`、`fonts/`**,这四个目录一旦删掉,数据和字体都得重来。
 
 什么时候不走脚本:
 
@@ -195,15 +235,16 @@ bash deploy/update.sh
 | 回滚到某个提交 | `git reset --hard <sha>` → `pnpm install && pnpm build` → 面板重启 |
 | 只改端口 / 密码 / 字体路径 | 改 `.env` → 面板重启,不必跑脚本 |
 
-脚本里有三处刻意设计,别删:
+脚本里有四处刻意设计,别删:
 
 1. `git pull --ff-only` —— 服务器上有本地改动时直接失败,不会悄悄生成合并提交;
 2. 工作区检查 —— 有未提交改动就停下并列出文件,避免把服务器上的手改覆盖掉;
-3. 没有 pm2 时不假装成功 —— 老进程还在跑,健康检查也会通过,所以脚本明确说「进程未重启」并让你去面板点,不会报「部署完成」。
+3. 更新前自动快照 —— 备份失败就不更新,不给自己留退不回去的局面;
+4. 没有 pm2 时不假装成功 —— 老进程还在跑,健康检查也会通过,所以脚本明确说「进程未重启」并让你去面板点,不会报「部署完成」。
 
 `pnpm check:font` 会验证 PDF 中文字体是否仍可用;老服务器升级时必须跑 `pnpm install`,字体自省新增了 `fontkit` 依赖。
 
-`data/` 不在版本库里,更新不会覆盖数据。**但删代码目录重传会** —— 重传前先备份 data。
+`data/` 不在版本库里,更新不会覆盖数据。**但删代码目录重传会** —— 重传前先备份 data,并且别用「删除目录再上传」的方式更新,用上面的脚本或 rsync 覆盖。
 
 ### 日志
 
