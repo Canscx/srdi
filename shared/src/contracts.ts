@@ -21,6 +21,7 @@ export interface HealthResponse {
     uptimeSec: number
     pid: number
     port: number
+    commit?: string | null
   }
   storage: {
     dataDir: string

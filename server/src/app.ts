@@ -11,6 +11,7 @@ import { resolveAiConfig } from './config/aiSettings'
 import { defaultModel } from './config/pricing'
 import { AppError } from './errors'
 import { healthRouter } from './routes/health'
+import { readCommit } from './version'
 import { jobsRouter } from './routes/jobs'
 import { projectsRouter } from './routes/projects'
 import { filesRouter } from './routes/files'
@@ -132,7 +133,7 @@ export const createApp = ({ webDist, port, dataDir, maxFileBytes, aiClient, aiMo
     app.use(`${API_PREFIX}/admin`, adminRouter(store, loadPortalConfig().passLine))
   }
 
-  app.use(API_PREFIX, healthRouter(port, dataDir))
+  app.use(API_PREFIX, healthRouter(port, dataDir, readCommit(process.cwd())))
   app.use(API_PREFIX, jobsRouter(queue))
   app.use(API_PREFIX, projectsRouter(store, queue))
   app.use(API_PREFIX, filesRouter(store, { maxFileBytes }))

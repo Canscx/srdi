@@ -542,3 +542,10 @@
 - 坑：tar 的 exclude 写 `项目目录/node_modules` 只能挡住顶层，pnpm workspaces 的 `server/node_modules`、`web/node_modules` 照样进包，必须用 `*/node_modules` 这类通配。
 - 本地已验证：备份生成、排除项零命中、KEEP 裁剪生效、回滚的列表与前置检查路径；覆盖那步因本机无 rsync 未实跑，服务器缺 rsync 会明确提示。
 - 文档同步：根 `README.md` 部署段与目录说明、`deploy/README.md`、`deploy/宝塔部署教程.md` 第 10 节、`AGENTS.md` 索引。
+
+## 「服务器上删除项目报接口不存在」定因与防呆（2026-11-06）
+
+- 现象：本地删项目正常，服务器上提示「接口不存在」。该文案出自 `server/src/app.ts` 的 404 兜底，说明请求到了 Node 进程但没匹配到 `DELETE /api/projects/:id` —— 进程跑的是旧代码。
+- 成因：根 `pnpm build` 只构建前端，服务端由 `tsx server/src/index.ts` 直接执行源码。`git pull` 后不重启进程，就得到「新前端 + 旧后端」，新入口必然 404。`update.sh` 在无 pm2 时只提示去面板重启，容易被跳过。
+- 处置：重启进程（`pm2 restart srdi` 或面板 Node 项目重启）。重启会清空内存 session，需要重新登录。
+- 防呆：`/api/health` 增 `runtime.commit`（`server/src/version.ts` 启动时读 git 短 sha，无 git 返回 null）。`update.sh` 重启后拿它与磁盘 HEAD 比对，不一致直接报错退出；无 pm2 分支会明确提示「重启之前，新增接口会返回接口不存在」。排错表同步补行。

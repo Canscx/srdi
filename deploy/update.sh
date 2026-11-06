@@ -40,6 +40,12 @@ if [ -z "${PORT_VALUE}" ] && [ -f .env ]; then
 fi
 PORT_VALUE="${PORT_VALUE:-8787}"
 
+running_commit() {
+  local body
+  body="$(curl -sf "http://127.0.0.1:${PORT_VALUE}/api/health" 2>/dev/null || true)"
+  printf '%s' "${body}" | sed -n 's/.*"commit":"\([0-9a-f][0-9a-f]*\)".*/\1/p' | head -1
+}
+
 hint_rollback() {
   echo ""
   echo "本次更新前的快照:${BACKUP_FILE}"
@@ -53,16 +59,32 @@ if command -v pm2 > /dev/null 2>&1 && pm2 describe srdi > /dev/null 2>&1; then
 else
   echo "命令行没有 pm2 进程 srdi,代码与依赖已更新,但进程未重启。"
   echo "请到宝塔「网站 → Node 项目」点【重启】,再访问页面确认版本。"
+  HEAD_SHA="$(git rev-parse --short HEAD)"
+  RUNNING="$(running_commit)"
+  if [ -n "${RUNNING}" ] && [ "${RUNNING}" != "${HEAD_SHA}" ]; then
+    echo ""
+    echo "!! 进程仍在跑 ${RUNNING},磁盘上已是 ${HEAD_SHA}"
+    echo "!! 重启之前,本次新增的接口会返回「接口不存在」"
+  fi
   hint_rollback
   exit 0
 fi
 
 echo "==> 健康检查 http://127.0.0.1:${PORT_VALUE}/api/health"
+HEAD_SHA="$(git rev-parse --short HEAD)"
 attempt=1
 while [ "${attempt}" -le 5 ]; do
   if curl -sf "http://127.0.0.1:${PORT_VALUE}/api/health" > /dev/null; then
+    RUNNING="$(running_commit)"
+    if [ -n "${RUNNING}" ] && [ "${RUNNING}" != "${HEAD_SHA}" ]; then
+      echo ""
+      echo "==> 检查未通过:进程跑的还是 ${RUNNING},磁盘上已是 ${HEAD_SHA}"
+      echo "    重启没生效,或重启的不是这个项目。新接口会返回「接口不存在」。"
+      hint_rollback
+      exit 1
+    fi
     echo ""
-    echo "==> 部署完成,健康检查通过"
+    echo "==> 部署完成,健康检查通过${RUNNING:+,进程提交 ${RUNNING}}"
     if [ "$(id -u)" = "0" ]; then
       echo "提示:本次以 root 执行,若 Node 项目以 www 运行,建议 chown -R www:www ${ROOT}"
     fi

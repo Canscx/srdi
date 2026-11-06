@@ -211,6 +211,13 @@ bash deploy/update.sh
 
 **备份落在哪**:`/www/backup/srdi/srdi-code-<时间>-<提交>.tar.gz`,默认保留最近 10 份。可用 `BACKUP_DIR` / `KEEP` 改。备份只含代码,不含 `node_modules`、`data`、`release`、`.git`——数据备份见上一节。
 
+**进程版本自检**:`/api/health` 的 `runtime.commit` 是进程启动时读到的提交号。脚本重启后会拿它和磁盘上的 `git rev-parse --short HEAD` 比对,不一致就报错退出;没有 pm2 时会提示「重启之前,新增接口会返回『接口不存在』」。手动核对:
+
+```bash
+curl -s http://127.0.0.1:8787/api/health | grep -o '"commit":"[^"]*"'
+git rev-parse --short HEAD
+```
+
 **不需要先手动 `git pull`** —— 脚本第一步就是它;手动拉过再跑也不出错,只是那句 `Already up to date` 白跑一遍。脚本会从自己所在位置反推项目根目录,装到别的路径也能用。
 
 ### 回滚
@@ -284,6 +291,7 @@ pm2 logs srdi --lines 200
 |---|---|---|
 | 启动即退出 | 用 `--prod` 装了依赖,缺 tsx | 重跑 `pnpm install` |
 | 页面白屏 / 静态资源 404 | 没跑 `pnpm build` | 跑一次构建 |
+| 新功能报「接口不存在」(404) | 进程跑的还是旧代码:只 `git pull` 没重启,或重启的不是这个目录 | `curl -s 127.0.0.1:8787/api/health` 看 `commit` 是否等于 `git rev-parse --short HEAD`,不等就重启进程 |
 | 上传 PDF 报 413 | nginx 默认 1MB | 配 `client_max_body_size 60m` |
 | 解析进度条不动 | SSE 被缓冲 | 配 `proxy_buffering off` |
 | 导出 PDF 报 "Not a supported font format" | 旧版本把 `.ttc` 的显示名当 PostScript 名传给 pdfkit,集合里找不到该字面 | 更新代码后 `pnpm check:font` 复检;仍失败就换 `fonts/simhei.ttf` |
