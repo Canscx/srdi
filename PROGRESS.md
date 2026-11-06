@@ -569,3 +569,14 @@
 - 高光用 `.pv-card::after` 径向热区跟指针，峰值 `rgba(37,99,235,.12)`，`opacity` 随 `is-live` 淡入；0.12 叠加后正文对比度仍在 15:1 以上。
 - 坑：原 `onMounted` 首行 `if (!saved) return`，任何追加在后的初始化都会在「未记住密码」时被跳过 —— 改成 `if (saved) { … }` 再绑定监听；`onBeforeUnmount` 必须移除 4 个监听 + `cancelAnimationFrame`，否则登录成功卸载后 rAF 残留。
 - 实测（CDP 直读 computed style）：光晕 transform 1.8s 内有变化；hover 后 `.pv-card` 得到 matrix3d、chip 位移 (-6.4, 6.4)、高光 opacity 1；离开 1.6s 后 class 回到 `preview`、transform 回到 `none`、`--mx` 归零。`--force-prefers-reduced-motion` 下 `animation-name: none`、悬停不倾斜。
+
+## 示例评分卡改三卡轮播（2026-11-06）
+
+- 3 张示例企业（A 装备制造 54.3 / B 新材料 61.8 / C 工业软件 47.6），五分项与总分自洽，`ratio = value / cap`（cap = 15/20/15/35/15），第一张复刻原 54.3 卡。
+- 结构：`.preview`（位置壳，仍不可加 transform）> `.pv-stage`（`display:grid`，三张卡 `grid-area:1/1` 叠在同一格，行高 = 最高卡）> `.pv-slide`（进出场）> `.pv-card`（白底与 3D 倾斜）。不用 `<Transition>`：class 驱动可中断、无挂载闪烁、高度不靠写死。
+- 过渡：新卡 `translateY 22px→0` 浮现、旧卡 `0→-20px` 上浮淡出，交叉 0.5s；`is-on` 的 transition 列表**不含 visibility**，`visibility 0s linear .62s` 只写在离开态，否则入场动画会在不可见时播完。
+- 数字与条形同一个 `prog[i] ∈ [0,1]`：数字 = `total * prog`，条形 `width: calc(var(--p) * var(--w))`，JS 只跑一个 easeOutCubic 950ms 的 rAF。**不要**用 `width` 的 CSS transition——第二轮循环要先归零再填充，等于第二个时钟，还会闪一帧满格。
+- 悬停暂停是功能不是装饰：`--mx/--my` 是全局共享的，悬停中切卡会让新卡带着旧位姿登场；旧卡失去 `is-on` 时倾斜 transform 会瞬间变平。暂停期间 `paused=true` 且 `disarm()`，离开再重新计时，切卡永远发生在倾斜已回正之后。
+- `onMounted` 里原来的 `if (!el || !tiltAllowed()) return` 已改为无条件绑监听、`tiltAllowed()` 下沉进 move 处理器，否则 reduced-motion / 粗指针下暂停也一起失效。
+- 降级：`prefers-reduced-motion` 下 `prog = [1,1,1]`、不 arm、不倾斜，只显示第一张卡的终值。
+- 实测（CDP）：循环 3→1→2→3 每 5.2s 一次；切卡后 80ms 数字 20.9 / p 0.439 / 条宽 108px（track 378 × 65.3% × 0.439），950ms 后 47.6 与 247px；悬停 6.2s 不切卡且 `.pv-card` 有 matrix3d，移开 1s 内回到 `none`；计数中悬停两套 rAF 同时跑、互不取消；`--force-prefers-reduced-motion` 下 `animation-name:none`、不轮播、不倾斜。

@@ -16,19 +16,67 @@ const busy = ref(false)
 
 const rulesId = RULES_ID
 
-const previewDims = [
-  { name: '专业化', value: '11.2', ratio: '75%' },
-  { name: '精细化', value: '13.4', ratio: '67%' },
-  { name: '特色化', value: '9.6', ratio: '64%' },
-  { name: '创新能力', value: '14.6', ratio: '42%' },
-  { name: '成长性', value: '5.5', ratio: '37%' }
-]
+const enterprises = [
+  {
+    org: '示例企业 A',
+    industry: '装备制造',
+    total: 54.3,
+    dims: [
+      { name: '专业化', value: 11.2, cap: 15 },
+      { name: '精细化', value: 13.4, cap: 20 },
+      { name: '特色化', value: 9.6, cap: 15 },
+      { name: '创新能力', value: 14.6, cap: 35 },
+      { name: '成长性', value: 5.5, cap: 15 }
+    ]
+  },
+  {
+    org: '示例企业 B',
+    industry: '新材料',
+    total: 61.8,
+    dims: [
+      { name: '专业化', value: 12.6, cap: 15 },
+      { name: '精细化', value: 15.1, cap: 20 },
+      { name: '特色化', value: 10.4, cap: 15 },
+      { name: '创新能力', value: 18.2, cap: 35 },
+      { name: '成长性', value: 5.5, cap: 15 }
+    ]
+  },
+  {
+    org: '示例企业 C',
+    industry: '工业软件',
+    total: 47.6,
+    dims: [
+      { name: '专业化', value: 9.8, cap: 15 },
+      { name: '精细化', value: 11.6, cap: 20 },
+      { name: '特色化', value: 8.2, cap: 15 },
+      { name: '创新能力', value: 12.4, cap: 35 },
+      { name: '成长性', value: 5.6, cap: 15 }
+    ]
+  }
+].map((item) => ({
+  ...item,
+  dims: item.dims.map((dim) => ({
+    ...dim,
+    ratio: `${((dim.value / dim.cap) * 100).toFixed(1)}%`
+  }))
+}))
 
 const facts = [
   { value: '5', label: '个评价维度' },
   { value: '23', label: '项自查指标' },
   { value: '1', label: '份可下载报告' }
 ]
+
+const active = ref(0)
+const prev = ref(-1)
+const prog = ref([0, 0, 0])
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+const tiltAllowed = () => finePointer && !reduceMotion
+
+const HOLD = 5200
+const COUNT = 950
 
 const previewEl = ref<HTMLElement | null>(null)
 let rafId = 0
@@ -38,7 +86,14 @@ let wantY = 0
 let haveX = 0
 let haveY = 0
 
+let countRaf = 0
+let countIdx = -1
+let countStart = 0
+let tickTimer = 0
+let paused = false
+
 const clampAxis = (value: number) => (value < -1 ? -1 : value > 1 ? 1 : value)
+const ease = (t: number) => 1 - Math.pow(1 - t, 3)
 
 const paint = () => {
   const el = previewEl.value
@@ -72,13 +127,64 @@ const schedule = () => {
   if (!rafId) rafId = requestAnimationFrame(paint)
 }
 
-const onTiltEnter = () => {
+const paintCount = (now: number) => {
+  if (countIdx < 0) {
+    countRaf = 0
+    return
+  }
+  if (!countStart) countStart = now
+  const t = Math.min(1, (now - countStart) / COUNT)
+  prog.value[countIdx] = Math.round(ease(t) * 1000) / 1000
+  if (t < 1) {
+    countRaf = requestAnimationFrame(paintCount)
+    return
+  }
+  countRaf = 0
+  countStart = 0
+}
+
+const startCount = (index: number) => {
+  if (countRaf) cancelAnimationFrame(countRaf)
+  countRaf = 0
+  countStart = 0
+  countIdx = index
+  prog.value[index] = 0
+  countRaf = requestAnimationFrame(paintCount)
+}
+
+const go = (next: number) => {
+  if (reduceMotion || next === active.value) return
+  prev.value = active.value
+  active.value = next
+  startCount(next)
+}
+
+const disarm = () => {
+  if (tickTimer) window.clearTimeout(tickTimer)
+  tickTimer = 0
+}
+
+const arm = () => {
+  disarm()
+  if (reduceMotion) return
+  tickTimer = window.setTimeout(() => {
+    if (paused) return
+    go((active.value + 1) % enterprises.length)
+    arm()
+  }, HOLD)
+}
+
+const onPreviewEnter = () => {
+  paused = true
+  disarm()
+  if (!tiltAllowed()) return
   hovering = true
   previewEl.value?.classList.add('is-live')
   schedule()
 }
 
-const onTiltMove = (event: PointerEvent) => {
+const onPreviewMove = (event: PointerEvent) => {
+  if (!tiltAllowed()) return
   const el = previewEl.value
   if (!el) return
   const rect = el.getBoundingClientRect()
@@ -88,16 +194,26 @@ const onTiltMove = (event: PointerEvent) => {
   schedule()
 }
 
-const onTiltLeave = () => {
+const onPreviewLeave = () => {
+  paused = false
+  arm()
   hovering = false
   wantX = 0
   wantY = 0
   schedule()
 }
 
-const tiltAllowed = () =>
-  window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
-  !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const onVisibility = () => {
+  if (document.hidden) {
+    disarm()
+    if (countRaf) cancelAnimationFrame(countRaf)
+    countRaf = 0
+    countIdx = -1
+    prog.value[active.value] = 1
+    return
+  }
+  if (!paused) arm()
+}
 
 const useRole = (next: 'customer' | 'admin') => {
   mode.value = next
@@ -119,26 +235,38 @@ onMounted(() => {
     remember.value = true
   }
   const el = previewEl.value
-  if (!el || !tiltAllowed()) return
-  el.addEventListener('pointerenter', onTiltEnter)
-  el.addEventListener('pointermove', onTiltMove, { passive: true })
-  el.addEventListener('pointerleave', onTiltLeave)
-  el.addEventListener('pointercancel', onTiltLeave)
+  if (el) {
+    el.addEventListener('pointerenter', onPreviewEnter)
+    el.addEventListener('pointermove', onPreviewMove, { passive: true })
+    el.addEventListener('pointerleave', onPreviewLeave)
+    el.addEventListener('pointercancel', onPreviewLeave)
+  }
+  document.addEventListener('visibilitychange', onVisibility)
+  if (reduceMotion) {
+    prog.value = [1, 1, 1]
+    return
+  }
+  startCount(0)
+  arm()
 })
 
 onBeforeUnmount(() => {
   const el = previewEl.value
   if (el) {
-    el.removeEventListener('pointerenter', onTiltEnter)
-    el.removeEventListener('pointermove', onTiltMove)
-    el.removeEventListener('pointerleave', onTiltLeave)
-    el.removeEventListener('pointercancel', onTiltLeave)
+    el.removeEventListener('pointerenter', onPreviewEnter)
+    el.removeEventListener('pointermove', onPreviewMove)
+    el.removeEventListener('pointerleave', onPreviewLeave)
+    el.removeEventListener('pointercancel', onPreviewLeave)
     el.classList.remove('is-live')
     el.style.removeProperty('--mx')
     el.style.removeProperty('--my')
   }
+  document.removeEventListener('visibilitychange', onVisibility)
+  disarm()
   if (rafId) cancelAnimationFrame(rafId)
   rafId = 0
+  if (countRaf) cancelAnimationFrame(countRaf)
+  countRaf = 0
 })
 
 watch(remember, (value) => {
@@ -202,25 +330,38 @@ const submit = async () => {
           </p>
 
           <div ref="previewEl" class="preview">
-            <div class="pv-card">
-              <div class="pv-head">
-                <div class="pv-org"><b>示例企业</b><span>装备制造</span></div>
-                <span class="pv-tag">示例</span>
-              </div>
-              <div class="pv-score">
-                <span class="pv-num">54.3</span>
-                <span class="pv-unit">/ 100</span>
-                <span class="pv-cap">当前参考得分</span>
-              </div>
-              <div class="pv-bars">
-                <div v-for="row in previewDims" :key="row.name" class="pv-row">
-                  <span class="pv-name">{{ row.name }}</span>
-                  <div class="pv-track"><i class="pv-fill" :style="{ width: row.ratio }" /></div>
-                  <span class="pv-val">{{ row.value }}</span>
+            <div class="pv-stage">
+              <div
+                v-for="(card, i) in enterprises"
+                :key="card.org"
+                class="pv-slide"
+                :class="{ 'is-on': i === active, 'is-out': i === prev }"
+                :style="{ '--p': prog[i] }"
+                :aria-hidden="i !== active"
+              >
+                <div class="pv-card">
+                  <div class="pv-head">
+                    <div class="pv-org"><b>{{ card.org }}</b><span>{{ card.industry }}</span></div>
+                    <span class="pv-tag">{{ i + 1 }} / {{ enterprises.length }}</span>
+                  </div>
+                  <div class="pv-score">
+                    <span class="pv-num">{{ (card.total * prog[i]).toFixed(1) }}</span>
+                    <span class="pv-unit">/ 100</span>
+                    <span class="pv-cap">当前参考得分</span>
+                  </div>
+                  <div class="pv-bars">
+                    <div v-for="row in card.dims" :key="row.name" class="pv-row">
+                      <span class="pv-name">{{ row.name }}</span>
+                      <div class="pv-track">
+                        <i class="pv-fill" :style="{ '--w': row.ratio }" />
+                      </div>
+                      <span class="pv-val">{{ row.value.toFixed(1) }}</span>
+                    </div>
+                  </div>
+                  <span class="pv-chip pv-chip-a"><i />23 项指标 · 证据已抽取</span>
+                  <span class="pv-chip pv-chip-b"><i />五个维度</span>
                 </div>
               </div>
-              <span class="pv-chip pv-chip-a"><i />23 项指标 · 证据已抽取</span>
-              <span class="pv-chip pv-chip-b"><i />五个维度</span>
             </div>
           </div>
         </div>
@@ -603,6 +744,43 @@ const submit = async () => {
   margin: clamp(24px, 3.4vh, 40px) 0 10px;
 }
 
+.pv-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.pv-slide {
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate3d(0, 22px, 0);
+  pointer-events: none;
+  transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.62s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 0.62s;
+}
+
+.pv-slide.is-on {
+  z-index: 2;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+  transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pv-slide.is-out {
+  z-index: 1;
+  opacity: 0;
+  visibility: visible;
+  transform: translate3d(0, -20px, 0);
+  transition: opacity 0.45s cubic-bezier(0.4, 0, 1, 1),
+    transform 0.62s cubic-bezier(0.4, 0, 1, 1), visibility 0s linear 0.62s;
+}
+
 .pv-card {
   position: relative;
   padding: 20px 22px 18px;
@@ -612,7 +790,7 @@ const submit = async () => {
   box-shadow: 0 24px 48px -34px rgba(37, 99, 235, 0.55);
 }
 
-.preview.is-live .pv-card {
+.preview.is-live .pv-slide.is-on .pv-card {
   transform: perspective(1000px) rotateX(calc(var(--my, 0) * -4.5deg))
     rotateY(calc(var(--mx, 0) * 6deg));
   box-shadow: 0 34px 58px -34px rgba(37, 99, 235, 0.62);
@@ -635,23 +813,23 @@ const submit = async () => {
   transition: opacity 0.28s ease;
 }
 
-.preview.is-live .pv-card::after {
+.preview.is-live .pv-slide.is-on .pv-card::after {
   opacity: 1;
 }
 
-.preview.is-live .pv-head {
+.preview.is-live .pv-slide.is-on .pv-head {
   transform: translate3d(calc(var(--mx, 0) * -3px), calc(var(--my, 0) * -3px), 0);
 }
 
-.preview.is-live .pv-bars {
+.preview.is-live .pv-slide.is-on .pv-bars {
   transform: translate3d(calc(var(--mx, 0) * 4px), calc(var(--my, 0) * 4px), 0);
 }
 
-.preview.is-live .pv-chip-a {
+.preview.is-live .pv-slide.is-on .pv-chip-a {
   transform: translate3d(calc(var(--mx, 0) * 8px), calc(var(--my, 0) * 8px), 0);
 }
 
-.preview.is-live .pv-chip-b {
+.preview.is-live .pv-slide.is-on .pv-chip-b {
   transform: translate3d(calc(var(--mx, 0) * 10px), calc(var(--my, 0) * 10px), 0);
 }
 
@@ -672,16 +850,22 @@ const submit = async () => {
   gap: 8px;
 }
 
+.pv-org {
+  min-width: 0;
+}
+
 .pv-org b {
   font-size: 13.5px;
   font-weight: 600;
   color: #111827;
+  white-space: nowrap;
 }
 
 .pv-org span {
   margin-left: 7px;
   font-size: 11.5px;
   color: #a3adbb;
+  white-space: nowrap;
 }
 
 .pv-tag {
@@ -749,6 +933,7 @@ const submit = async () => {
 
 .pv-fill {
   display: block;
+  width: calc(var(--p, 1) * var(--w, 0%));
   height: 100%;
   border-radius: 4px;
   background: linear-gradient(90deg, #2563eb, #3b82f6);
@@ -1150,14 +1335,21 @@ const submit = async () => {
     animation: none;
   }
 
-  .preview.is-live .pv-card {
+  .pv-slide,
+  .pv-slide.is-on,
+  .pv-slide.is-out {
+    transition: none;
     transform: none;
   }
 
-  .preview.is-live .pv-head,
-  .preview.is-live .pv-bars,
-  .preview.is-live .pv-chip-a,
-  .preview.is-live .pv-chip-b {
+  .preview.is-live .pv-slide.is-on .pv-card {
+    transform: none;
+  }
+
+  .preview.is-live .pv-slide.is-on .pv-head,
+  .preview.is-live .pv-slide.is-on .pv-bars,
+  .preview.is-live .pv-slide.is-on .pv-chip-a,
+  .preview.is-live .pv-slide.is-on .pv-chip-b {
     transform: none;
   }
 }

@@ -37,7 +37,7 @@ pnpm workspaces:`shared` / `server` / `web`。
 `config/portal.json` 客户流程参数(5 个槽位含营业执照/查询限流/预识别;及格线继承规则包;知识产权档位规则在 IND_17) · `config/industry-map.json` 行业推断 · `config/advice.json` 兜底话术
 `web/src/components/portal/ScoreReport.vue` 评分页与结果页共用主体 · `server/src/portal/detail.ts` 两页共用数据装配
 `web/src/components/portal/LicenseBanner.vue` 营业执照上传引导条(四态) · `server/src/portal/recognize.ts` 预识别 · `server/src/portal/identity.ts` 主体信息裁决
-`web/src/views/LoginView.vue` 登录页满视口左右对半(品牌区 1fr | 表单列 1fr,表单内容 440 居中;左栏三层光晕 `.brand-aura` + 评分卡 `.pv-card` 指针 3D 倾斜,`.preview` 是纯位置壳不可加 transform;EP 主色仅在本页覆盖为 `#2563eb`)
+`web/src/views/LoginView.vue` 登录页满视口左右对半(品牌区 1fr | 表单列 1fr,表单内容 440 居中);左栏 `.brand-aura` 光晕 + 三卡轮播(`.pv-stage` grid 叠层、`.pv-slide` 管进出场、`prog` 单变量同时驱动数字与条形)+ `.pv-card` 指针 3D 倾斜;`.preview` 是纯位置壳不可加 transform;EP 主色仅在本页覆盖为 `#2563eb`)
 `web/src/styles/base.css` 全局按钮语言:EP 按钮皮肤重定义(胶囊 + 主按钮渐变) + `.btn-cta`/`.btn-line` 门户外挂
 `assets/consult-qr.png` 报告二维码(英文路径,勿改中文名)
 `samples/` 两套虚构企业材料 · `server/scripts/generate-samples.ts` 样本生成器(`pnpm samples`)
