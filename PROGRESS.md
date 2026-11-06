@@ -559,3 +559,13 @@
 - 「仅限授权人员」从右上角绝对定位改到表单列流内左上，对齐参考图的标签位；`.form-pane` 底部留 72px 防止表单居中时被页脚压住。
 - 只改 `views/LoginView.vue`，鉴权链路 / `App.vue` 守卫 / `savedLogin` 一行未动。实测 1280 / 1366 / 1440 / 1920 / 2560 五档，分隔线像素位置与 50% 计算值一致。
 - 旧的「不放大字号」结论只适用于浮卡版：满屏后左栏画布翻倍，字号交由 vw 驱动，否则 1920 下标题仍是 20px。
+
+## 登录页左栏光晕 + 评分卡 3D 倾斜（2026-11-06）
+
+- 动效二选一定为**渐变光晕**（放弃浮动粒子）：小颗粒会飘过标题，违背「不干扰文字」；光晕是纯合成层，成本低且克制。
+- `.brand-aura` 三个 `radial-gradient` blob（右上蓝 .18 / 左中下青 .16 / 右下靛 .12），23 / 28 / 34s 互质时长，只做 `translate3d + scale` 关键帧，**不加 `filter: blur`**（大尺寸模糊是 3–6ms/帧 的实打实开销）、不加 `mix-blend-mode`。层级 `z-index:0`，落在 `.brand::before` 与网格 `::after` 之间，`.brand-body` 的 1 压在最后。
+- 卡片倾斜必须新增内壳 `.pv-card`：`.preview::before` 靠 `z-index:-1` + **父级不是层叠上下文**才藏在白卡后面；一旦 `.preview` 拿到 `transform/perspective/filter/will-change`，负层伪元素立刻翻到白底之上，静止状态就变成「卡里一块浅蓝内衬 + 12px 内缩描边」。白底/边框/圆角/投影/padding 全部下移到 `.pv-card`，投影跟着卡走。
+- 交互：`pointerenter/move/leave/cancel` 挂在未变形的 `.preview` 上（挂变形元素会让 `getBoundingClientRect` 被自身输出污染，产生回吸抖动）；`--mx/--my ∈ [-1,1]` 经 0.14 阻尼插值，rAF 收敛即停；`perspective(1000px) rotateX(±4.5°) rotateY(±6°)`，`is-live` 之外 transform 为 `none`（常驻会让 11.5px 小字发灰）。子层视差 head ∓3 / bars ±4 / chip 8·10px，**不能给 chip 20px**——会把浮标签推进卡内压住「成长性」一行。
+- 高光用 `.pv-card::after` 径向热区跟指针，峰值 `rgba(37,99,235,.12)`，`opacity` 随 `is-live` 淡入；0.12 叠加后正文对比度仍在 15:1 以上。
+- 坑：原 `onMounted` 首行 `if (!saved) return`，任何追加在后的初始化都会在「未记住密码」时被跳过 —— 改成 `if (saved) { … }` 再绑定监听；`onBeforeUnmount` 必须移除 4 个监听 + `cancelAnimationFrame`，否则登录成功卸载后 rAF 残留。
+- 实测（CDP 直读 computed style）：光晕 transform 1.8s 内有变化；hover 后 `.pv-card` 得到 matrix3d、chip 位移 (-6.4, 6.4)、高光 opacity 1；离开 1.6s 后 class 回到 `preview`、transform 回到 `none`、`--mx` 归零。`--force-prefers-reduced-motion` 下 `animation-name: none`、悬停不倾斜。

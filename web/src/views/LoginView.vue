@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { RULES_ID } from '@srdi/shared'
 import { api, errorText } from '@/api'
@@ -30,6 +30,75 @@ const facts = [
   { value: '1', label: '份可下载报告' }
 ]
 
+const previewEl = ref<HTMLElement | null>(null)
+let rafId = 0
+let hovering = false
+let wantX = 0
+let wantY = 0
+let haveX = 0
+let haveY = 0
+
+const clampAxis = (value: number) => (value < -1 ? -1 : value > 1 ? 1 : value)
+
+const paint = () => {
+  const el = previewEl.value
+  if (!el) {
+    rafId = 0
+    return
+  }
+  haveX += (wantX - haveX) * 0.14
+  haveY += (wantY - haveY) * 0.14
+  if (Math.abs(wantX - haveX) < 0.001 && Math.abs(wantY - haveY) < 0.001) {
+    haveX = wantX
+    haveY = wantY
+    el.style.setProperty('--mx', haveX.toFixed(4))
+    el.style.setProperty('--my', haveY.toFixed(4))
+    if (!hovering) {
+      haveX = 0
+      haveY = 0
+      el.style.setProperty('--mx', '0')
+      el.style.setProperty('--my', '0')
+      el.classList.remove('is-live')
+    }
+    rafId = 0
+    return
+  }
+  el.style.setProperty('--mx', haveX.toFixed(4))
+  el.style.setProperty('--my', haveY.toFixed(4))
+  rafId = requestAnimationFrame(paint)
+}
+
+const schedule = () => {
+  if (!rafId) rafId = requestAnimationFrame(paint)
+}
+
+const onTiltEnter = () => {
+  hovering = true
+  previewEl.value?.classList.add('is-live')
+  schedule()
+}
+
+const onTiltMove = (event: PointerEvent) => {
+  const el = previewEl.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  if (!rect.width || !rect.height) return
+  wantX = clampAxis(((event.clientX - rect.left) / rect.width) * 2 - 1)
+  wantY = clampAxis(((event.clientY - rect.top) / rect.height) * 2 - 1)
+  schedule()
+}
+
+const onTiltLeave = () => {
+  hovering = false
+  wantX = 0
+  wantY = 0
+  schedule()
+}
+
+const tiltAllowed = () =>
+  window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
+  !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 const useRole = (next: 'customer' | 'admin') => {
   mode.value = next
   error.value = ''
@@ -44,10 +113,32 @@ const useRole = (next: 'customer' | 'admin') => {
 
 onMounted(() => {
   const saved = loadSavedLogin()
-  if (!saved) return
-  username.value = saved.username
-  password.value = saved.password
-  remember.value = true
+  if (saved) {
+    username.value = saved.username
+    password.value = saved.password
+    remember.value = true
+  }
+  const el = previewEl.value
+  if (!el || !tiltAllowed()) return
+  el.addEventListener('pointerenter', onTiltEnter)
+  el.addEventListener('pointermove', onTiltMove, { passive: true })
+  el.addEventListener('pointerleave', onTiltLeave)
+  el.addEventListener('pointercancel', onTiltLeave)
+})
+
+onBeforeUnmount(() => {
+  const el = previewEl.value
+  if (el) {
+    el.removeEventListener('pointerenter', onTiltEnter)
+    el.removeEventListener('pointermove', onTiltMove)
+    el.removeEventListener('pointerleave', onTiltLeave)
+    el.removeEventListener('pointercancel', onTiltLeave)
+    el.classList.remove('is-live')
+    el.style.removeProperty('--mx')
+    el.style.removeProperty('--my')
+  }
+  if (rafId) cancelAnimationFrame(rafId)
+  rafId = 0
 })
 
 watch(remember, (value) => {
@@ -84,6 +175,11 @@ const submit = async () => {
 <template>
   <div class="gate">
     <aside class="brand">
+      <div class="brand-aura" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
       <div class="brand-body">
         <div class="brand-head">
           <span class="mark">专</span>
@@ -105,25 +201,27 @@ const submit = async () => {
             项指标逐条打分，并给出可以马上动手的补足建议。
           </p>
 
-          <div class="preview">
-            <div class="pv-head">
-              <div class="pv-org"><b>示例企业</b><span>装备制造</span></div>
-              <span class="pv-tag">示例</span>
-            </div>
-            <div class="pv-score">
-              <span class="pv-num">54.3</span>
-              <span class="pv-unit">/ 100</span>
-              <span class="pv-cap">当前参考得分</span>
-            </div>
-            <div class="pv-bars">
-              <div v-for="row in previewDims" :key="row.name" class="pv-row">
-                <span class="pv-name">{{ row.name }}</span>
-                <div class="pv-track"><i class="pv-fill" :style="{ width: row.ratio }" /></div>
-                <span class="pv-val">{{ row.value }}</span>
+          <div ref="previewEl" class="preview">
+            <div class="pv-card">
+              <div class="pv-head">
+                <div class="pv-org"><b>示例企业</b><span>装备制造</span></div>
+                <span class="pv-tag">示例</span>
               </div>
+              <div class="pv-score">
+                <span class="pv-num">54.3</span>
+                <span class="pv-unit">/ 100</span>
+                <span class="pv-cap">当前参考得分</span>
+              </div>
+              <div class="pv-bars">
+                <div v-for="row in previewDims" :key="row.name" class="pv-row">
+                  <span class="pv-name">{{ row.name }}</span>
+                  <div class="pv-track"><i class="pv-fill" :style="{ width: row.ratio }" /></div>
+                  <span class="pv-val">{{ row.value }}</span>
+                </div>
+              </div>
+              <span class="pv-chip pv-chip-a"><i />23 项指标 · 证据已抽取</span>
+              <span class="pv-chip pv-chip-b"><i />五个维度</span>
             </div>
-            <span class="pv-chip pv-chip-a"><i />23 项指标 · 证据已抽取</span>
-            <span class="pv-chip pv-chip-b"><i />五个维度</span>
           </div>
         </div>
 
@@ -334,6 +432,81 @@ const submit = async () => {
   );
 }
 
+.brand-aura {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.brand-aura i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  animation: aura-a 28s ease-in-out infinite alternate;
+}
+
+.brand-aura i:nth-child(1) {
+  width: clamp(320px, 38vw, 660px);
+  aspect-ratio: 1;
+  top: -16%;
+  right: -12%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(37, 99, 235, 0.18),
+    rgba(37, 99, 235, 0.07) 44%,
+    transparent 70%
+  );
+}
+
+.brand-aura i:nth-child(2) {
+  width: clamp(260px, 30vw, 520px);
+  aspect-ratio: 1;
+  left: -14%;
+  top: 46%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(14, 165, 233, 0.16),
+    rgba(14, 165, 233, 0.05) 46%,
+    transparent 68%
+  );
+  animation: aura-b 34s ease-in-out infinite alternate;
+}
+
+.brand-aura i:nth-child(3) {
+  width: clamp(220px, 26vw, 440px);
+  aspect-ratio: 1;
+  right: 4%;
+  bottom: -14%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(99, 102, 241, 0.12),
+    rgba(99, 102, 241, 0.04) 46%,
+    transparent 70%
+  );
+  animation-duration: 23s;
+}
+
+@keyframes aura-a {
+  from {
+    transform: translate3d(-4%, -3%, 0) scale(0.94);
+  }
+
+  to {
+    transform: translate3d(4%, 4%, 0) scale(1.06);
+  }
+}
+
+@keyframes aura-b {
+  from {
+    transform: translate3d(5%, 3%, 0) scale(1.05);
+  }
+
+  to {
+    transform: translate3d(-3%, -4%, 0) scale(0.95);
+  }
+}
+
 .brand-body {
   position: relative;
   z-index: 1;
@@ -428,11 +601,58 @@ const submit = async () => {
   position: relative;
   max-width: 560px;
   margin: clamp(24px, 3.4vh, 40px) 0 10px;
+}
+
+.pv-card {
+  position: relative;
   padding: 20px 22px 18px;
   border-radius: 16px;
   background: #fff;
   border: 1px solid #e8eef6;
   box-shadow: 0 24px 48px -34px rgba(37, 99, 235, 0.55);
+}
+
+.preview.is-live .pv-card {
+  transform: perspective(1000px) rotateX(calc(var(--my, 0) * -4.5deg))
+    rotateY(calc(var(--mx, 0) * 6deg));
+  box-shadow: 0 34px 58px -34px rgba(37, 99, 235, 0.62);
+  will-change: transform;
+}
+
+.pv-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle 210px at calc(50% + var(--mx, 0) * 34%) calc(50% + var(--my, 0) * 34%),
+    rgba(37, 99, 235, 0.12),
+    rgba(37, 99, 235, 0.04) 46%,
+    transparent 72%
+  );
+  transition: opacity 0.28s ease;
+}
+
+.preview.is-live .pv-card::after {
+  opacity: 1;
+}
+
+.preview.is-live .pv-head {
+  transform: translate3d(calc(var(--mx, 0) * -3px), calc(var(--my, 0) * -3px), 0);
+}
+
+.preview.is-live .pv-bars {
+  transform: translate3d(calc(var(--mx, 0) * 4px), calc(var(--my, 0) * 4px), 0);
+}
+
+.preview.is-live .pv-chip-a {
+  transform: translate3d(calc(var(--mx, 0) * 8px), calc(var(--my, 0) * 8px), 0);
+}
+
+.preview.is-live .pv-chip-b {
+  transform: translate3d(calc(var(--mx, 0) * 10px), calc(var(--my, 0) * 10px), 0);
 }
 
 .preview::before {
@@ -922,6 +1142,23 @@ const submit = async () => {
 
   .pv-num {
     font-size: 46px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-aura i {
+    animation: none;
+  }
+
+  .preview.is-live .pv-card {
+    transform: none;
+  }
+
+  .preview.is-live .pv-head,
+  .preview.is-live .pv-bars,
+  .preview.is-live .pv-chip-a,
+  .preview.is-live .pv-chip-b {
+    transform: none;
   }
 }
 </style>
