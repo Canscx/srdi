@@ -37,7 +37,7 @@ pnpm workspaces:`shared` / `server` / `web`。
 `config/portal.json` 客户流程参数(5 个槽位含营业执照/查询限流/预识别;及格线继承规则包;知识产权档位规则在 IND_17) · `config/industry-map.json` 行业推断 · `config/advice.json` 兜底话术
 `web/src/components/portal/ScoreReport.vue` 评分页与结果页共用主体 · `server/src/portal/detail.ts` 两页共用数据装配
 `web/src/components/portal/LicenseBanner.vue` 营业执照上传引导条(四态) · `server/src/portal/recognize.ts` 预识别 · `server/src/portal/identity.ts` 主体信息裁决
-`web/src/views/LoginView.vue` 登录页左右分栏版式(品牌区 + 表单区,EP 主色仅在本页覆盖为 `#2563eb`)
+`web/src/views/LoginView.vue` 登录页满视口左右分栏(左品牌区 1fr + 右表单列 clamp(420,32vw,600),无卡片留白;EP 主色仅在本页覆盖为 `#2563eb`)
 `web/src/styles/base.css` 全局按钮语言:EP 按钮皮肤重定义(胶囊 + 主按钮渐变) + `.btn-cta`/`.btn-line` 门户外挂
 `assets/consult-qr.png` 报告二维码(英文路径,勿改中文名)
 `samples/` 两套虚构企业材料 · `server/scripts/generate-samples.ts` 样本生成器(`pnpm samples`)

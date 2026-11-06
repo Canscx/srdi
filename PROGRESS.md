@@ -549,3 +549,12 @@
 - 成因：根 `pnpm build` 只构建前端，服务端由 `tsx server/src/index.ts` 直接执行源码。`git pull` 后不重启进程，就得到「新前端 + 旧后端」，新入口必然 404。`update.sh` 在无 pm2 时只提示去面板重启，容易被跳过。
 - 处置：重启进程（`pm2 restart srdi` 或面板 Node 项目重启）。重启会清空内存 session，需要重新登录。
 - 防呆：`/api/health` 增 `runtime.commit`（`server/src/version.ts` 启动时读 git 短 sha，无 git 返回 null）。`update.sh` 重启后拿它与磁盘 HEAD 比对，不一致直接报错退出；无 pm2 分支会明确提示「重启之前，新增接口会返回接口不存在」。排错表同步补行。
+
+## 登录页改满屏左右分栏（2026-11-06）
+
+- 原 1080×680 浮卡（`.gate` 居中 + `.card` 圆角 + 描边 + 投影 + 四周留白）观感偏小。去掉 `.card` 包装层，`.gate` 自己变成两列 grid：`minmax(0,1fr) | clamp(420px, 32vw, 600px)`，`min-height: 100vh`；右列纯白 + 左侧发丝线，无圆角、无投影、无外留白。
+- 左栏改三段 flex：品牌头 / `.brand-main`（`margin: auto 0` 垂直居中：kicker + 标题 + 说明 + 评分预览）/ `.brand-foot`（贴底 5·23·1 + 引擎状态）。`.brand-body` 上限 800px、左锚 `clamp(48px,6vw,128px)`，≥1800px 才升到 900 / 620 / 标题 44。
+- 字号交给画布：标题 `clamp(26px,2.4vw,44px)`、表单标题 `clamp(22px,1.8vw,26px)`、输入 46 高、主按钮 50 高；`@media (max-height:780px)` 收纵向间距，1366×768 与 1280×720 都不出滚动条。
+- 「仅限授权人员」从右上角绝对定位改到表单列流内左上，对齐参考图的标签位；`.foot` 仍绝对贴底，`.form-pane` 底部留 72px 防止表单居中时被页脚压住。
+- 只改 `views/LoginView.vue`，鉴权链路 / `App.vue` 守卫 / `savedLogin` 一行未动。实测 1280 / 1366 / 1440 / 1920 / 2560 五档，分隔线像素位置与 32vw 计算值一致。
+- 旧的「不放大字号」结论只适用于浮卡版：满屏后左栏画布翻倍，字号交由 vw 驱动，否则 1920 下标题仍是 20px。
