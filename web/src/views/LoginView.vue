@@ -261,7 +261,7 @@ const submit = async () => {
   z-index: 1;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(420px, 32vw, 600px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   background: #fff;
   --el-color-primary: #2563eb;
   --el-color-primary-light-3: #6692f1;
@@ -282,7 +282,7 @@ const submit = async () => {
   isolation: isolate;
   overflow: hidden;
   display: flex;
-  padding: 48px clamp(48px, 6vw, 128px) 40px;
+  padding: 48px clamp(40px, 4vw, 72px) 40px;
   background: linear-gradient(150deg, #fbfdff 0%, #f3f8ff 42%, #e7f1ff 100%);
   border-right: 1px solid #e8eef6;
 }
@@ -636,7 +636,7 @@ const submit = async () => {
 .form-inner {
   width: 100%;
   max-width: 440px;
-  margin: auto 0;
+  margin: auto;
 }
 
 .badge {
@@ -866,9 +866,10 @@ const submit = async () => {
 
 .foot {
   position: absolute;
-  left: clamp(36px, 4vw, 64px);
-  right: clamp(36px, 4vw, 64px);
+  left: 50%;
   bottom: 26px;
+  width: min(440px, calc(100% - 2 * clamp(36px, 4vw, 64px)));
+  transform: translateX(-50%);
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -903,8 +904,8 @@ const submit = async () => {
 
 @media (min-width: 1800px) {
   .brand {
-    padding-left: 7vw;
-    padding-right: 7vw;
+    padding-left: 5vw;
+    padding-right: 5vw;
   }
 
   .brand-body {
