@@ -418,10 +418,16 @@ const renderMaterials = (doc: PDFKit.PDFDocument, data: PortalResultResponse) =>
     '行业基准数值来自公开统计与行业报告估算，未匹配到行业时按中性基准计算。',
     '换设备后，在首页输入企业全称与手机号后四位即可找回本报告。'
   ]
+  const NOTE_INDENT = 11
   doc.fontSize(8.5).fillColor(COLOR.body)
   for (const note of notes) {
-    doc.text(`· ${note}`, M, y, { width: CW, lineGap: 3 })
-    y += doc.heightOfString(note, { width: CW, lineGap: 3 }) + 4
+    const height = doc.heightOfString(note, { width: CW - NOTE_INDENT, lineGap: 3 })
+    const next = gap(doc, y, height + 6)
+    doc = next.doc
+    y = next.y
+    doc.fontSize(8.5).fillColor(COLOR.body).text('·', M, y, { width: NOTE_INDENT })
+    doc.text(note, M + NOTE_INDENT, y, { width: CW - NOTE_INDENT, lineGap: 3 })
+    y += height + 4
   }
 
   const scope = (data.company.businessScope ?? '').trim()
