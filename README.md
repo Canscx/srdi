@@ -1,7 +1,7 @@
 # 专精特新申报自评打分系统
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/Canscx/srdi?color=blue&label=release)](https://github.com/Canscx/srdi/releases)
+[![Tag](https://img.shields.io/github/v/tag/Canscx/srdi?color=blue&label=tag)](https://github.com/Canscx/srdi/tags)
 [![Node](https://img.shields.io/badge/node-%E2%89%A5%2020.11-339933?logo=node.js&logoColor=white)](package.json)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883?logo=vue.js&logoColor=white)](web/package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript&logoColor=white)](tsconfig.base.json)

@@ -67,6 +67,6 @@
 - 四份 JSON Schema：rules / field-catalog / benchmarks / evidence
 - 三篇设计文档：架构、打分数学、解析与 AI 契约
 
-[0.3.0]: https://github.com/Canscx/srdi/releases/tag/v0.3.0
-[0.2.0]: https://github.com/Canscx/srdi/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/Canscx/srdi/releases/tag/v0.1.0
+[0.3.0]: https://github.com/Canscx/srdi/compare/v0.1.0...v0.3.0
+[0.2.0]: https://github.com/Canscx/srdi/compare/v0.1.0...v0.3.0
+[0.1.0]: https://github.com/Canscx/srdi/tree/v0.1.0
