@@ -588,3 +588,16 @@
 - 修法：拆成悬挂缩进 —— `·` 画在 `M`，正文画在 `M + 11` 且宽 `CW - 11`，高度用同一串同一宽度量；每条前加 `gap()` 分页保护，防止说明变长后压到页脚。
 - 只改 `server/src/report/portal.ts`，八条文案一字未动。用 `p_mvund2h17224ef57`（上海搜信）实渲染复核：每条独占行，第 5 条折行对齐正文。`npm run validate` 154 项通过。
 - 旧 PDF 是生成时快照，需在页面重新导出才会生效。
+
+## 仓库规范化与 v0.3.0 发布（2026-11-23）
+
+GitHub 仓库从「只有代码」补成可对外展示的状态：About 简介与 topics、README 重写、许可证、CHANGELOG、贡献与安全说明、Issue / PR 模板、CI。
+
+- **许可证选 Apache-2.0 而不是 MIT**：项目会嵌入字体、引用政策文件、并可能被企业内部分发；Apache-2.0 的专利授权与变更声明条款比 MIT 更适合这种场景。LICENSE 由 GitHub API 取官方正文，只填版权人，不改条款。
+- **README 结构**：徽章 → 一句话定位 → 能力表 → 核心设计（五层解耦图 + 「AI 只抽证据」原则）→ 界面截图 → 快速开始 → 评分口径表 → 目录结构 → 技术栈 → 开发命令 → 部署三形态 → 政策依据 → 文档索引 → 免责声明。原来的「状态」段落删掉（版本改由徽章与 CHANGELOG 表达），补上客户轻流程与双角色，避免 README 落后于代码。
+- **截图取自真实运行实例**：CDP 驱动无头 Chrome 逐页截取（1440 宽、2x DPR），再用 System.Drawing 等比压到 1600px 宽。企业名与信用代码在页面里替换成虚构的「南京云枢信息技术有限公司 / 91320100MA1AB2CD3E」，避免把真实客户材料带上公网。图存 docs/images/。
+- **版本号统一到 0.3.0**：四个 package.json + shared/src/constants.ts 的 APP_VERSION。此前代码停在 0.2.0 而 AGENTS.md 已写 0.3.0，/api/health 会对外报旧版本。review.spec.ts 只校验 semver 形状，不受影响。
+- **CI 跑 windows-latest**：shared/vitest.config.ts 为规避 Windows 的 EPERM 关了文件并行，linux 上跑不出等价结果；本项目主战场也是 Windows 单机与宝塔。CI 只跑 pnpm validate，不构建便携包。
+- **踩到的坑**：无头 Chrome 用 hash 路由时，只改 hash 不触发重新挂载，截图会停在上一页 —— 必须先 Page.navigate 到带随机 query 的地址再设 hash，否则六张图全一样。另一个坑是 read 工具对大文件会截断（本文件 590 行只回 415 行），整文件重写会丢内容，追加必须用 edit 或 Add-Content。
+- 验证：pnpm validate 全绿（配置 7 个文件 / shared 147 条 / server 154 条）；README 内所有相对链接与 docs/images/ 路径逐一核对存在。
+

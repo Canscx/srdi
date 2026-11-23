@@ -1,0 +1,41 @@
+name: 功能建议
+description: 提出新能力或改进
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先读 [docs/architecture.md](../blob/main/docs/architecture.md) 与 `PROGRESS.md` 的「决策记录」，避免重复提已被否掉的方案。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决什么问题
+      description: 描述场景与痛点，而不是先给方案
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的做法
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+      description: 以及为什么没选它
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: 是否触碰架构约束
+      options:
+        - label: 会改动五层解耦中的某一层（L1–L5）
+        - label: 需要动规则包 / 字段目录 / 行业基准的配置结构
+        - label: 会引入新的运行时依赖

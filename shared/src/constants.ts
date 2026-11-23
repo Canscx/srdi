@@ -1,5 +1,5 @@
 export const SERVICE_NAME = 'srdi-scorer'
-export const APP_VERSION = '0.2.0'
+export const APP_VERSION = '0.3.0'
 export const STAGE = 'report'
 
 export const RULES_ID = 'rules.srdi.v1.0.0'

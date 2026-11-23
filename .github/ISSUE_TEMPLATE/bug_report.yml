@@ -1,0 +1,72 @@
+name: 问题反馈
+description: 报告一个可复现的缺陷
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请先搜索已有 issue，避免重复。**请勿粘贴真实企业材料、真实财务数据或 API Key**，需要复现时用 `samples/` 里的虚构样本。
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影响范围
+      options:
+        - 解析（PDF / DOCX / XLSX / 图片）
+        - 抽取（AI 字段识别）
+        - 确认页
+        - 打分与口径
+        - 报告导出（Markdown / PDF）
+        - 客户轻流程
+        - 登录与权限
+        - 部署与更新
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 现象
+      description: 发生了什么，期望发生什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. pnpm start
+        2. 用 samples/firm-a-nanjing 建项目
+        3. 点「解析」
+        4. …
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本与提交号
+      description: 页面右上角或 GET /api/health 的 version 与 runtime.commit
+      placeholder: v0.3.0 / c046317
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: 运行环境
+      placeholder: Windows 11 / Node 22.20 / pnpm 11.22 / Chrome 142
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志与截图
+      description: 服务端终端输出、浏览器 Console、相关截图
+      render: text
+    validations:
+      required: false

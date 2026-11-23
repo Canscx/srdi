@@ -27,7 +27,8 @@ pnpm workspaces:`shared` / `server` / `web`。
 
 - 动手前读 `PROGRESS.md` 的「决策记录」,那里有已被否掉的方案
 - 完成任务后追加 `PROGRESS.md`
-- 提交前跑 `npm run validate`
+- 提交前跑 `pnpm validate`
+- 改了对外可见的能力 / 版本 / 口径,同步 `README.md` 与 `CHANGELOG.md`(README 只写现状,历史进 CHANGELOG)
 
 ## 索引
 
@@ -43,3 +44,4 @@ pnpm workspaces:`shared` / `server` / `web`。
 `samples/` 两套虚构企业材料 · `server/scripts/generate-samples.ts` 样本生成器(`pnpm samples`)
 `server/scripts/check-font.ts` 中文字体自检(`pnpm check:font`)· `docs/HANDOVER-font-bug.md` PDF 字体故障复盘
 `deploy/` 宝塔部署手册 + nginx/PM2 配置 + `update.sh`(更新前自动快照)/`backup.sh`/`rollback.sh` · `scripts/build-portable.mjs` 便携包构建(`pnpm pack:portable`)
+`docs/images/` README 截图(真实实例 + 虚构企业名,勿换回真实客户名)· `CHANGELOG.md` 版本变更 · `CONTRIBUTING.md` 贡献规范 · `SECURITY.md` 漏洞报告与已知设计 · `.github/` Issue/PR 模板与 CI(跑 `pnpm validate`)

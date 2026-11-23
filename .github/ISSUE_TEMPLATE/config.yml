@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 部署与运维问题
+    url: https://github.com/Canscx/srdi/blob/main/deploy/README.md
+    about: 宝塔部署、更新、回滚、字体与端口问题先查部署手册的排错对照表
+  - name: 架构与口径说明
+    url: https://github.com/Canscx/srdi/blob/main/docs/architecture.md
+    about: 五层架构、接口契约、打分口径与风险清单
