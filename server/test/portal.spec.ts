@@ -13,8 +13,8 @@ const ACCOUNTS = {
 }
 
 const COMPANY = {
-  name: '上海搜信网络科技有限公司',
-  creditCode: '91310105MA1FW5R45P',
+  name: '南京云枢信息技术有限公司',
+  creditCode: '91320100MA1AB2CD3N',
   phone: '13800001111',
   inventionCount: 1,
   layoutDesignCount: 1,
@@ -282,7 +282,7 @@ describe('客户轻流程', () => {
           const admin = session(server.base)
           await signIn(admin, 'admin', 'admin-pass')
           const submissions = await admin.request(
-            `/api/admin/submissions?q=${encodeURIComponent('搜信')}`
+            `/api/admin/submissions?q=${encodeURIComponent('云枢')}`
           )
           expect(submissions.status).toBe(200)
           const body = (await submissions.json()) as {

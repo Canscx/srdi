@@ -41,15 +41,15 @@ describe('主体信息解析', () => {
   it('材料合法而手填非法时采用材料值', () => {
     const identity = resolveIdentity({
       project: projectOf({
-        name: '上海搜信网络科技有限公司',
-        creditCode: '91310105MAIFWSR4SP',
+        name: '南京云枢信息技术有限公司',
+        creditCode: '91320100MAIAB2CD3N',
         phone: '13800001111'
       }),
       evidence: evidenceOf({
-        'company.creditCode': entry('company.creditCode', 'text', '91310105MA1FW5R45P')
+        'company.creditCode': entry('company.creditCode', 'text', '91320100MA1AB2CD3N')
       })
     })
-    expect(identity.creditCode).toBe('91310105MA1FW5R45P')
+    expect(identity.creditCode).toBe('91320100MA1AB2CD3N')
     expect(identity.creditCodeSource).toBe('material')
     expect(identity.warnings).toHaveLength(0)
   })
@@ -58,32 +58,32 @@ describe('主体信息解析', () => {
     const identity = resolveIdentity({
       project: projectOf({
         name: '甲公司',
-        creditCode: '91310105MA2FW5R45X',
+        creditCode: '91320114MA1XY7QW8B',
         phone: '13800001111'
       }),
       evidence: evidenceOf({
-        'company.creditCode': entry('company.creditCode', 'text', '91310105MA1FW5R45P')
+        'company.creditCode': entry('company.creditCode', 'text', '91320100MA1AB2CD3N')
       })
     })
-    expect(identity.creditCode).toBe('91310105MA1FW5R45P')
+    expect(identity.creditCode).toBe('91320100MA1AB2CD3N')
     expect(identity.creditCodeSource).toBe('material')
     expect(identity.warnings.join()).toContain('不一致')
   })
 
   it('材料缺失时回落到手填值', () => {
     const identity = resolveIdentity({
-      project: projectOf({ name: '甲公司', creditCode: '91310105MA1FW5R45P', phone: '138' }),
+      project: projectOf({ name: '甲公司', creditCode: '91320100MA1AB2CD3N', phone: '138' }),
       evidence: evidenceOf({})
     })
-    expect(identity.creditCode).toBe('91310105MA1FW5R45P')
+    expect(identity.creditCode).toBe('91320100MA1AB2CD3N')
     expect(identity.creditCodeSource).toBe('input')
   })
 
   it('两者都不合法时留空并提示', () => {
     const identity = resolveIdentity({
-      project: projectOf({ name: '甲公司', creditCode: '91310105MAIFWSR4SP', phone: '138' }),
+      project: projectOf({ name: '甲公司', creditCode: '91320100MAIAB2CD3N', phone: '138' }),
       evidence: evidenceOf({
-        'company.creditCode': entry('company.creditCode', 'text', '91310105MAIFWSR4SP')
+        'company.creditCode': entry('company.creditCode', 'text', '91320100MAIAB2CD3N')
       })
     })
     expect(identity.creditCode).toBe('')
@@ -142,10 +142,10 @@ describe('主体信息解析', () => {
       const store = createStore(dir)
       const created = await store.projects.create(
         {
-          name: '上海搜信网络科技有限公司',
+          name: '南京云枢信息技术有限公司',
           company: {
-            name: '上海搜信网络科技有限公司',
-            creditCode: '91310105MA1FW5R45P',
+            name: '南京云枢信息技术有限公司',
+            creditCode: '91320100MA1AB2CD3N',
             phone: '13800001111'
           },
           period: PERIOD
@@ -156,7 +156,7 @@ describe('主体信息解析', () => {
       await writeJson(
         path.join(store.projects.dir(created.projectId), 'evidence.json'),
         evidenceOf({
-          'company.creditCode': entry('company.creditCode', 'text', '91310105MA1FW5R45P'),
+          'company.creditCode': entry('company.creditCode', 'text', '91320100MA1AB2CD3N'),
           'identity.businessScope': entry('identity.businessScope', 'text', '一般项目：技术服务。')
         })
       )
@@ -168,7 +168,7 @@ describe('主体信息解析', () => {
       expect(second).toHaveLength(0)
 
       const saved = await store.projects.get(created.projectId)
-      expect(saved.company?.creditCode).toBe('91310105MA1FW5R45P')
+      expect(saved.company?.creditCode).toBe('91320100MA1AB2CD3N')
       expect(saved.company?.creditCodeSource).toBe('material')
     })
   })
