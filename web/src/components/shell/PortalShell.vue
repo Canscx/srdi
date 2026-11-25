@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { goto } from '@/router'
+import IcpLink from '@/components/shell/IcpLink.vue'
 
 const emit = defineEmits<{ 'sign-out': [] }>()
 
@@ -31,7 +32,8 @@ const signOut = () => emit('sign-out')
     </main>
 
     <footer class="foot">
-      参考得分非官方口径，仅供申报前自查 · 材料仅用于本次评估
+      <span>参考得分非官方口径，仅供申报前自查 · 材料仅用于本次评估</span>
+      <IcpLink />
     </footer>
   </div>
 </template>
@@ -138,9 +140,21 @@ h1 {
 
 .foot {
   padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   text-align: center;
-  font-size: 11px;
-  color: #cbd5e1;
+  font-size: 11.5px;
+  color: #8a94a6;
   letter-spacing: 0.2px;
+}
+
+.foot .icp {
+  color: #8a94a6;
+}
+
+.foot .icp:hover {
+  color: #2563eb;
 }
 </style>

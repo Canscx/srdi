@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { RULES_ID } from '@srdi/shared'
 import { api, errorText } from '@/api'
 import { clearSavedLogin, loadSavedLogin, saveSavedLogin } from '@/savedLogin'
+import IcpLink from '@/components/shell/IcpLink.vue'
 
 const emit = defineEmits<{ done: [] }>()
 
@@ -487,8 +488,7 @@ const submit = async () => {
       </div>
 
       <div class="foot">
-        <span>参考得分非官方口径 · 仅供申报前自查</span>
-        <span>{{ rulesId }}</span>
+        <IcpLink />
       </div>
     </form>
   </div>
@@ -1276,8 +1276,9 @@ const submit = async () => {
   width: min(440px, calc(100% - 2 * clamp(36px, 4vw, 64px)));
   transform: translateX(-50%);
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
   font-size: 11.5px;
   color: #a3adbb;
   letter-spacing: 0.2px;

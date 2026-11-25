@@ -601,3 +601,11 @@ GitHub 仓库从「只有代码」补成可对外展示的状态：About 简介�
 - **踩到的坑**：无头 Chrome 用 hash 路由时，只改 hash 不触发重新挂载，截图会停在上一页 —— 必须先 Page.navigate 到带随机 query 的地址再设 hash，否则六张图全一样。另一个坑是 read 工具对大文件会截断（本文件 590 行只回 415 行），整文件重写会丢内容，追加必须用 edit 或 Add-Content。
 - 验证：pnpm validate 全绿（配置 7 个文件 / shared 147 条 / server 154 条）；README 内所有相对链接与 docs/images/ 路径逐一核对存在。
 
+
+## 页脚备案号（2026-11-25）
+
+- 新增 `web/src/components/shell/IcpLink.vue`：单个组件持有备案号 `浙ICP备2025216279号` 与工信部地址 `https://beian.miit.gov.cn/`，`target="_blank"` + `rel="noopener noreferrer"`。三处页脚共用，改号只改一处。
+- 落点三处：登录页 `.foot`、客户门户 `PortalShell`、管理后台 `AdminShell`。原页脚是单行文字，改成 `flex column` 让备案号独占一行，样式仍全部 scoped。
+- 登录页页脚按用户要求只留备案号，「参考得分非官方口径 · 仅供申报前自查」与 `rulesId` 那行整行删除（`rulesId` 在左栏 `.brand-foot` 仍有使用，import 保留）。
+- 登录后两处页脚原色 `#cbd5e1` / `#a3adbb` 太淡看不清，统一提到 `#8a94a6`，字号统一 11.5px（门户原 11px）；备案号同色，hover 转 `#2563eb` + 下划线。坑：`.foot .icp` 的 `color` 特异性高于组件内 `.icp:hover`，只写组件里的 hover 不会变色，必须在外壳补 `.foot .icp:hover`。
+- 实测（CDP，1440×900 与 1280×720 / 1366×768）：三处 `a.icp` 均可见，`href` 与 `target` 正确，hover 变蓝加下划线；1280×720 下登录页页脚与表单无重叠、不出滚动条。
