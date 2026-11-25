@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { goto } from '@/router'
 import IcpLink from '@/components/shell/IcpLink.vue'
+import BrandMark from '@/components/shell/BrandMark.vue'
 
 const emit = defineEmits<{ 'sign-out': [] }>()
 
@@ -11,7 +12,7 @@ const signOut = () => emit('sign-out')
   <div class="shell">
     <header class="bar">
       <div class="brand" @click="goto('/')">
-        <span class="mark">专</span>
+        <BrandMark class="mark" :size="38" />
         <div>
           <h1>专精特新自评</h1>
           <p>上传材料 · 自动打分 · 出具补足建议</p>
@@ -65,15 +66,7 @@ const signOut = () => emit('sign-out')
 }
 
 .mark {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
   border-radius: 11px;
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
-  color: #fff;
-  font-size: 17px;
-  font-weight: 600;
   box-shadow: 0 10px 22px -12px rgba(37, 99, 235, 0.7);
 }
 

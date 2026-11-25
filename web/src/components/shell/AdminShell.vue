@@ -4,6 +4,7 @@ import { goto } from '@/router'
 import { useAiSettings } from '@/composables/useAiSettings'
 import AiSettingsDialog from '@/components/AiSettingsDialog.vue'
 import IcpLink from '@/components/shell/IcpLink.vue'
+import BrandMark from '@/components/shell/BrandMark.vue'
 
 defineProps<{ active: string }>()
 const emit = defineEmits<{ 'sign-out': [] }>()
@@ -21,7 +22,7 @@ onMounted(() => {
   <div class="shell">
     <header class="masthead">
       <div class="brand">
-        <span class="mark">专</span>
+        <BrandMark class="mark" :size="44" />
         <div>
           <h1>专精特新申报自评打分系统</h1>
           <p class="sub">管理员后台 · 上传材料 · 抽取证据 · 人工确认 · 参考打分</p>
@@ -89,16 +90,7 @@ onMounted(() => {
 }
 
 .mark {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
   border-radius: 13px;
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
-  color: #fff;
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: 1px;
   box-shadow: 0 10px 22px -10px rgba(37, 99, 235, 0.65);
 }
 

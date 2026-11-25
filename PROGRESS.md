@@ -609,3 +609,16 @@ GitHub 仓库从「只有代码」补成可对外展示的状态：About 简介�
 - 登录页页脚按用户要求只留备案号，「参考得分非官方口径 · 仅供申报前自查」与 `rulesId` 那行整行删除（`rulesId` 在左栏 `.brand-foot` 仍有使用，import 保留）。
 - 登录后两处页脚原色 `#cbd5e1` / `#a3adbb` 太淡看不清，统一提到 `#8a94a6`，字号统一 11.5px（门户原 11px）；备案号同色，hover 转 `#2563eb` + 下划线。坑：`.foot .icp` 的 `color` 特异性高于组件内 `.icp:hover`，只写组件里的 hover 不会变色，必须在外壳补 `.foot .icp:hover`。
 - 实测（CDP，1440×900 与 1280×720 / 1366×768）：三处 `a.icp` 均可见，`href` 与 `target` 正确，hover 变蓝加下划线；1280×720 下登录页页脚与表单无重叠、不出滚动条。
+
+## 品牌 Logo 与 favicon（2026-11-25）
+
+- 新增 `web/public/brand-mark.svg` 作为唯一品牌图形源文件；新增 `web/src/components/shell/BrandMark.vue` 承载 `<img>`，登录页 46px / 客户门户 38px / 管理后台 44px 三处复用，`index.html` 加 SVG favicon。
+- **图形从「文字」改为纯矢量**：初版用 `<text>专</text>` 渲染汉字，favicon 在 16px 下必然发糊，且依赖客户端字体、换机器就可能变形。定稿改为「白色五边形 + 蓝色对勾」：五边形对应产品核心的五维雷达，对勾对应「达标」，全部是路径，任意尺寸都锐利、不依赖字体。
+- 选型过程：三轮候选实测（达标勾 / 递增柱 / 量表环 / 破环箭头 / 五维雷达 / 盾形 / 阶梯），在 16 / 32 / 38 / 44 / 64 / 96 / 180px 逐档渲染比对。描边式雷达在 16px 糊成一团，**实心体块**才立得住；纯柱状图太通用、辨识度低，故取雷达语义。
+- 配色收到沉稳蓝（`#5B9DF9 → #2563EB → #123A8C`），比初版偏青的 `#2563eb → #0ea5e9` 更克制，叠一层斜向白色 sheen 与内描边提质感；小尺寸下外描边会糊，故只保留体块与对勾。
+- **坑（这次返工的原因）**：`BrandMark.vue` 原来写静态 `src="/brand-mark.svg"`，Vue 模板编译器把它当资源导入交给 Vite，1KB 的 SVG 低于内联阈值，于是被**内联成 data URI 编译进 JS**。结果 favicon 走了新文件、页头 logo 还是打包时的旧图 —— 改 `public/` 下的文件对页头**完全不生效**，且 dev server 缓存住旧模块时刷新也看不到变化。修法见下一条（最终用「绑定变量」绕开资源转换，而不是内联复制图形）。
+- **最终形态：单一数据源**。`BrandMark.vue` 改为 `<img :src="markSrc">`，`markSrc` 是 JS 变量 —— Vue 只对**静态** `src` 属性做资源转换，绑定变量不经过资源管线，因此不会被内联，运行时真的去读 `/brand-mark.svg`。图形只有 `web/public/brand-mark.svg` 一份，favicon 与页头共用，不会再出现两处不一致。
+- 验证方式（关键）：把 `dist/brand-mark.svg` 里的五边形临时改成红色，页头 logo 跟着变红 → 证明读的是文件而非编译期快照。这是上一版失效的地方，仅看 `naturalWidth` 无法发现。
+- favicon 三件套：`brand-mark.svg`（现代浏览器）+ `favicon-32.png`（32×32 兜底）+ `apple-touch-icon.png`（180×180，iOS 加到主屏）。PNG 由无头 Chrome 按精确像素从 SVG 栅格化（本机无 sharp/resvg，不额外引依赖）。
+- 16px 实测：五边形与对勾仍可辨认，标签页与书签栏观感正常；`useId` 方案在改为 `<img>` 后不再需要，同页多实例也不会撞 ID。
+- 验证：`pnpm validate` 全绿（shared 147 / server 154）；生产构建下三处 `img.mark` 的 `src` 均为 `/brand-mark.svg`、`naturalWidth` 150、`complete:true`，尺寸 46/38/44 与圆角 14/11/13 正确；`GET /brand-mark.svg` 返回 200 `image/svg+xml`。

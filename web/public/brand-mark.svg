@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="专精特新自评">
+  <defs>
+    <linearGradient id="srdi-body" x1="10" y1="2" x2="54" y2="62" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5B9DF9"/>
+      <stop offset="0.45" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#123A8C"/>
+    </linearGradient>
+    <linearGradient id="srdi-sheen" x1="2" y1="2" x2="62" y2="62" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#srdi-body)"/>
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="url(#srdi-sheen)"/>
+  <polygon points="32.00,11.50 51.97,26.01 44.34,49.49 19.66,49.49 12.03,26.01" fill="#ffffff"/>
+  <path d="M23.5 32.5 L29.6 38.8 L41 26.4" fill="none" stroke="#1D4ED8" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
